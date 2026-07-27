@@ -1169,7 +1169,7 @@ func (b *Bot) storeCandle(ctx context.Context, c provider.Candle) {
 
 func (b *Bot) onTick(ctx context.Context, price provider.PriceEvent) {
 	b.currentPrice = price
-	if b.registry.Count() > 0 && time.Since(b.lastDrawbackCheck) >= 5*time.Second {
+	if b.registry.Count() > 0 && time.Since(b.lastDrawbackCheck) >= time.Second {
 		b.lastDrawbackCheck = time.Now()
 		mid := price.Mid
 		if price.Bid > 0 && price.Ask > 0 {
