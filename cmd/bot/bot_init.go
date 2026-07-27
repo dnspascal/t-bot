@@ -18,8 +18,11 @@ import (
 	combined "github.com/denismgaya/t-bot/internal/strategy/combined"
 	"github.com/denismgaya/t-bot/internal/strategy/regime"
 	sessionopen "github.com/denismgaya/t-bot/internal/strategy/session_open"
+	sessionmomentum "github.com/denismgaya/t-bot/internal/strategy/session_momentum"
+	emapullback "github.com/denismgaya/t-bot/internal/strategy/ema_pullback"
+	rsireversal "github.com/denismgaya/t-bot/internal/strategy/rsi_reversal"
 	srbounce "github.com/denismgaya/t-bot/internal/strategy/sr_bounce"
-	"github.com/denismgaya/t-bot/internal/strategy/trend_follow"
+	trendfollow "github.com/denismgaya/t-bot/internal/strategy/trend_follow"
 )
 
 type BotInitResult struct {
@@ -104,6 +107,9 @@ func buildStrategies(name, symbol, mlModelDir, mlOnnxLib string) ([]strategy.Str
 			breakout.New(),
 			sessionopen.New(),
 			trendfollow.New(),
+			rsireversal.New(),
+			sessionmomentum.New(),
+			emapullback.New(),
 		}, nil
 	case "regime":
 		return []strategy.Strategy{regime.New()}, nil
@@ -115,10 +121,16 @@ func buildStrategies(name, symbol, mlModelDir, mlOnnxLib string) ([]strategy.Str
 		return []strategy.Strategy{breakout.New()}, nil
 	case "session_open":
 		return []strategy.Strategy{sessionopen.New()}, nil
+	case "rsi_reversal":
+		return []strategy.Strategy{rsireversal.New()}, nil
+	case "session_momentum":
+		return []strategy.Strategy{sessionmomentum.New()}, nil
+	case "ema_pullback":
+		return []strategy.Strategy{emapullback.New()}, nil
 	case "combined":
 		return []strategy.Strategy{combined.New(trendfollow.New(), newSRBounce())}, nil
 	default:
-		return nil, fmt.Errorf("unknown strategy %q — valid options: all, regime, sr_bounce, trend_follow, breakout, combined", name)
+		return nil, fmt.Errorf("unknown strategy %q — valid options: all, regime, sr_bounce, trend_follow, breakout, session_open, rsi_reversal, session_momentum, ema_pullback, combined", name)
 	}
 }
 
