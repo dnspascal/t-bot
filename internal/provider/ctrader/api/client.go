@@ -429,9 +429,21 @@ func (c *Client) handleMessage(payloadType uint32, payload []byte) {
 	case ProtoOAErrorRes:
 		code, desc := decodeOAError(payload)
 		slog.Error("cTrader OA error", "code", code, "description", desc)
-		if code == "SYMBOL_NOT_FOUND" {
+		switch code {
+		case "SYMBOL_NOT_FOUND":
 			select {
 			case c.symbolByIdResCh <- nil:
+			default:
+			}
+		case "INCORRECT_BOUNDARIES":
+			// Unblock any pending historical data or deal list callers so they
+			// don't block for 15 seconds before timing out.
+			select {
+			case c.trendbarsResCh <- nil:
+			default:
+			}
+			select {
+			case c.dealListResCh <- nil:
 			default:
 			}
 		}

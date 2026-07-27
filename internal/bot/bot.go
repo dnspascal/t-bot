@@ -1494,7 +1494,9 @@ func (b *Bot) botWatchDog(ctx context.Context) {
 
 		case <-ticker.C:
 			now := time.Now().UTC()
-			if now.Weekday() == time.Saturday || (now.Weekday() == time.Sunday && now.Hour() < 22) {
+			if now.Weekday() == time.Saturday ||
+				(now.Weekday() == time.Sunday && now.Hour() < 22) ||
+				(now.Weekday() == time.Friday && now.Hour() >= 21) {
 				continue
 			}
 

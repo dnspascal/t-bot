@@ -13,11 +13,11 @@ import (
 const (
 	slATRMult       = 1.0
 	tpATRMult       = 2.0
-	minBodyATRRatio = 0.4 // M5 candle body must be >= 40% of ATR to qualify as a strong move
+	minBodyATRRatio = 0.4 
 )
 
 type SessionMomentum struct {
-	lastTradeSession string // e.g. "london-2026-07-27" — one trade per session window
+	lastTradeSession string 
 }
 
 func New() *SessionMomentum { return &SessionMomentum{} }
@@ -35,8 +35,7 @@ func (s *SessionMomentum) Evaluate(states map[string]indicator.MarketState, curr
 		return hold("M5 not warmed up")
 	}
 
-	// Determine if this M5 bar falls inside a session open window (UTC)
-	barTime := time.Unix(m5.BarTime/1000, 0).UTC()
+	barTime := time.Unix(m5.BarTime, 0).UTC()
 	h, min := barTime.Hour(), barTime.Minute()
 	dateStr := barTime.Format("2006-01-02")
 
@@ -54,7 +53,6 @@ func (s *SessionMomentum) Evaluate(states map[string]indicator.MarketState, curr
 		return hold("already traded this session window")
 	}
 
-	// Require a strong directional candle body
 	body := m5.Close - m5.Open
 	absBody := math.Abs(body)
 	if absBody < minBodyATRRatio*m5.ATR {
@@ -68,7 +66,6 @@ func (s *SessionMomentum) Evaluate(states map[string]indicator.MarketState, curr
 		dir = config.SignalSell
 	}
 
-	// H1 EMA50 alignment filter
 	if h1, ok := states[config.PeriodH1]; ok && h1.IsWarmedUp && h1.EMA50 > 0 {
 		if dir == config.SignalBuy && currentPrice < h1.EMA50 {
 			return hold("BUY session momentum blocked — price below H1 EMA50")

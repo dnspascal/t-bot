@@ -59,7 +59,7 @@ func (p *Processor) WarmCandle(openTime int64, open, high, low, close float64, v
 // accumulateSessionRange updates the pre-session high/low accumulators.
 // Called on every candle so the accumulators are ready when session opens.
 func (p *Processor) accumulateSessionRange(openTimeMs int64, high, low float64) {
-	barUTC := time.Unix(openTimeMs/1000, 0).UTC()
+	barUTC := time.Unix(openTimeMs, 0).UTC()
 	h, m := barUTC.Hour(), barUTC.Minute()
 
 	switch {
@@ -88,7 +88,7 @@ func (p *Processor) accumulateSessionRange(openTimeMs int64, high, low float64) 
 
 // injectSessionRange sets SessionHigh/Low on the market state if we are inside a session open window.
 func (p *Processor) injectSessionRange(openTimeMs int64, ms *indicator.MarketState) {
-	barUTC := time.Unix(openTimeMs/1000, 0).UTC()
+	barUTC := time.Unix(openTimeMs, 0).UTC()
 	h, m := barUTC.Hour(), barUTC.Minute()
 
 	if h == 7 && m < 30 && p.londonPreHigh > 0 {

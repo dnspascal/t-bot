@@ -945,10 +945,10 @@ func encodeDealListReq(accountID, fromMs, toMs int64, maxRows int32) []byte {
 	var b []byte
 	b = appendUint32(b, 1, ProtoOADealListReq)
 	b = appendInt64(b, 2, accountID)
-	b = appendInt64(b, 4, fromMs)
-	b = appendInt64(b, 5, toMs)
+	b = appendInt64(b, 3, fromMs)
+	b = appendInt64(b, 4, toMs)
 	if maxRows > 0 {
-		b = appendUint32(b, 6, uint32(maxRows))
+		b = appendUint32(b, 5, uint32(maxRows))
 	}
 	return b
 }
