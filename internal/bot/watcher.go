@@ -12,6 +12,7 @@ import (
 )
 
 const peakDrawbackThreshold = 60.0
+const neverProfitableTimeout = 30 * time.Minute
 
 const signalsToClose = 3
 
@@ -159,6 +160,7 @@ func peakDrawbackPct(pos trackedPosition, currentPrice, pipSize float64) float64
 }
 
 func (b *Bot) checkPeakDrawback(ctx context.Context, currentPrice float64) {
+	b.checkTimeStop(ctx, currentPrice)
 	for _, pos := range b.registry.All() {
 		if pc, pending := b.pendingCloseReasons[pos.ProviderPositionID]; pending {
 			if time.Since(pc.sentAt) < pendingCloseTimeout {
@@ -183,6 +185,32 @@ func (b *Bot) checkPeakDrawback(ctx context.Context, currentPrice float64) {
 				"drawback", fmt.Sprintf("%.0f%%", pct),
 			)
 			b.closeTrackedPosition(ctx, pos, reason)
+		}
+	}
+}
+
+func (b *Bot) checkTimeStop(ctx context.Context, _ float64) {
+	for _, pos := range b.registry.All() {
+		if time.Since(pos.OpenTime) < neverProfitableTimeout {
+			continue
+		}
+		if _, pending := b.pendingCloseReasons[pos.ProviderPositionID]; pending {
+			continue
+		}
+		neverProfitable := false
+		if pos.Side == "BUY" && pos.MaxFavorable <= pos.OpenPrice+b.pipSize {
+			neverProfitable = true
+		} else if pos.Side == "SELL" && pos.MaxFavorable >= pos.OpenPrice-b.pipSize {
+			neverProfitable = true
+		}
+		if neverProfitable {
+			slog.Info("time stop — position never profitable in 30m, closing",
+				"posID", pos.ProviderPositionID,
+				"side", pos.Side,
+				"openPrice", pos.OpenPrice,
+				"maxFavorable", pos.MaxFavorable,
+			)
+			b.closeTrackedPosition(ctx, pos, "time_stop=never_profitable_30m")
 		}
 	}
 }
