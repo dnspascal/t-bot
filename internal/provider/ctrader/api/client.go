@@ -19,7 +19,7 @@ type ExecutionEvent struct {
 	Type             string
 	Deal             DealInfo
 	HasDeal          bool
-	ClosedPositionID int64 // non-zero when broker closed position without deal (TP/SL hit)
+	ClosedPositionID int64
 	ErrorCode        string
 	Timestamp        time.Time
 }
@@ -36,17 +36,16 @@ type Client struct {
 	accountID     int64
 	symbolID      int64
 	priceDivisor  float64
-	absoluteSLTP  bool // true for commodities — broker rejects relative SL/TP
-	priceDecimals int  // decimal places allowed in order prices (2 for gold, 5 for EURUSD)
-
-	mu          sync.Mutex
-	authed      bool
-	lastBid     float64 // last known bid; only updated when bid > 0 in spot event
-	lastAsk     float64 // last known ask; only updated when ask > 0 in spot event
-	spotLogOnce atomic.Bool
-	PriceCh     chan PriceEvent
-	ExecutionCh chan ExecutionEvent
-	TrendbarCh  chan Trendbar
+	absoluteSLTP  bool
+	priceDecimals int
+	mu            sync.Mutex
+	authed        bool
+	lastBid       float64
+	lastAsk       float64
+	spotLogOnce   atomic.Bool
+	PriceCh       chan PriceEvent
+	ExecutionCh   chan ExecutionEvent
+	TrendbarCh    chan Trendbar
 
 	traderResCh     chan TraderInfo
 	reconcileResCh  chan []OpenPosition
@@ -55,6 +54,7 @@ type Client struct {
 	dealListResCh   chan []DealInfo
 	symbolByIdResCh chan []LightSymbol
 	accountAuthedCh chan struct{}
+	pendingCloses   atomic.Int32
 }
 
 func NewClient(demo bool, accountID, symbolID int64, priceDivisor float64, pipSize float64) *Client {
@@ -194,9 +194,6 @@ func (c *Client) FetchHistoricalTrendbars(period uint32, count int) ([]Trendbar,
 	}
 }
 
-
-// GetDealsForPosition fetches all deals in [from, now] and returns the close deal
-// for the given positionID, or nil if not found.
 func (c *Client) GetDealsForPosition(positionID int64, from time.Time) (*DealInfo, error) {
 	fromMs := from.UnixMilli()
 	toMs := time.Now().UnixMilli()
@@ -246,8 +243,13 @@ func (c *Client) ClosePosition(positionID, volume int64) error {
 	}
 
 	slog.Info("closing position", "positionID", positionID, "volume", volume)
-	return c.conn.SendRaw(ProtoOAClosePositionReq,
-		encodeClosePositionReq(accountID, positionID, volume))
+
+	if err := c.conn.SendRaw(ProtoOAClosePositionReq, encodeClosePositionReq(accountID, positionID, volume)); err != nil {
+		return err
+	}
+	c.pendingCloses.Add(1)
+	return nil
+
 }
 
 func (c *Client) PlaceMarketOrder(side uint32, volume int64, slDist, tpDist float64) error {
@@ -376,6 +378,11 @@ func (c *Client) handleMessage(payloadType uint32, payload []byte) {
 			"executionPrice", deal.ExecutionPrice,
 			"isClose", deal.IsClose,
 		)
+
+		if hasDeal && deal.IsClose {
+			c.pendingCloses.Add(-1)
+		}
+
 		select {
 		case c.ExecutionCh <- ExecutionEvent{
 			Type:             execType,
@@ -436,15 +443,21 @@ func (c *Client) handleMessage(payloadType uint32, payload []byte) {
 			default:
 			}
 		case "INCORRECT_BOUNDARIES":
-			// Unblock any pending historical data or deal list callers so they
-			// don't block for 15 seconds before timing out.
-			select {
-			case c.trendbarsResCh <- nil:
-			default:
-			}
-			select {
-			case c.dealListResCh <- nil:
-			default:
+			if c.pendingCloses.Load() > 0 {
+				c.pendingCloses.Add(-1)
+				select {
+				case c.ExecutionCh <- ExecutionEvent{Type: "CLOSE_REJECTED", ErrorCode: "INCORRECT_BOUNDARIES", Timestamp: time.Now().UTC()}:
+				default:
+				}
+			} else {
+				select {
+				case c.trendbarsResCh <- nil:
+				default:
+				}
+				select {
+				case c.dealListResCh <- nil:
+				default:
+				}
 			}
 		}
 
