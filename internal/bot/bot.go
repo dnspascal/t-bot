@@ -926,14 +926,15 @@ func (b *Bot) recordOpenFill(ctx context.Context, exec provider.ExecutionEvent) 
 		slPips := math.Abs(ep-b.pendingSLPrice) / b.pipSize
 		tpPips := math.Abs(b.pendingTPPrice-ep) / b.pipSize
 		go b.dispatcher.Dispatch(ctx, notify.EventTradeOpened, notify.TradeOpenedPayload{
-			Symbol:   b.symbol,
-			Side:     b.pendingSide,
-			Price:    ep,
-			SLPrice:  b.pendingSLPrice,
-			TPPrice:  b.pendingTPPrice,
-			SLPips:   slPips,
-			TPPips:   tpPips,
-			Strategy: b.pendingStrategyName,
+			PositionID: provPosID,
+			Symbol:     b.symbol,
+			Side:       b.pendingSide,
+			Price:      ep,
+			SLPrice:    b.pendingSLPrice,
+			TPPrice:    b.pendingTPPrice,
+			SLPips:     slPips,
+			TPPips:     tpPips,
+			Strategy:   b.pendingStrategyName,
 		})
 	}
 
@@ -1053,6 +1054,7 @@ func (b *Bot) recordCloseFill(ctx context.Context, exec provider.ExecutionEvent)
 			dur = time.Duration(*durationMs) * time.Millisecond
 		}
 		go b.dispatcher.Dispatch(ctx, notify.EventTradeClosed, notify.TradeClosedPayload{
+			PositionID: provPosID,
 			Symbol:     b.symbol,
 			Side:       tracked.Side,
 			EntryPrice: cl.EntryPrice,
