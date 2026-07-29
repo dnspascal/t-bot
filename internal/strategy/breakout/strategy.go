@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	slATRMult = 1.0 
-	tpATRMult = 1.5
+	slATRMult = 1.0
+	tpATRMult = 2.0
 )
 
 type Breakout struct {
@@ -59,11 +59,12 @@ func (s *Breakout) Evaluate(states map[string]indicator.MarketState, currentPric
 	}
 
 	if h1, ok := states[config.PeriodH1]; ok && h1.IsWarmedUp {
-		if dir == config.SignalBuy && h1.EMA50 > 0 && currentPrice < h1.EMA50 {
-			return hold("BUY breakout blocked — price below H1 EMA50")
+		// Breakout must align with the H1 trend — counter-trend breakouts are fakeouts.
+		if dir == config.SignalBuy && h1.Regime != config.TrendingUp {
+			return hold("BUY breakout blocked — H1 not trending up")
 		}
-		if dir == config.SignalSell && h1.EMA50 > 0 && currentPrice > h1.EMA50 {
-			return hold("SELL breakout blocked — price above H1 EMA50")
+		if dir == config.SignalSell && h1.Regime != config.TrendingDown {
+			return hold("SELL breakout blocked — H1 not trending down")
 		}
 	}
 
@@ -72,10 +73,10 @@ func (s *Breakout) Evaluate(states map[string]indicator.MarketState, currentPric
 
 	if dir == config.SignalBuy {
 		slPrice = m15.BreakoutLevel - slATRMult*atr
-		tpPrice = currentPrice + (m15.TrendHigh-m15.TrendLow)*tpATRMult
+		tpPrice = currentPrice + tpATRMult*atr
 	} else {
 		slPrice = m15.BreakoutLevel + slATRMult*atr
-		tpPrice = currentPrice - (m15.TrendHigh-m15.TrendLow)*tpATRMult
+		tpPrice = currentPrice - tpATRMult*atr
 	}
 
 	slPips := math.Abs(currentPrice-slPrice) / pipSize
