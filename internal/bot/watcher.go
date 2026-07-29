@@ -66,7 +66,7 @@ func (b *Bot) watchPositions(ctx context.Context, ms indicator.MarketState) {
 				continue
 			}
 
-			slog.Info("reversal signals detected")
+			slog.Debug("reversal signals detected")
 
 			reason := strings.Join(signals, ",")
 			switch {
@@ -237,22 +237,10 @@ func (b *Bot) logM1State(currentPrice float64) {
 		}
 		totalUnrealized += unrealized
 
-		slog.Info("M1 position state",
-			"provider", provider,
-			"positions", count,
-			"posID", pos.ProviderPositionID,
-			"side", pos.Side,
-			"open", pos.OpenPrice,
-			"price", currentPrice,
-			"pnlUSD", fmt.Sprintf("%+.4f", unrealized),
-			"maxFav", pos.MaxFavorable,
-			"maxAdv", pos.MaxAdverse,
-			"drawbackPct", fmt.Sprintf("%.1f%%", peakDrawbackPct(pos, currentPrice, b.pipSize)),
-		)
 	}
 
 	if count > 1 {
-		slog.Info("M1 total P&L",
+		slog.Debug("M1 total P&L",
 			"provider", provider,
 			"positions", count,
 			"totalPnlUSD", fmt.Sprintf("%+.4f", totalUnrealized),

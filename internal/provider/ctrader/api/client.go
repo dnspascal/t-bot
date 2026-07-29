@@ -435,7 +435,7 @@ func (c *Client) handleMessage(payloadType uint32, payload []byte) {
 
 	case ProtoOAErrorRes:
 		code, desc := decodeOAError(payload)
-		slog.Error("cTrader OA error", "code", code, "description", desc)
+		slog.Warn("cTrader OA error", "code", code, "description", desc)
 		switch code {
 		case "SYMBOL_NOT_FOUND":
 			select {
