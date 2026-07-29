@@ -56,15 +56,15 @@ type Bot struct {
 	balance   float64
 	leverage  float64
 
-	pendingOrder         bool
-	pendingOrderID       string
-	pendingOrderSentAt   time.Time
-	pendingSide          string
-	pendingTier          int
-	pendingSLPrice       float64
-	pendingTPPrice       float64
-	pendingATR           float64
-	pendingStrategyName  string
+	pendingOrder        bool
+	pendingOrderID      string
+	pendingOrderSentAt  time.Time
+	pendingSide         string
+	pendingTier         int
+	pendingSLPrice      float64
+	pendingTPPrice      float64
+	pendingATR          float64
+	pendingStrategyName string
 
 	lastCandleOpenTime int64
 	lastCandleClose    float64
@@ -614,7 +614,6 @@ func (b *Bot) logUnrealizedPnL(currentPrice float64) {
 }
 
 func (b *Bot) onExecution(ctx context.Context, exec provider.ExecutionEvent) {
-	// Ignore fills that belong to a different symbol on the same cTrader account.
 	if exec.HasDeal && exec.Deal.SymbolID != 0 && b.cfg.CTrader != nil && exec.Deal.SymbolID != b.cfg.CTrader.SymbolID {
 		return
 	}
@@ -669,6 +668,17 @@ func (b *Bot) onExecution(ctx context.Context, exec provider.ExecutionEvent) {
 			b.orders.UpdateError(ctx, b.pendingOrderID, exec.ErrorCode, exec.Type)
 		}
 		b.events.Insert(ctx, "order_not_filled", map[string]any{"reason": exec.Type, "errorCode": exec.ErrorCode}, 0)
+
+	case "CLOSE_REJECTED":
+		slog.Warn("broker rejected close — purging positions stuck at broker")
+		for posID := range b.pendingCloseReasons {
+			slog.Warn("purging position rejected at broker", "posID", posID)
+			delete(b.pendingCloseReasons, posID)
+			b.registry.Remove(posID)
+			if err := b.positions.Close(ctx, b.provider.Name(), posID, time.Now(), nil, nil); err != nil {
+				slog.Error("failed to mark rejected position closed in DB", "posID", posID, "err", err)
+			}
+		}
 	}
 }
 
