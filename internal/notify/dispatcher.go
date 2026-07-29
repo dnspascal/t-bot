@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -23,12 +24,16 @@ type subscriberTarget struct {
 type DBDispatcher struct {
 	db       *pgxpool.Pool
 	channels map[string]Channel
+
+	mu         sync.Mutex
+	openMsgIDs map[string]map[string]string
 }
 
 func NewDispatcher(db *pgxpool.Pool) *DBDispatcher {
 	return &DBDispatcher{
-		db:       db,
-		channels: make(map[string]Channel),
+		db:         db,
+		channels:   make(map[string]Channel),
+		openMsgIDs: make(map[string]map[string]string),
 	}
 }
 
@@ -44,12 +49,35 @@ func (d *DBDispatcher) Dispatch(ctx context.Context, eventType EventType, payloa
 
 	payloadJSON, _ := json.Marshal(payload)
 
+	var positionID string
+	var replyMap map[string]string
+	switch eventType {
+	case EventTradeOpened:
+		if p, ok := payload.(TradeOpenedPayload); ok {
+			positionID = p.PositionID
+		}
+	case EventTradeClosed:
+		if p, ok := payload.(TradeClosedPayload); ok {
+			positionID = p.PositionID
+		}
+		if positionID != "" {
+			d.mu.Lock()
+			replyMap = d.openMsgIDs[positionID]
+			delete(d.openMsgIDs, positionID)
+			d.mu.Unlock()
+		}
+	}
+
 	for _, t := range targets {
 		ch, ok := d.channels[t.channel]
 		if !ok {
 			continue
 		}
-		sendErr := ch.Send(ctx, t.recipientID, eventType, payload)
+		replyMsgID := ""
+		if replyMap != nil {
+			replyMsgID = replyMap[t.recipientID]
+		}
+		msgID, sendErr := ch.Send(ctx, t.recipientID, replyMsgID, eventType, payload)
 		status := "sent"
 		var errText *string
 		if sendErr != nil {
@@ -57,6 +85,13 @@ func (d *DBDispatcher) Dispatch(ctx context.Context, eventType EventType, payloa
 			status = "failed"
 			s := sendErr.Error()
 			errText = &s
+		} else if eventType == EventTradeOpened && positionID != "" && msgID != "" {
+			d.mu.Lock()
+			if d.openMsgIDs[positionID] == nil {
+				d.openMsgIDs[positionID] = make(map[string]string)
+			}
+			d.openMsgIDs[positionID][t.recipientID] = msgID
+			d.mu.Unlock()
 		}
 		d.log(ctx, t.subscriberID, t.channel, eventType, payloadJSON, status, errText)
 	}

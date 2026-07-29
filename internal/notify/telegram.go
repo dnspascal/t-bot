@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -24,16 +25,22 @@ func NewTelegramChannel(token string) *TelegramChannel {
 
 func (t *TelegramChannel) Name() string { return "telegram" }
 
-func (t *TelegramChannel) Send(ctx context.Context, recipientID string, eventType EventType, payload any) error {
+func (t *TelegramChannel) Send(ctx context.Context, recipientID, replyMsgID string, eventType EventType, payload any) (string, error) {
 	text := t.format(eventType, payload)
 	if text == "" {
-		return nil
+		return "", nil
 	}
-	return t.post(ctx, "sendMessage", map[string]any{
+	msg := map[string]any{
 		"chat_id":    recipientID,
 		"text":       text,
 		"parse_mode": "HTML",
-	})
+	}
+	if replyMsgID != "" {
+		if id, err := strconv.ParseInt(replyMsgID, 10, 64); err == nil {
+			msg["reply_to_message_id"] = id
+		}
+	}
+	return t.post(ctx, "sendMessage", msg)
 }
 
 func (t *TelegramChannel) format(eventType EventType, payload any) string {
@@ -98,19 +105,21 @@ func (t *TelegramChannel) format(eventType EventType, payload any) string {
 
 // SendText sends a plain HTML message to a specific chat.
 func (t *TelegramChannel) SendText(ctx context.Context, chatID, text string) error {
-	return t.post(ctx, "sendMessage", map[string]any{
+	_, err := t.post(ctx, "sendMessage", map[string]any{
 		"chat_id":    chatID,
 		"text":       text,
 		"parse_mode": "HTML",
 	})
+	return err
 }
 
 // RegisterWebhook tells Telegram to POST updates to the given URL.
 func (t *TelegramChannel) RegisterWebhook(ctx context.Context, webhookURL string) error {
-	return t.post(ctx, "setWebhook", map[string]any{
+	_, err := t.post(ctx, "setWebhook", map[string]any{
 		"url":             webhookURL,
 		"allowed_updates": []string{"message", "callback_query"},
 	})
+	return err
 }
 
 // Update is a Telegram update object.
@@ -161,29 +170,37 @@ func (t *TelegramChannel) WebhookHandler(secret string, handler func(Update)) ht
 	}
 }
 
-func (t *TelegramChannel) post(ctx context.Context, method string, payload map[string]any) error {
+func (t *TelegramChannel) post(ctx context.Context, method string, payload map[string]any) (string, error) {
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return err
+		return "", err
 	}
 	url := fmt.Sprintf("%s%s/%s", telegramAPI, t.token, method)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return err
+		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer resp.Body.Close()
+	respBody, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("telegram %s: %s", method, b)
+		return "", fmt.Errorf("telegram %s: %s", method, respBody)
 	}
-	return nil
+	var res struct {
+		Result struct {
+			MessageID int64 `json:"message_id"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal(respBody, &res); err != nil || res.Result.MessageID == 0 {
+		return "", nil
+	}
+	return fmt.Sprintf("%d", res.Result.MessageID), nil
 }
 
 func formatPrice(p float64) string {

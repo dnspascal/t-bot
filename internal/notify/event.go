@@ -11,24 +11,26 @@ const (
 )
 
 type TradeOpenedPayload struct {
-	Symbol   string
-	Side     string
-	Price    float64
-	SLPrice  float64
-	TPPrice  float64
-	SLPips   float64
-	TPPips   float64
-	Strategy string
+	PositionID string
+	Symbol     string
+	Side       string
+	Price      float64
+	SLPrice    float64
+	TPPrice    float64
+	SLPips     float64
+	TPPips     float64
+	Strategy   string
 }
 
 type TradeClosedPayload struct {
-	Symbol      string
-	Side        string
-	EntryPrice  float64
-	ClosePrice  float64
-	Realized    float64
-	IsWin       bool
-	Duration    time.Duration
+	PositionID string
+	Symbol     string
+	Side       string
+	EntryPrice float64
+	ClosePrice float64
+	Realized   float64
+	IsWin      bool
+	Duration   time.Duration
 }
 
 type DailySummaryPayload struct {
