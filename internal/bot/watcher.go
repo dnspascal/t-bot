@@ -20,6 +20,10 @@ const signalsToReduce = 2
 
 func isEODWindow() bool {
 	now := time.Now().UTC()
+	wd := now.Weekday()
+	if wd == time.Saturday || wd == time.Sunday {
+		return false
+	}
 	return now.Hour() == 21 && now.Minute() >= 30
 }
 
