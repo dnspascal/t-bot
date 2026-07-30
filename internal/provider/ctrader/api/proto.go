@@ -87,8 +87,11 @@ func encodeClosePositionReq(accountID, positionID, volume int64) []byte {
 	var b []byte
 	b = appendUint32(b, 1, ProtoOAClosePositionReq)
 	b = appendInt64(b, 2, accountID)
-	b = appendInt64(b, 3, positionID)
-	b = appendInt64(b, 4, volume)
+	// Pepperstone cTrader API: positionId is field 4, volume is field 5.
+	// Field 3 exists in their proto but is optional and not required for close.
+	// Standard Spotware spec has positionId=3/volume=4 but this broker diverges.
+	b = appendInt64(b, 4, positionID)
+	b = appendInt64(b, 5, volume)
 	return b
 }
 

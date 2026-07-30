@@ -954,41 +954,9 @@ func (b *Bot) recordOpenFill(ctx context.Context, exec provider.ExecutionEvent) 
 
 	if b.testCloseMode.CompareAndSwap(true, false) {
 		if pos, ok := b.registry.Get(provPosID); ok {
-			posSnapshot := pos
-			type variantCloser interface {
-				ClosePositionVariant(positionID string, volume int64, posIDField, volField int) error
-			}
-			vc, hasVariant := b.provider.(variantCloser)
-			go func() {
-				// Standard (field3=posID, field4=vol) — will get INCORRECT_BOUNDARIES
-				// because positionID(234M) > volume(100K) and broker reads them as timestamps.
-				slog.Info("TESTCLOSE: standard (posID=field3, vol=field4)",
-					"posID", posSnapshot.ProviderPositionID, "volume", posSnapshot.Volume)
-				if _, err := b.provider.ClosePosition(ctx, posSnapshot.ProviderPositionID, posSnapshot.Volume); err != nil {
-					slog.Error("TESTCLOSE: standard error", "err", err)
-				}
-
-				if !hasVariant {
-					slog.Warn("TESTCLOSE: provider does not support ClosePositionVariant — skipping")
-					return
-				}
-
-				time.Sleep(3 * time.Second)
-
-				// Variant A: posID=field4, vol=field5
-				slog.Info("TESTCLOSE: variant A (posID=field4, vol=field5)")
-				if err := vc.ClosePositionVariant(posSnapshot.ProviderPositionID, posSnapshot.Volume, 4, 5); err != nil {
-					slog.Error("TESTCLOSE: variant A error", "err", err)
-				}
-
-				time.Sleep(3 * time.Second)
-
-				// Variant B: posID=field5, vol=field6
-				slog.Info("TESTCLOSE: variant B (posID=field5, vol=field6)")
-				if err := vc.ClosePositionVariant(posSnapshot.ProviderPositionID, posSnapshot.Volume, 5, 6); err != nil {
-					slog.Error("TESTCLOSE: variant B error", "err", err)
-				}
-			}()
+			slog.Info("TESTCLOSE: closing immediately after fill",
+				"posID", provPosID, "volume", pos.Volume)
+			b.closeTrackedPosition(ctx, pos, "test_close_cmd")
 		}
 	}
 }
