@@ -8,7 +8,7 @@ const (
 	ProtoOATraderReq          = uint32(2104)
 	ProtoOATraderRes          = uint32(2105)
 	ProtoOANewOrderReq        = uint32(2106)
-	ProtoOAClosePositionReq   = uint32(2133)
+	ProtoOAClosePositionReq   = uint32(2111)
 	ProtoOAReconcileReq       = uint32(2124)
 	ProtoOAReconcileRes       = uint32(2125)
 	ProtoOAExecutionEvent     = uint32(2126)
