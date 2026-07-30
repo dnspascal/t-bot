@@ -143,7 +143,7 @@ waitFill:
 	// Try close with STANDARD encoding: posID at field 3, volume at field 4
 	slog.Info("step 7: trying STANDARD close (posID=field3, vol=field4)",
 		"positionID", positionID, "volume", filledVolume)
-	if err := client.ClosePosition(positionID, filledVolume); err != nil {
+	if err := client.ClosePosition(positionID, filledVolume, api.TradeSideSell); err != nil { // BUY position → close with SELL
 		log.Fatal("ClosePosition:", err)
 	}
 

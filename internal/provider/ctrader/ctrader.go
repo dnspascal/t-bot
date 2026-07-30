@@ -358,12 +358,17 @@ func (c *CTrader) QueryOpenPositions(ctx context.Context, symbol string) ([]prov
 	return result, nil
 }
 
-func (c *CTrader) ClosePosition(ctx context.Context, positionID string, volume int64) (string, error) {
+func (c *CTrader) ClosePosition(ctx context.Context, positionID string, volume int64, side string) (string, error) {
 	var posID int64
 	if _, err := fmt.Sscanf(positionID, "%d", &posID); err != nil {
 		return "", fmt.Errorf("invalid positionID %q: %w", positionID, err)
 	}
-	if err := c.client.ClosePosition(posID, volume); err != nil {
+	// The close order must be in the OPPOSITE direction of the position.
+	closeSide := api.TradeSideSell
+	if side == "SELL" {
+		closeSide = api.TradeSideBuy
+	}
+	if err := c.client.ClosePosition(posID, volume, closeSide); err != nil {
 		return "", fmt.Errorf("ClosePosition: %w", err)
 	}
 	return "", nil

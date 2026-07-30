@@ -146,7 +146,7 @@ func (o *OANDA) QueryOpenPositions(ctx context.Context, symbol string) ([]provid
 	return []provider.Position{}, nil
 }
 
-func (o *OANDA) ClosePosition(ctx context.Context, positionID string, volume int64) (closeOrderID string, err error) {
+func (o *OANDA) ClosePosition(ctx context.Context, positionID string, volume int64, side string) (closeOrderID string, err error) {
 	return "", fmt.Errorf("ClosePosition not yet implemented for OANDA")
 }
 

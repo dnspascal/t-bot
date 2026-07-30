@@ -257,29 +257,35 @@ func (c *Client) ClosePositionVariant(positionID, volume int64, posIDField, volF
 	return nil
 }
 
-func (c *Client) ClosePosition(positionID, volume int64) error {
+// ClosePosition closes a position by placing an opposite-side market order via
+// ProtoOANewOrderReq (2106). Payload type 2133 (ProtoOAClosePositionReq) is mapped
+// to a different handler on Pepperstone's server, so we use the NewOrderReq path
+// with positionId at field 24 to target the specific position.
+// closeSide is the OPPOSITE of the position's side (BUY→SELL, SELL→BUY).
+func (c *Client) ClosePosition(positionID, volume int64, closeSide uint32) error {
 	c.mu.Lock()
 	authed := c.authed
 	accountID := c.accountID
+	symbolID := c.symbolID
 	c.mu.Unlock()
 
 	if !authed {
 		return fmt.Errorf("not authenticated")
 	}
 
-	inner := encodeClosePositionReq(accountID, positionID, volume)
-	slog.Info("closing position",
+	inner := encodeCloseViaNewOrderReq(accountID, symbolID, positionID, volume, closeSide)
+	slog.Info("closing position via new order",
 		"positionID", positionID,
 		"volume", volume,
+		"closeSide", sideStr(closeSide),
 		"innerHex", fmt.Sprintf("%x", inner),
 	)
 
-	if err := c.conn.SendRaw(ProtoOAClosePositionReq, inner); err != nil {
+	if err := c.conn.SendRaw(ProtoOANewOrderReq, inner); err != nil {
 		return err
 	}
 	c.pendingCloses.Add(1)
 	return nil
-
 }
 
 func (c *Client) PlaceMarketOrder(side uint32, volume int64, slDist, tpDist float64) error {
@@ -431,13 +437,23 @@ func (c *Client) handleMessage(payloadType uint32, payload []byte) {
 			"orderID", orderID,
 			"description", description,
 		)
-		select {
-		case c.ExecutionCh <- ExecutionEvent{
-			Type:      "ORDER_REJECTED",
-			ErrorCode: errorCode,
-			Timestamp: time.Now().UTC(),
-		}:
-		default:
+		// If there is a pending close, this rejection is from the close order.
+		pending := c.pendingCloses.Load()
+		if pending > 0 {
+			c.pendingCloses.Add(-1)
+			select {
+			case c.ExecutionCh <- ExecutionEvent{Type: "CLOSE_REJECTED", ErrorCode: errorCode, Timestamp: time.Now().UTC()}:
+			default:
+			}
+		} else {
+			select {
+			case c.ExecutionCh <- ExecutionEvent{
+				Type:      "ORDER_REJECTED",
+				ErrorCode: errorCode,
+				Timestamp: time.Now().UTC(),
+			}:
+			default:
+			}
 		}
 
 	case ProtoOADealListRes:

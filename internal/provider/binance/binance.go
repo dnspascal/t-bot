@@ -304,10 +304,10 @@ func (b *Binance) QueryOpenPositions(ctx context.Context, symbol string) ([]prov
 }
 
 
-func (b *Binance) ClosePosition(ctx context.Context, positionID string, volume int64) (string, error) {
-	closeSide := "SELL" 
-	if len(positionID) >= 5 && positionID[:5] == "SELL:" {
-		closeSide = "BUY" 
+func (b *Binance) ClosePosition(ctx context.Context, positionID string, volume int64, side string) (string, error) {
+	closeSide := "SELL"
+	if side == "SELL" {
+		closeSide = "BUY"
 	}
 
 	qty := math.Floor(float64(volume)/100_000_000*1000) / 1000
