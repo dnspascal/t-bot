@@ -92,6 +92,17 @@ func encodeClosePositionReq(accountID, positionID, volume int64) []byte {
 	return b
 }
 
+// EncodeClosePositionReqVariant builds a close request with caller-specified
+// proto field numbers for positionId and volume, used to diagnose field-shift issues.
+func EncodeClosePositionReqVariant(accountID, positionID, volume int64, posIDField, volField int) []byte {
+	var b []byte
+	b = appendUint32(b, 1, ProtoOAClosePositionReq)
+	b = appendInt64(b, 2, accountID)
+	b = appendInt64(b, posIDField, positionID)
+	b = appendInt64(b, volField, volume)
+	return b
+}
+
 func encodeNewOrderReq(accountID, symbolID int64, side uint32, volume int64, slDist, tpDist, priceDivisor float64, absoluteSLTP bool, priceDecimals int, lastBid, lastAsk float64) []byte {
 	var b []byte
 	b = appendUint32(b, 1, ProtoOANewOrderReq)

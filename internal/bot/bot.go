@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/denismgaya/t-bot/internal/candle"
@@ -88,6 +89,9 @@ type Bot struct {
 	lastTickSaved     time.Time
 	lastDrawbackCheck time.Time
 
+	testCloseMode    atomic.Bool
+	testCloseTrigger chan struct{}
+
 	db        *pgxpool.Pool
 	lookup    *symbol.SymbolLookup
 	ticks     *tick.Repository
@@ -144,6 +148,7 @@ func New(
 		registry:            newPositionRegistry(),
 		pendingCloseReasons: make(map[string]pendingClose),
 		tickCh:              make(chan tick.Tick, 500),
+		testCloseTrigger:    make(chan struct{}, 1),
 		lookup:              lookup,
 		ticks:               ticks,
 		candles:             candles,
@@ -197,6 +202,11 @@ func (b *Bot) Run(ctx context.Context, startedAt time.Time) {
 
 		case exec := <-execCh:
 			b.onExecution(ctx, exec)
+
+		case <-b.testCloseTrigger:
+			slog.Info("TESTCLOSE: opening test position to diagnose close rejection")
+			b.testCloseMode.Store(true)
+			b.sendTestPosition(ctx)
 
 		case <-discCh:
 			slog.Error("provider connection lost — bot stopping")
@@ -944,6 +954,14 @@ func (b *Bot) recordOpenFill(ctx context.Context, exec provider.ExecutionEvent) 
 		"price":       deal.ExecutionPrice,
 		"tier":        b.pendingTier,
 	}, 0)
+
+	if b.testCloseMode.CompareAndSwap(true, false) {
+		if pos, ok := b.registry.Get(provPosID); ok {
+			slog.Info("TESTCLOSE: firing close immediately after fill",
+				"posID", provPosID, "volume", pos.Volume)
+			b.closeTrackedPosition(ctx, pos, "test_close_cmd")
+		}
+	}
 }
 
 func (b *Bot) recordCloseFill(ctx context.Context, exec provider.ExecutionEvent) {
@@ -1422,6 +1440,20 @@ func (b *Bot) IsPaused() bool {
 }
 
 func (b *Bot) Symbol() string { return b.symbol }
+
+// TriggerTestClose opens a 1-micro-lot position and immediately tries to close
+// it using the live provider connection. Used to diagnose INCORRECT_BOUNDARIES.
+func (b *Bot) TriggerTestClose() string {
+	if b.testCloseMode.Load() {
+		return fmt.Sprintf("[%s] test close already in progress", b.symbol)
+	}
+	select {
+	case b.testCloseTrigger <- struct{}{}:
+		return fmt.Sprintf("[%s] test triggered — opening micro lot and closing immediately. Watch journalctl.", b.symbol)
+	default:
+		return fmt.Sprintf("[%s] trigger channel busy", b.symbol)
+	}
+}
 
 func (b *Bot) StatusText(ctx context.Context) string {
 	mode := "Running"

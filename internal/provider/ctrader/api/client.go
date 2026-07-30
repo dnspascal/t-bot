@@ -232,6 +232,31 @@ func (c *Client) GetSymbolsByIds(ids []int64) ([]LightSymbol, error) {
 	}
 }
 
+// ClosePositionVariant sends a close with caller-specified proto field numbers.
+// Used by the closetest diagnostic command to try alternative field assignments.
+func (c *Client) ClosePositionVariant(positionID, volume int64, posIDField, volField int) error {
+	c.mu.Lock()
+	authed := c.authed
+	accountID := c.accountID
+	c.mu.Unlock()
+	if !authed {
+		return fmt.Errorf("not authenticated")
+	}
+	inner := EncodeClosePositionReqVariant(accountID, positionID, volume, posIDField, volField)
+	slog.Info("closing position (variant)",
+		"positionID", positionID,
+		"volume", volume,
+		"posIDField", posIDField,
+		"volField", volField,
+		"innerHex", fmt.Sprintf("%x", inner),
+	)
+	if err := c.conn.SendRaw(ProtoOAClosePositionReq, inner); err != nil {
+		return err
+	}
+	c.pendingCloses.Add(1)
+	return nil
+}
+
 func (c *Client) ClosePosition(positionID, volume int64) error {
 	c.mu.Lock()
 	authed := c.authed
@@ -242,9 +267,14 @@ func (c *Client) ClosePosition(positionID, volume int64) error {
 		return fmt.Errorf("not authenticated")
 	}
 
-	slog.Info("closing position", "positionID", positionID, "volume", volume)
+	inner := encodeClosePositionReq(accountID, positionID, volume)
+	slog.Info("closing position",
+		"positionID", positionID,
+		"volume", volume,
+		"innerHex", fmt.Sprintf("%x", inner),
+	)
 
-	if err := c.conn.SendRaw(ProtoOAClosePositionReq, encodeClosePositionReq(accountID, positionID, volume)); err != nil {
+	if err := c.conn.SendRaw(ProtoOAClosePositionReq, inner); err != nil {
 		return err
 	}
 	c.pendingCloses.Add(1)
@@ -435,7 +465,7 @@ func (c *Client) handleMessage(payloadType uint32, payload []byte) {
 
 	case ProtoOAErrorRes:
 		code, desc := decodeOAError(payload)
-		slog.Warn("cTrader OA error", "code", code, "description", desc)
+		slog.Warn("cTrader OA error", "code", code, "description", desc, "rawHex", fmt.Sprintf("%x", payload))
 		switch code {
 		case "SYMBOL_NOT_FOUND":
 			select {
@@ -443,7 +473,9 @@ func (c *Client) handleMessage(payloadType uint32, payload []byte) {
 			default:
 			}
 		case "INCORRECT_BOUNDARIES":
-			if c.pendingCloses.Load() > 0 {
+			pending := c.pendingCloses.Load()
+			slog.Warn("INCORRECT_BOUNDARIES received", "pendingCloses", pending)
+			if pending > 0 {
 				c.pendingCloses.Add(-1)
 				select {
 				case c.ExecutionCh <- ExecutionEvent{Type: "CLOSE_REJECTED", ErrorCode: "INCORRECT_BOUNDARIES", Timestamp: time.Now().UTC()}:

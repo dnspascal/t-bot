@@ -17,6 +17,7 @@ type botController interface {
 	IsPaused() bool
 	StatusText(ctx context.Context) string
 	TodayText(ctx context.Context) string
+	TriggerTestClose() string
 }
 
 // telegramCommandHandler handles incoming Telegram updates: onboarding and commands.
@@ -62,6 +63,8 @@ func (h *telegramCommandHandler) Handle(ctx context.Context, update notify.Updat
 		h.handleResume(ctx, chatID)
 	case "/balance":
 		h.handleBalance(ctx, chatID)
+	case "/testclose":
+		h.handleTestClose(ctx, chatID)
 	}
 }
 
@@ -113,4 +116,12 @@ func (h *telegramCommandHandler) handleBalance(ctx context.Context, chatID strin
 		parts = append(parts, b.StatusText(ctx))
 	}
 	h.tg.SendText(ctx, chatID, strings.Join(parts, "\n\n"))
+}
+
+func (h *telegramCommandHandler) handleTestClose(ctx context.Context, chatID string) {
+	var results []string
+	for _, b := range h.getTradingInstances() {
+		results = append(results, b.TriggerTestClose())
+	}
+	h.tg.SendText(ctx, chatID, strings.Join(results, "\n"))
 }
