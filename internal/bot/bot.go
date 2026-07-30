@@ -634,6 +634,9 @@ func (b *Bot) onExecution(ctx context.Context, exec provider.ExecutionEvent) {
 		}
 		switch exec.Type {
 		case "ORDER_REJECTED", "ORDER_CANCELLED", "ORDER_EXPIRED":
+			if exec.Type == "ORDER_CANCELLED" && exec.ClosedPositionID != "" {
+				return
+			}
 			b.pendingOrder = false
 			slog.Warn("order not filled", "reason", exec.Type, "errorCode", exec.ErrorCode)
 			if b.pendingOrderID != "" {
