@@ -366,7 +366,17 @@ func (c *CTrader) ClosePosition(ctx context.Context, positionID string, volume i
 	if err := c.client.ClosePosition(posID, volume); err != nil {
 		return "", fmt.Errorf("ClosePosition: %w", err)
 	}
-	return "", nil 
+	return "", nil
+}
+
+// ClosePositionVariant sends a close with alternative proto field numbers.
+// Used by the /testclose diagnostic to detect field-number mismatches.
+func (c *CTrader) ClosePositionVariant(positionID string, volume int64, posIDField, volField int) error {
+	var posID int64
+	if _, err := fmt.Sscanf(positionID, "%d", &posID); err != nil {
+		return fmt.Errorf("invalid positionID %q: %w", positionID, err)
+	}
+	return c.client.ClosePositionVariant(posID, volume, posIDField, volField)
 }
 
 func (c *CTrader) ReconcilePositions(ctx context.Context) ([]provider.Position, error) {
