@@ -271,7 +271,6 @@ func (c *Client) ClosePosition(positionID, volume int64) error {
 	slog.Info("closing position",
 		"positionID", positionID,
 		"volume", volume,
-		"innerHex", fmt.Sprintf("%x", inner),
 	)
 
 	if err := c.conn.SendRaw(ProtoOAClosePositionReq, inner); err != nil {
@@ -464,7 +463,7 @@ func (c *Client) handleMessage(payloadType uint32, payload []byte) {
 
 	case ProtoOAErrorRes:
 		code, desc := decodeOAError(payload)
-		slog.Warn("cTrader OA error", "code", code, "description", desc, "rawHex", fmt.Sprintf("%x", payload))
+		slog.Warn("cTrader OA error", "code", code, "description", desc)
 		switch code {
 		case "SYMBOL_NOT_FOUND":
 			select {
@@ -472,9 +471,7 @@ func (c *Client) handleMessage(payloadType uint32, payload []byte) {
 			default:
 			}
 		case "INCORRECT_BOUNDARIES":
-			pending := c.pendingCloses.Load()
-			slog.Warn("INCORRECT_BOUNDARIES received", "pendingCloses", pending)
-			if pending > 0 {
+			if pending := c.pendingCloses.Load(); pending > 0 {
 				c.pendingCloses.Add(-1)
 				select {
 				case c.ExecutionCh <- ExecutionEvent{Type: "CLOSE_REJECTED", ErrorCode: "INCORRECT_BOUNDARIES", Timestamp: time.Now().UTC()}:
