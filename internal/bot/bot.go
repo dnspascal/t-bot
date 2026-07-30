@@ -659,7 +659,7 @@ func (b *Bot) onExecution(ctx context.Context, exec provider.ExecutionEvent) {
 			}
 		} else {
 			if !b.pendingOrder {
-				return // open fill for an order we didn't place — another bot's trade
+				return 
 			}
 			b.pendingOrder = false
 			b.recordOpenFill(ctx, exec)
@@ -680,8 +680,6 @@ func (b *Bot) onExecution(ctx context.Context, exec provider.ExecutionEvent) {
 		b.events.Insert(ctx, "order_not_filled", map[string]any{"reason": exec.Type, "errorCode": exec.ErrorCode}, 0)
 
 	case "CLOSE_REJECTED":
-		// Clear pending state so the watcher retries in 30s — do NOT purge from
-		// registry. The position is still open at the broker; purging loses P&L tracking.
 		for posID, pc := range b.pendingCloseReasons {
 			slog.Warn("close rejected by broker — will retry", "posID", posID, "reason", pc.reason)
 			delete(b.pendingCloseReasons, posID)
@@ -1438,8 +1436,6 @@ func (b *Bot) IsPaused() bool {
 
 func (b *Bot) Symbol() string { return b.symbol }
 
-// TriggerTestClose opens a 1-micro-lot position and immediately tries to close
-// it using the live provider connection. Used to diagnose INCORRECT_BOUNDARIES.
 func (b *Bot) TriggerTestClose() string {
 	if b.testCloseMode.Load() {
 		return fmt.Sprintf("[%s] test close already in progress", b.symbol)
