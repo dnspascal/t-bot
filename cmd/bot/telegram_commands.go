@@ -9,7 +9,6 @@ import (
 	"github.com/denismgaya/t-bot/internal/notify"
 )
 
-// tradingInstance exposes the subset of trading bot methods the command handler needs.
 type botController interface {
 	Symbol() string
 	Pause()
@@ -20,7 +19,6 @@ type botController interface {
 	TriggerTestClose() string
 }
 
-// telegramCommandHandler handles incoming Telegram updates: onboarding and commands.
 type telegramCommandHandler struct {
 	tg      *notify.TelegramChannel
 	db      *Services
@@ -45,7 +43,6 @@ func (h *telegramCommandHandler) Handle(ctx context.Context, update notify.Updat
 		return
 	}
 	cmd := strings.ToLower(parts[0])
-	// strip bot username suffix e.g. /start@mybotname
 	if i := strings.Index(cmd, "@"); i != -1 {
 		cmd = cmd[:i]
 	}
