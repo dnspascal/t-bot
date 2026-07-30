@@ -158,7 +158,6 @@ type Provider interface {
 		ctx context.Context,
 		positionID string,
 		volume int64,
-		side string, // "BUY" or "SELL" — the position's own side (not the closing side)
 	) (closeOrderID string, err error)
 
 	ReconcilePositions(ctx context.Context) ([]Position, error)

@@ -83,20 +83,12 @@ func encodeSubscribeSpotsReq(accountID, symbolID int64) []byte {
 	return b
 }
 
-// encodeCloseViaNewOrderReq closes a position using ProtoOANewOrderReq (2106) instead
-// of ProtoOAClosePositionReq (2133). On Pepperstone's cTrader server, payload type 2133
-// is routed to a handler that interprets field 3 and field 4 as timestamps, causing
-// INCORRECT_BOUNDARIES errors for any close attempt. ProtoOANewOrderReq works correctly;
-// field 24 = positionId instructs the broker to close that specific position.
-func encodeCloseViaNewOrderReq(accountID, symbolID, positionID, volume int64, closeSide uint32) []byte {
+func encodeClosePositionReq(accountID, positionID, volume int64) []byte {
 	var b []byte
-	b = appendUint32(b, 1, ProtoOANewOrderReq)
+	b = appendUint32(b, 1, ProtoOAClosePositionReq)
 	b = appendInt64(b, 2, accountID)
-	b = appendInt64(b, 3, symbolID)
-	b = appendUint32(b, 4, 1)         // orderType = MARKET
-	b = appendUint32(b, 5, closeSide) // opposite side to the position being closed
-	b = appendInt64(b, 6, volume)
-	b = appendInt64(b, 24, positionID) // positionId: close this specific position
+	b = appendInt64(b, 3, positionID)
+	b = appendInt64(b, 4, volume)
 	return b
 }
 

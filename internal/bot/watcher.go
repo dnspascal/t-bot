@@ -249,7 +249,7 @@ func (b *Bot) logM1State(currentPrice float64) {
 }
 
 func (b *Bot) closeTrackedPosition(ctx context.Context, pos trackedPosition, reason string) {
-	if _, err := b.provider.ClosePosition(ctx, pos.ProviderPositionID, pos.Volume, pos.Side); err != nil {
+	if _, err := b.provider.ClosePosition(ctx, pos.ProviderPositionID, pos.Volume); err != nil {
 		slog.Error("watcher: ClosePosition failed",
 			"posID", pos.ProviderPositionID, "err", err,
 		)
