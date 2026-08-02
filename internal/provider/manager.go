@@ -218,7 +218,7 @@ func (m *Manager) PlaceOrderAcrossProviders(
 		wg.Add(1)
 		go func(n string, p Provider) {
 			defer wg.Done()
-			orderID, err := p.PlaceMarketOrder(ctx, side, volume, slPips, tpPips)
+			orderID, err := p.PlaceMarketOrder(ctx, side, volume, slPips, tpPips, "")
 			orderIDsCh <- struct {
 				providerName string
 				orderID      string

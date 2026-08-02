@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"math"
 	"time"
+
+	"github.com/denismgaya/t-bot/internal/config"
 )
 
 func appendDouble(b []byte, field int, v float64) []byte {
@@ -92,8 +94,6 @@ func encodeClosePositionReq(accountID, positionID, volume int64) []byte {
 	return b
 }
 
-// EncodeClosePositionReqVariant builds a close request with caller-specified
-// proto field numbers for positionId and volume, used to diagnose field-shift issues.
 func EncodeClosePositionReqVariant(accountID, positionID, volume int64, posIDField, volField int) []byte {
 	var b []byte
 	b = appendUint32(b, 1, ProtoOAClosePositionReq)
@@ -103,7 +103,7 @@ func EncodeClosePositionReqVariant(accountID, positionID, volume int64, posIDFie
 	return b
 }
 
-func encodeNewOrderReq(accountID, symbolID int64, side uint32, volume int64, slDist, tpDist, priceDivisor float64, absoluteSLTP bool, priceDecimals int, lastBid, lastAsk float64) []byte {
+func encodeNewOrderReq(accountID, symbolID int64, side uint32, volume int64, slDist, tpDist, priceDivisor float64, absoluteSLTP bool, priceDecimals int, lastBid, lastAsk float64, clientOrderID string) []byte {
 	var b []byte
 	b = appendUint32(b, 1, ProtoOANewOrderReq)
 	b = appendInt64(b, 2, accountID)
@@ -112,19 +112,20 @@ func encodeNewOrderReq(accountID, symbolID int64, side uint32, volume int64, slD
 	b = appendUint32(b, 5, side)
 	b = appendInt64(b, 6, volume)
 
+	if clientOrderID != "" {
+		b = appendString(b, 18, clientOrderID)
+	}
 	if absoluteSLTP {
-		// Broker rejects relative SL/TP for this symbol — use absolute prices.
-		// Compute current mid from last known bid/ask, fall back to bid if ask unknown.
 		mid := lastBid
 		if lastBid > 0 && lastAsk > 0 {
 			mid = (lastBid + lastAsk) / 2
 		}
 		scale := math.Pow(10, float64(priceDecimals))
 		var slPrice, tpPrice float64
-		if side == 1 { // BUY: SL below, TP above
+		if side == 1 { 
 			slPrice = math.Round((mid-slDist)*scale) / scale
 			tpPrice = math.Round((mid+tpDist)*scale) / scale
-		} else { // SELL: SL above, TP below
+		} else { 
 			slPrice = math.Round((mid+slDist)*scale) / scale
 			tpPrice = math.Round((mid-tpDist)*scale) / scale
 		}
@@ -135,7 +136,6 @@ func encodeNewOrderReq(accountID, symbolID int64, side uint32, volume int64, slD
 			b = appendDouble(b, 12, tpPrice)
 		}
 	} else {
-		// Relative SL/TP in ticks from entry — works for forex.
 		if slDist > 0 {
 			b = appendInt64(b, 19, int64(math.Round(slDist*priceDivisor)))
 		}
@@ -560,7 +560,63 @@ type DealInfo struct {
 }
 
 
-func decodeFullExecutionEvent(data []byte) (execType string, deal DealInfo, hasDeal bool, closedPosID int64) {
+// extractLenDelim returns the first occurrence of a length-delimited field
+// with the given field number from a raw proto message, or nil if not found.
+func extractLenDelim(data []byte, targetField uint64) []byte {
+	i := 0
+	for i < len(data) {
+		tag, n := decodeVarint(data[i:])
+		if n == 0 {
+			break
+		}
+		i += n
+		field := tag >> 3
+		wire := tag & 0x7
+		if field == targetField && wire == 2 {
+			l, n2 := decodeVarint(data[i:])
+			i += n2
+			return data[i : i+int(l)]
+		}
+		i = skipField(data, i, wire)
+	}
+	return nil
+}
+
+func decodeClientOrderID(data []byte) string {
+	rawOrder := extractLenDelim(data, 5)
+	if rawOrder == nil {
+		return ""
+	}
+	idBytes := extractLenDelim(rawOrder, 17)
+	return string(idBytes)
+}
+
+func decodeBrokerOrderID(data []byte) int64 {
+	rawOrder := extractLenDelim(data, 5)
+	if rawOrder == nil {
+		return 0
+	}
+	i := 0
+	for i < len(rawOrder) {
+		tag, n := decodeVarint(rawOrder[i:])
+		if n == 0 {
+			break
+		}
+		i += n
+		field := tag >> 3
+		wire := tag & 0x7
+		if field == 1 && wire == 0 {
+			v, _ := decodeVarint(rawOrder[i:])
+			return int64(v)
+		}
+		i = skipField(rawOrder, i, wire)
+	}
+	return 0
+}
+
+func decodeFullExecutionEvent(data []byte) (execType string, deal DealInfo, hasDeal bool, closedPosID int64, clientOrderID string, brokerOrderID int64) {
+	clientOrderID = decodeClientOrderID(data)
+	brokerOrderID = decodeBrokerOrderID(data)
 	i := 0
 	var rawDeal []byte
 	var rawPosition []byte
@@ -577,12 +633,12 @@ func decodeFullExecutionEvent(data []byte) (execType string, deal DealInfo, hasD
 			v, n2 := decodeVarint(data[i:])
 			i += n2
 			execType = execTypeString(v)
-		case field == 4 && wire == 2: 
+		case field == 4 && wire == 2:
 			l, n2 := decodeVarint(data[i:])
 			i += n2
 			rawPosition = data[i : i+int(l)]
 			i += int(l)
-		case field == 6 && wire == 2: 
+		case field == 6 && wire == 2:
 			l, n2 := decodeVarint(data[i:])
 			i += n2
 			rawDeal = data[i : i+int(l)]
@@ -636,15 +692,15 @@ func execTypeString(v uint64) string {
 	case 2:
 		return "ORDER_ACCEPTED"
 	case 3:
-		return "ORDER_FILLED"
+		return config.ExecOrderFilled
 	case 4:
 		return "ORDER_REPLACED"
 	case 5:
-		return "ORDER_CANCELLED"
+		return config.ExecOrderCancelled
 	case 6:
-		return "ORDER_EXPIRED"
+		return config.ExecOrderExpired
 	case 7:
-		return "ORDER_REJECTED"
+		return config.ExecOrderRejected
 	case 8:
 		return "ORDER_CANCEL_REJECTED"
 	case 9:
@@ -652,7 +708,7 @@ func execTypeString(v uint64) string {
 	case 10:
 		return "DEPOSIT_WITHDRAW"
 	case 11:
-		return "ORDER_PARTIAL_FILL"
+		return config.ExecOrderPartialFill
 	case 12:
 		return "BONUS_DEPOSIT_WITHDRAW"
 	default:
