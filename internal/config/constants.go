@@ -62,3 +62,19 @@ const (
 	TierVeryStrong = 3
 )
 
+const (
+	ExecOrderAccepted        = "ORDER_ACCEPTED"
+	ExecOrderFilled          = "ORDER_FILLED"
+	ExecOrderReplaced        = "ORDER_REPLACED"
+	ExecOrderCancelled       = "ORDER_CANCELLED"
+	ExecOrderExpired         = "ORDER_EXPIRED"
+	ExecOrderRejected        = "ORDER_REJECTED"
+	ExecCancelOrderRejected  = "ORDER_CANCEL_REJECTED"
+	ExecSwap                 = "SWAP"
+	ExecDepositWithdraw      = "DEPOSIT_WITHDRAW"
+	ExecOrderPartialFill     = "ORDER_PARTIAL_FILL"
+	ExecBonusDepositWithdraw = "BONUS_DEPOSIT_WITHDRAW"
+	
+	//Custom event
+	ExecCloseRejected        = "CLOSE_REJECTED"
+)

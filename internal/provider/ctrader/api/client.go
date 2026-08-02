@@ -6,6 +6,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/denismgaya/t-bot/internal/config"
 )
 
 type PriceEvent struct {
@@ -21,6 +23,8 @@ type ExecutionEvent struct {
 	HasDeal          bool
 	ClosedPositionID int64
 	ErrorCode        string
+	ClientOrderID    string
+	BrokerOrderID    int64
 	Timestamp        time.Time
 }
 
@@ -280,7 +284,7 @@ func (c *Client) ClosePosition(positionID, volume int64) error {
 	return nil
 }
 
-func (c *Client) PlaceMarketOrder(side uint32, volume int64, slDist, tpDist float64) error {
+func (c *Client) PlaceMarketOrder(side uint32, volume int64, slDist, tpDist float64, clientOrderID string) error {
 	c.mu.Lock()
 	authed := c.authed
 	lastBid, lastAsk := c.lastBid, c.lastAsk
@@ -298,7 +302,7 @@ func (c *Client) PlaceMarketOrder(side uint32, volume int64, slDist, tpDist floa
 	)
 	return c.conn.SendRaw(ProtoOANewOrderReq,
 		encodeNewOrderReq(c.accountID, c.symbolID, side, volume, slDist, tpDist,
-			c.priceDivisor, c.absoluteSLTP, c.priceDecimals, lastBid, lastAsk))
+			c.priceDivisor, c.absoluteSLTP, c.priceDecimals, lastBid, lastAsk, clientOrderID))
 }
 
 func (c *Client) handleMessage(payloadType uint32, payload []byte) {
@@ -397,15 +401,7 @@ func (c *Client) handleMessage(payloadType uint32, payload []byte) {
 		}
 
 	case ProtoOAExecutionEvent:
-		execType, deal, hasDeal, closedPosID := decodeFullExecutionEvent(payload)
-		slog.Info("execution event received",
-			"type", execType,
-			"dealID", deal.DealID,
-			"positionID", deal.PositionID,
-			"closedPosID", closedPosID,
-			"executionPrice", deal.ExecutionPrice,
-			"isClose", deal.IsClose,
-		)
+		execType, deal, hasDeal, closedPosID, clientOrderID, brokerOrderID := decodeFullExecutionEvent(payload)
 
 		if hasDeal && deal.IsClose {
 			c.pendingCloses.Add(-1)
@@ -417,6 +413,8 @@ func (c *Client) handleMessage(payloadType uint32, payload []byte) {
 			Deal:             deal,
 			HasDeal:          hasDeal,
 			ClosedPositionID: closedPosID,
+			ClientOrderID:    clientOrderID,
+			BrokerOrderID:    brokerOrderID,
 			Timestamp:        time.Now().UTC(),
 		}:
 		default:
@@ -431,9 +429,10 @@ func (c *Client) handleMessage(payloadType uint32, payload []byte) {
 		)
 		select {
 		case c.ExecutionCh <- ExecutionEvent{
-			Type:      "ORDER_REJECTED",
-			ErrorCode: errorCode,
-			Timestamp: time.Now().UTC(),
+			Type:          config.ExecOrderRejected,
+			ErrorCode:     errorCode,
+			BrokerOrderID: orderID,
+			Timestamp:     time.Now().UTC(),
 		}:
 		default:
 		}
@@ -474,7 +473,7 @@ func (c *Client) handleMessage(payloadType uint32, payload []byte) {
 			if pending := c.pendingCloses.Load(); pending > 0 {
 				c.pendingCloses.Add(-1)
 				select {
-				case c.ExecutionCh <- ExecutionEvent{Type: "CLOSE_REJECTED", ErrorCode: "INCORRECT_BOUNDARIES", Timestamp: time.Now().UTC()}:
+				case c.ExecutionCh <- ExecutionEvent{Type: config.ExecCloseRejected, ErrorCode: "INCORRECT_BOUNDARIES", Timestamp: time.Now().UTC()}:
 				default:
 				}
 			} else {

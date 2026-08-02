@@ -75,6 +75,8 @@ type PriceEvent struct {
 type ExecutionEvent struct {
 	Type             string
 	OrderID          string
+	ClientOrderID    string // our DB order UUID echoed back by broker
+	BrokerOrderID    int64  // cTrader's internal order ID
 	ProviderName     string
 	Deal             *DealInfo
 	HasDeal          bool
@@ -137,6 +139,7 @@ type Provider interface {
 		volume int64,
 		slDist float64,
 		tpDist float64,
+		label string,
 	) (orderID string, err error)
 
 	PlaceMarketOrderWithTimeout(
@@ -146,6 +149,7 @@ type Provider interface {
 		slDist float64,
 		tpDist float64,
 		timeout time.Duration,
+		label string,
 	) (orderID string, err error)
 
 	CancelOrder(ctx context.Context, orderID string) error

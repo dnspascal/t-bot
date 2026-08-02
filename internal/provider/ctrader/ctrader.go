@@ -56,12 +56,14 @@ func New(cfg *config.Config, client *api.Client, db *pgxpool.Pool, events Events
 func (c *CTrader) pipeExecEvents() {
 	for event := range c.client.ExecutionCh {
 		execEvent := provider.ExecutionEvent{
-			Type:         event.Type,
-			OrderID:      fmt.Sprintf("%d", event.Deal.OrderID),
-			ProviderName: c.Name(),
-			Timestamp:    event.Timestamp,
-			HasDeal:      event.HasDeal,
-			ErrorCode:    event.ErrorCode,
+			Type:          event.Type,
+			OrderID:       fmt.Sprintf("%d", event.Deal.OrderID),
+			ClientOrderID: event.ClientOrderID,
+			BrokerOrderID: event.BrokerOrderID,
+			ProviderName:  c.Name(),
+			Timestamp:     event.Timestamp,
+			HasDeal:       event.HasDeal,
+			ErrorCode:     event.ErrorCode,
 		}
 		if event.ClosedPositionID != 0 {
 			execEvent.ClosedPositionID = fmt.Sprintf("%d", event.ClosedPositionID)
@@ -270,9 +272,10 @@ func (c *CTrader) PlaceMarketOrder(
 	volume int64,
 	slDist float64,
 	tpDist float64,
+	label string,
 ) (orderID string, err error) {
 	sideUint32 := stringToSide(side)
-	err = c.client.PlaceMarketOrder(sideUint32, volume, slDist, tpDist)
+	err = c.client.PlaceMarketOrder(sideUint32, volume, slDist, tpDist, label)
 
 	return "", err
 }
@@ -284,13 +287,14 @@ func (c *CTrader) PlaceMarketOrderWithTimeout(
 	slDist float64,
 	tpDist float64,
 	timeout time.Duration,
+	label string,
 ) (orderID string, err error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	done := make(chan error, 1)
 	go func() {
-		_, err := c.PlaceMarketOrder(ctx, side, volume, slDist, tpDist)
+		_, err := c.PlaceMarketOrder(ctx, side, volume, slDist, tpDist, label)
 		done <- err
 	}()
 

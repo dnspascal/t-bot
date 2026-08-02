@@ -107,6 +107,7 @@ func (o *OANDA) PlaceMarketOrder(
 	volume int64,
 	slPips float64,
 	tpPips float64,
+	_ string,
 ) (orderID string, err error) {
 	return "", fmt.Errorf("PlaceMarketOrder not yet implemented for OANDA")
 }
@@ -118,6 +119,7 @@ func (o *OANDA) PlaceMarketOrderWithTimeout(
 	slPips float64,
 	tpPips float64,
 	timeout time.Duration,
+	_ string,
 ) (orderID string, err error) {
 	return "", fmt.Errorf("PlaceMarketOrderWithTimeout not yet implemented for OANDA")
 }
