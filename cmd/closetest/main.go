@@ -101,7 +101,7 @@ func main() {
 	const tpDist = 0.0100 // 100 pips
 
 	slog.Info("step 5: placing BUY order", "volume", volume, "slDist", slDist, "tpDist", tpDist)
-	if err := client.PlaceMarketOrder(api.TradeSideBuy, volume, slDist, tpDist); err != nil {
+	if err := client.PlaceMarketOrder(api.TradeSideBuy, volume, slDist, tpDist, ""); err != nil {
 		log.Fatal("PlaceMarketOrder:", err)
 	}
 

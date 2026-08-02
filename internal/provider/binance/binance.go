@@ -184,6 +184,7 @@ func (b *Binance) PlaceMarketOrder(
 	volume int64,
 	slDist float64,
 	tpDist float64,
+	_ string,
 ) (orderID string, err error) {
 	if b.restClient == nil {
 		return "", fmt.Errorf("not connected")
@@ -209,13 +210,14 @@ func (b *Binance) PlaceMarketOrderWithTimeout(
 	slDist float64,
 	tpDist float64,
 	timeout time.Duration,
+	label string,
 ) (orderID string, err error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	done := make(chan string, 1)
 	go func() {
-		id, _ := b.PlaceMarketOrder(ctx, side, volume, slDist, tpDist)
+		id, _ := b.PlaceMarketOrder(ctx, side, volume, slDist, tpDist, label)
 		done <- id
 	}()
 

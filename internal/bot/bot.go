@@ -38,6 +38,18 @@ type pendingClose struct {
 	sentAt time.Time
 }
 
+type pendingOrderState struct {
+	ourOrderID    string
+	sentAt        time.Time
+	side          string
+	tier          int
+	slPrice       float64
+	tpPrice       float64
+	atr           float64
+	strategyName  string
+	brokerOrderID int64
+}
+
 type Bot struct {
 	cfg          *config.Config
 	provider     provider.Provider
@@ -51,22 +63,14 @@ type Bot struct {
 	providerAcctID string
 	pipSize        float64
 
-	lotUnit int64 // base API volume units for 1 micro lot on this symbol
+	lotUnit int64
 
 	balanceMu sync.Mutex
 	balance   float64
 	leverage  float64
 
-	pendingOrder        bool
-	pendingOrderID      string
-	pendingOrderSentAt  time.Time
-	pendingSide         string
-	pendingTier         int
-	pendingSLPrice      float64
-	pendingTPPrice      float64
-	pendingATR          float64
-	pendingStrategyName string
-
+	pendingOrders      map[string]*pendingOrderState
+	brokerOrderIDs     map[int64]string // broker order ID → our clientOrderID
 	lastCandleOpenTime int64
 	lastCandleClose    float64
 
@@ -146,6 +150,8 @@ func New(
 		balance:             balance,
 		leverage:            leverage,
 		registry:            newPositionRegistry(),
+		pendingOrders:       make(map[string]*pendingOrderState),
+		brokerOrderIDs:      make(map[int64]string),
 		pendingCloseReasons: make(map[string]pendingClose),
 		tickCh:              make(chan tick.Tick, 500),
 		testCloseTrigger:    make(chan struct{}, 1),
@@ -358,9 +364,9 @@ func (b *Bot) reconcileOfflineClose(ctx context.Context, p position.Position) {
 		slog.Error("startup reconcile: positions.Close failed", "posID", posID, "err", err)
 	}
 
-	closeSide := "SELL"
-	if deal.TradeSide == 1 { // TradeSideBuy (1): closing order was BUY → position was SELL
-		closeSide = "BUY"
+	closeSide := config.SignalSell
+	if deal.TradeSide == 1 {
+		closeSide = config.SignalBuy
 	}
 	provPosID := posID
 	reason := inferCloseReason(cl.GrossProfit)
@@ -452,15 +458,18 @@ func (b *Bot) onCandleReceived(ctx context.Context, c provider.Candle) {
 }
 
 func (b *Bot) processClosedCandle(ctx context.Context, _ float64) {
-	if b.pendingOrder && time.Since(b.pendingOrderSentAt) > pendingOrderTimeout {
-		slog.Warn("pending order timed out — clearing to allow new signals",
-			"orderID", b.pendingOrderID,
-			"elapsed", time.Since(b.pendingOrderSentAt).Round(time.Second),
-		)
-		if b.pendingOrderID != "" {
-			b.orders.UpdateError(ctx, b.pendingOrderID, "TIMEOUT", "no execution event received")
+	for id, ps := range b.pendingOrders {
+		if time.Since(ps.sentAt) > pendingOrderTimeout {
+			slog.Warn("pending order timed out — clearing",
+				"orderID", ps.ourOrderID,
+				"elapsed", time.Since(ps.sentAt).Round(time.Second),
+			)
+			b.orders.UpdateError(ctx, ps.ourOrderID, "TIMEOUT", "no execution event received")
+			delete(b.pendingOrders, id)
+			if ps.brokerOrderID != 0 {
+				delete(b.brokerOrderIDs, ps.brokerOrderID)
+			}
 		}
-		b.pendingOrder = false
 	}
 
 	if !b.processorMgr.AllWarmedUp() {
@@ -623,32 +632,66 @@ func (b *Bot) logUnrealizedPnL(currentPrice float64) {
 	}
 }
 
+func (b *Bot) claimPendingByClientOrderID(clientOrderID string) *pendingOrderState {
+	ps, ok := b.pendingOrders[clientOrderID]
+	if !ok {
+		return nil
+	}
+	delete(b.pendingOrders, clientOrderID)
+	if ps.brokerOrderID != 0 {
+		delete(b.brokerOrderIDs, ps.brokerOrderID)
+	}
+	return ps
+}
+
+func (b *Bot) claimPendingByBrokerOrderID(brokerOrderID int64) *pendingOrderState {
+	if brokerOrderID == 0 {
+		return nil
+	}
+	clientOrderID, ok := b.brokerOrderIDs[brokerOrderID]
+	if !ok {
+		return nil
+	}
+	return b.claimPendingByClientOrderID(clientOrderID)
+}
+
 func (b *Bot) onExecution(ctx context.Context, exec provider.ExecutionEvent) {
 	if exec.HasDeal && exec.Deal.SymbolID != 0 && b.cfg.CTrader != nil && exec.Deal.SymbolID != b.cfg.CTrader.SymbolID {
 		return
 	}
 	if !exec.HasDeal {
-		if exec.Type == "ORDER_FILLED" && exec.ClosedPositionID != "" {
+		if exec.Type == config.ExecOrderFilled && exec.ClosedPositionID != "" {
 			b.recordBrokerClose(ctx, exec)
 			return
 		}
 		switch exec.Type {
-		case "ORDER_REJECTED", "ORDER_CANCELLED", "ORDER_EXPIRED":
-			if exec.Type == "ORDER_CANCELLED" && exec.ClosedPositionID != "" {
+		case config.ExecOrderAccepted:
+			slog.Info("order accepted by broker", "clientOrderID", exec.ClientOrderID, "brokerOrderID", exec.BrokerOrderID)
+			if exec.BrokerOrderID != 0 && exec.ClientOrderID != "" {
+				if ps, ok := b.pendingOrders[exec.ClientOrderID]; ok {
+					ps.brokerOrderID = exec.BrokerOrderID
+					b.brokerOrderIDs[exec.BrokerOrderID] = exec.ClientOrderID
+				}
+			}
+		case config.ExecOrderCancelled:
+			return
+		case config.ExecOrderRejected, config.ExecOrderExpired:
+			ps := b.claimPendingByClientOrderID(exec.ClientOrderID)
+			if ps == nil {
+				ps = b.claimPendingByBrokerOrderID(exec.BrokerOrderID)
+			}
+			if ps == nil {
 				return
 			}
-			b.pendingOrder = false
-			slog.Warn("order not filled", "reason", exec.Type, "errorCode", exec.ErrorCode)
-			if b.pendingOrderID != "" {
-				b.orders.UpdateError(ctx, b.pendingOrderID, exec.ErrorCode, exec.Type)
-			}
+			slog.Warn("order not filled", "reason", exec.Type, "errorCode", exec.ErrorCode, "orderID", ps.ourOrderID)
+			b.orders.UpdateError(ctx, ps.ourOrderID, exec.ErrorCode, exec.Type)
 			b.events.Insert(ctx, "order_not_filled", map[string]any{"reason": exec.Type, "errorCode": exec.ErrorCode}, 0)
 		}
 		return
 	}
 
 	switch exec.Type {
-	case "ORDER_FILLED":
+	case config.ExecOrderFilled:
 		if exec.Deal.IsClose {
 			b.recordCloseFill(ctx, exec)
 			if exec.Deal.Close != nil && exec.Deal.Close.Balance > 0 {
@@ -661,28 +704,33 @@ func (b *Bot) onExecution(ctx context.Context, exec provider.ExecutionEvent) {
 				go b.refreshBalance()
 			}
 		} else {
-			if !b.pendingOrder {
-				return 
+			ps := b.claimPendingByClientOrderID(exec.ClientOrderID)
+			if ps == nil {
+				slog.Warn("open fill for unknown pending order", "clientOrderID", exec.ClientOrderID, "dealID", exec.Deal.DealID)
+				return
 			}
-			b.pendingOrder = false
-			b.recordOpenFill(ctx, exec)
+			b.recordOpenFill(ctx, exec, ps)
 		}
 
-	case "ORDER_PARTIAL_FILL":
+	case config.ExecOrderPartialFill:
 		slog.Info("partial fill — waiting for full fill",
 			"dealID", exec.Deal.DealID,
 			"filledVolume", exec.Deal.FilledVolume,
 		)
 
-	case "ORDER_REJECTED", "ORDER_CANCELLED", "ORDER_EXPIRED":
-		b.pendingOrder = false
-		slog.Warn("order not filled", "reason", exec.Type, "errorCode", exec.ErrorCode)
-		if b.pendingOrderID != "" {
-			b.orders.UpdateError(ctx, b.pendingOrderID, exec.ErrorCode, exec.Type)
+	case config.ExecOrderRejected, config.ExecOrderCancelled, config.ExecOrderExpired:
+		ps := b.claimPendingByClientOrderID(exec.ClientOrderID)
+		if ps == nil {
+			ps = b.claimPendingByBrokerOrderID(exec.BrokerOrderID)
 		}
+		if ps == nil {
+			return
+		}
+		slog.Warn("order not filled (with deal)", "reason", exec.Type, "errorCode", exec.ErrorCode, "orderID", ps.ourOrderID)
+		b.orders.UpdateError(ctx, ps.ourOrderID, exec.ErrorCode, exec.Type)
 		b.events.Insert(ctx, "order_not_filled", map[string]any{"reason": exec.Type, "errorCode": exec.ErrorCode}, 0)
 
-	case "CLOSE_REJECTED":
+	case config.ExecCloseRejected:
 		for posID, pc := range b.pendingCloseReasons {
 			slog.Warn("close rejected by broker — will retry", "posID", posID, "reason", pc.reason)
 			delete(b.pendingCloseReasons, posID)
@@ -696,11 +744,6 @@ func (b *Bot) onTradeSignal(ctx context.Context, result strat.EntryResult, price
 	b.pausedMu.Unlock()
 	if paused {
 		slog.Info("signal skipped — bot paused")
-		return
-	}
-
-	if b.pendingOrder {
-		slog.Info("signal skipped — pending order active")
 		return
 	}
 
@@ -790,7 +833,7 @@ func (b *Bot) onTradeSignal(ctx context.Context, result strat.EntryResult, price
 		slog.Error("insert order record failed", "err", err)
 	}
 
-	if _, err = b.provider.PlaceMarketOrder(ctx, result.Signal, volume, result.SLPips*b.pipSize, result.TPPips*b.pipSize); err != nil {
+	if _, err = b.provider.PlaceMarketOrder(ctx, result.Signal, volume, result.SLPips*b.pipSize, result.TPPips*b.pipSize, orderID); err != nil {
 		slog.Error("order failed", "err", err)
 		b.orders.UpdateError(ctx, orderID, "SEND_FAILED", err.Error())
 		b.events.Insert(ctx, "error", map[string]any{
@@ -798,16 +841,6 @@ func (b *Bot) onTradeSignal(ctx context.Context, result strat.EntryResult, price
 		}, ms(sentAt))
 		return
 	}
-
-	b.pendingOrder = true
-	b.pendingOrderID = orderID
-	b.pendingOrderSentAt = sentAt
-	b.pendingSide = result.Signal
-	b.pendingTier = result.Tier
-	b.pendingSLPrice = result.SLPrice
-	b.pendingTPPrice = result.TPPrice
-	b.pendingATR = result.ATR
-	b.pendingStrategyName = result.StrategyName
 
 	if b.provider.Name() == "binance" {
 		mid := price.Mid
@@ -826,7 +859,17 @@ func (b *Bot) onTradeSignal(ctx context.Context, result strat.EntryResult, price
 			OpenTime:           sentAt,
 			StrategyName:       result.StrategyName,
 		})
-		b.pendingOrder = false
+	} else {
+		b.pendingOrders[orderID] = &pendingOrderState{
+			ourOrderID:   orderID,
+			sentAt:       sentAt,
+			side:         result.Signal,
+			tier:         result.Tier,
+			slPrice:      result.SLPrice,
+			tpPrice:      result.TPPrice,
+			atr:          result.ATR,
+			strategyName: result.StrategyName,
+		}
 	}
 
 	slog.Info("order sent",
@@ -847,17 +890,17 @@ func (b *Bot) onTradeSignal(ctx context.Context, result strat.EntryResult, price
 	}, ms(sentAt))
 }
 
-func (b *Bot) recordOpenFill(ctx context.Context, exec provider.ExecutionEvent) {
+func (b *Bot) recordOpenFill(ctx context.Context, exec provider.ExecutionEvent, ps *pendingOrderState) {
 	if !exec.HasDeal {
 		return
 	}
 	deal := exec.Deal
-	roundTripMs := time.Since(b.pendingOrderSentAt).Milliseconds()
+	roundTripMs := time.Since(ps.sentAt).Milliseconds()
 	provOrderID := fmt.Sprintf("%d", deal.OrderID)
 	provPosID := fmt.Sprintf("%d", deal.PositionID)
 
 	if err := b.orders.UpdateExecution(ctx,
-		b.pendingOrderID, provOrderID, provPosID,
+		ps.ourOrderID, provOrderID, provPosID,
 		deal.ExecutionPrice, 0, "filled",
 		exec.Timestamp, roundTripMs,
 	); err != nil {
@@ -866,17 +909,17 @@ func (b *Bot) recordOpenFill(ctx context.Context, exec provider.ExecutionEvent) 
 
 	openTime := deal.ExecTime
 	posUUID, err := b.positions.Upsert(ctx, position.Position{
-		OurOrderID:         &b.pendingOrderID,
+		OurOrderID:         &ps.ourOrderID,
 		Provider:           b.provider.Name(),
 		ProviderPositionID: provPosID,
 		ProviderAcctID:     b.providerAcctID,
 		SymbolID:           b.symbolUUID,
-		Side:               b.pendingSide,
+		Side:               ps.side,
 		Volume:             deal.FilledVolume,
-		Tier:               b.pendingTier,
+		Tier:               ps.tier,
 		OpenPrice:          &deal.ExecutionPrice,
-		CurrentSL:          &b.pendingSLPrice,
-		CurrentTP:          &b.pendingTPPrice,
+		CurrentSL:          &ps.slPrice,
+		CurrentTP:          &ps.tpPrice,
 		Status:             "open",
 		OpenTimestamp:      &openTime,
 	})
@@ -886,28 +929,28 @@ func (b *Bot) recordOpenFill(ctx context.Context, exec provider.ExecutionEvent) 
 
 	b.registry.Register(trackedPosition{
 		ProviderPositionID: provPosID,
-		Side:               b.pendingSide,
-		Tier:               b.pendingTier,
+		Side:               ps.side,
+		Tier:               ps.tier,
 		Volume:             deal.FilledVolume,
 		OpenPrice:          deal.ExecutionPrice,
-		SLPrice:            b.pendingSLPrice,
-		TPPrice:            b.pendingTPPrice,
-		ATR:                b.pendingATR,
+		SLPrice:            ps.slPrice,
+		TPPrice:            ps.tpPrice,
+		ATR:                ps.atr,
 		OpenTime:           deal.ExecTime,
-		StrategyName:       b.pendingStrategyName,
+		StrategyName:       ps.strategyName,
 	})
 
 	volume := deal.Volume
 	filledVolume := deal.FilledVolume
 	commission := deal.Commission
 	openFill := fill.Fill{
-		OurOrderID:         &b.pendingOrderID,
+		OurOrderID:         &ps.ourOrderID,
 		Provider:           b.provider.Name(),
 		ProviderFillID:     fmt.Sprintf("%d", deal.DealID),
 		ProviderOrderID:    &provOrderID,
 		ProviderPositionID: &provPosID,
 		SymbolID:           b.symbolUUID,
-		Side:               b.pendingSide,
+		Side:               ps.side,
 		Volume:             &volume,
 		FilledVolume:       &filledVolume,
 		ExecutionPrice:     &deal.ExecutionPrice,
@@ -925,24 +968,24 @@ func (b *Bot) recordOpenFill(ctx context.Context, exec provider.ExecutionEvent) 
 	}
 
 	slog.Info("position opened",
-		"posID", provPosID, "side", b.pendingSide,
-		"price", deal.ExecutionPrice, "tier", b.pendingTier,
+		"posID", provPosID, "side", ps.side,
+		"price", deal.ExecutionPrice, "tier", ps.tier,
 	)
 
 	if b.dispatcher != nil {
 		ep := deal.ExecutionPrice
-		slPips := math.Abs(ep-b.pendingSLPrice) / b.pipSize
-		tpPips := math.Abs(b.pendingTPPrice-ep) / b.pipSize
+		slPips := math.Abs(ep-ps.slPrice) / b.pipSize
+		tpPips := math.Abs(ps.tpPrice-ep) / b.pipSize
 		go b.dispatcher.Dispatch(ctx, notify.EventTradeOpened, notify.TradeOpenedPayload{
 			PositionID: provPosID,
 			Symbol:     b.symbol,
-			Side:       b.pendingSide,
+			Side:       ps.side,
 			Price:      ep,
-			SLPrice:    b.pendingSLPrice,
-			TPPrice:    b.pendingTPPrice,
+			SLPrice:    ps.slPrice,
+			TPPrice:    ps.tpPrice,
 			SLPips:     slPips,
 			TPPips:     tpPips,
-			Strategy:   b.pendingStrategyName,
+			Strategy:   ps.strategyName,
 		})
 	}
 
@@ -950,7 +993,7 @@ func (b *Bot) recordOpenFill(ctx context.Context, exec provider.ExecutionEvent) 
 		"deal_id":     deal.DealID,
 		"position_id": provPosID,
 		"price":       deal.ExecutionPrice,
-		"tier":        b.pendingTier,
+		"tier":        ps.tier,
 	}, 0)
 
 	if b.testCloseMode.CompareAndSwap(true, false) {
@@ -1240,16 +1283,11 @@ func (b *Bot) tickWriter(ctx context.Context) {
 }
 
 func (b *Bot) Reset() {
-	b.pendingOrder = false
-	b.pendingOrderID = ""
+	b.pendingOrders = make(map[string]*pendingOrderState)
+	b.brokerOrderIDs = make(map[int64]string)
 	b.pendingCloseReasons = make(map[string]pendingClose)
 	b.lastCandleOpenTime = 0
 	b.lastCandleClose = 0
-	b.pendingSide = ""
-	b.pendingTier = 0
-	b.pendingSLPrice = 0
-	b.pendingTPPrice = 0
-	b.pendingATR = 0
 }
 
 func (b *Bot) refreshBalance() {
@@ -1347,7 +1385,7 @@ func ms(t time.Time) int64 {
 }
 
 func (b *Bot) sendTestPosition(ctx context.Context) {
-	if b.pendingOrder || b.registry.Count() > 0 {
+	if len(b.pendingOrders) > 0 || b.registry.Count() > 0 {
 		slog.Info("DEV: test position skipped — order already pending or position open",
 			"provider", b.provider.Name())
 		return
@@ -1379,20 +1417,18 @@ func (b *Bot) sendTestPosition(ctx context.Context) {
 		slog.Error("DEV: test order record insert failed", "err", err)
 	}
 
-	if _, err := b.provider.PlaceMarketOrder(ctx, "BUY", testVolume, testSLPips*b.pipSize, testTPPips*b.pipSize); err != nil {
+	if _, err := b.provider.PlaceMarketOrder(ctx, config.SignalBuy, testVolume, testSLPips*b.pipSize, testTPPips*b.pipSize, orderID); err != nil {
 		slog.Error("DEV: test position placement failed", "provider", b.provider.Name(), "err", err)
 		b.orders.UpdateError(ctx, orderID, "SEND_FAILED", err.Error())
 		return
 	}
 
-	b.pendingOrder = true
-	b.pendingOrderID = orderID
-	b.pendingOrderSentAt = sentAt
-	b.pendingSide = "BUY"
-	b.pendingTier = config.TierNormal
-	b.pendingSLPrice = 0
-	b.pendingTPPrice = 0
-	b.pendingATR = 0
+	b.pendingOrders[orderID] = &pendingOrderState{
+		ourOrderID: orderID,
+		sentAt:     sentAt,
+		side:       config.SignalBuy,
+		tier:       config.TierNormal,
+	}
 
 	if b.provider.Name() == "binance" {
 		mid := b.currentPrice.Mid
@@ -1407,7 +1443,6 @@ func (b *Bot) sendTestPosition(ctx context.Context) {
 			OpenPrice:          mid,
 			OpenTime:           sentAt,
 		})
-		b.pendingOrder = false
 		slog.Info("DEV: test position registered (Binance)", "posID", orderID, "openPrice", mid)
 	}
 }
