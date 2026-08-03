@@ -132,18 +132,18 @@ func peakDrawbackPct(pos trackedPosition, currentPrice, pipSize float64) float64
 	}
 
 	var tpDist float64
-	if pos.Side == "BUY" {
+	if pos.Side == config.SignalBuy {
 		tpDist = pos.TPPrice - pos.OpenPrice
 	} else {
 		tpDist = pos.OpenPrice - pos.TPPrice
 	}
-	minPeakGain := tpDist * 0.33
+	minPeakGain := tpDist * 0.5
 	if minPeakGain <= 0 {
 		minPeakGain = 3 * pipSize 
 	}
 
 	var peakGain, currentGain float64
-	if pos.Side == "BUY" {
+	if pos.Side == config.SignalBuy {
 		peakGain = pos.MaxFavorable - pos.OpenPrice
 		currentGain = currentPrice - pos.OpenPrice
 	} else {
