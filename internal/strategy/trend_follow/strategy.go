@@ -51,12 +51,20 @@ func (s *TrendFollow) Evaluate(states map[string]indicator.MarketState, currentP
 		return hold("M5 not warmed up")
 	}
 
-	if dir == config.SignalBuy && m5.EMAFast > m5.EMASlow {
-		return hold("no pullback - price still above fast EMA")
+	if dir == config.SignalBuy && m5.EMAFast < m5.EMASlow {
+		return hold("M5 EMA bearish — not aligned with H1 uptrend")
 	}
 
-	if dir == config.SignalSell && m5.EMAFast < m5.EMASlow {
-		return hold("no pullback - price still below fast EMA")
+	if dir == config.SignalSell && m5.EMAFast > m5.EMASlow {
+		return hold("M5 EMA bullish — not aligned with H1 downtrend")
+	}
+
+	if dir == config.SignalBuy && m5.Regime != config.TrendingUp {
+		return hold("M5 regime not confirming H1 uptrend")
+	}
+
+	if dir == config.SignalSell && m5.Regime != config.TrendingDown {
+		return hold("M5 regime not confirming H1 downtrend")
 	}
 
 	m15, ok := states[config.PeriodM15]
