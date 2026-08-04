@@ -39,7 +39,7 @@ func initializeBot(ctx context.Context, cfg *config.Config, svc *Services, prov 
 	if err != nil {
 		log.Fatal("load daily pnl:", err)
 	}
-	riskMgr := risk.New(cfg.RiskPercent, cfg.MaxDailyLossPct)
+	riskMgr := risk.New(cfg.RiskPercent, cfg.MaxDailyLossPct, cfg.EnableRiskMgmt)
 	switch prov.Name() {
 	case "ctrader":
 		// cTrader API: 100,000 units = 1 micro lot (0.01 lots). Matches V1.

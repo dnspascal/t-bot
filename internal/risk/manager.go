@@ -8,9 +8,10 @@ import (
 
 type Manager struct {
 	riskPercent      float64
-	maxDailyLossPct  float64 
+	maxDailyLossPct  float64
+	enabled          bool
 
-	dailyPnL float64 
+	dailyPnL float64
 	dayStart time.Time
 
 	unitsPerMicroLot    int64
@@ -19,10 +20,11 @@ type Manager struct {
 	pipValuePerMicroLot float64 
 }
 
-func New(riskPercent, maxDailyLossPct float64) *Manager {
+func New(riskPercent, maxDailyLossPct float64, enabled bool) *Manager {
 	return &Manager{
 		riskPercent:         riskPercent,
 		maxDailyLossPct:     maxDailyLossPct,
+		enabled:             enabled,
 		dayStart:            today(),
 		unitsPerMicroLot:    1000,
 		minVolume:           1000,
@@ -84,6 +86,9 @@ func (m *Manager) RestorePnL(netPnL float64) {
 }
 
 func (m *Manager) CanTrade(balance float64) bool {
+	if !m.enabled {
+		return true
+	}
 	m.resetDayIfNeeded()
 	return m.dailyPnL > -m.dailyLimit(balance)
 }
