@@ -10,8 +10,8 @@ CREATE TABLE symbol_configs (
     trading_hours   TEXT,
     is_active       BOOLEAN         DEFAULT true,
 
-    default_sl_pips INT             DEFAULT 10,   -- default stop loss in pips for this symbol
-    default_tp_pips INT             DEFAULT 20,   -- default take profit in pips for this symbol
+    default_sl_pips INT             DEFAULT 10,   
+    default_tp_pips INT             DEFAULT 20,   
 
     created_at      TIMESTAMPTZ     DEFAULT NOW(),
     updated_at      TIMESTAMPTZ     DEFAULT NOW(),

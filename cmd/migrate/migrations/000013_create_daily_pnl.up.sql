@@ -1,11 +1,8 @@
--- One row per trading day, updated after every closed trade.
--- Survives bot restarts — loaded on startup to restore risk manager state.
 CREATE TABLE daily_pnl (
     id                  UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
     date                DATE          NOT NULL,
     symbol_id           UUID          NOT NULL REFERENCES symbols(id),
 
-    -- P&L breakdown (real currency amounts in deposit currency)
     realized_pnl        NUMERIC(18,4) NOT NULL DEFAULT 0, -- net after commission and swap
     gross_profit        NUMERIC(18,4) NOT NULL DEFAULT 0, -- raw profit before costs
     total_commission    NUMERIC(18,4) NOT NULL DEFAULT 0, -- total commission paid today
