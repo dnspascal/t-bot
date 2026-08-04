@@ -1,27 +1,22 @@
--- Live and historical positions received from the provider.
--- Critical for restart recovery — tells the bot exactly what is open.
 CREATE TABLE positions (
     id                   UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
-    our_order_id         UUID          REFERENCES orders(id),  -- order that opened this position
-    provider             TEXT          NOT NULL DEFAULT 'ctrader', -- ctrader | oanda | ib | mt5
-    provider_position_id TEXT          NOT NULL,   -- provider's own position identifier
-    provider_acct_id     TEXT          NOT NULL,   -- provider's own account identifier
+    our_order_id         UUID          REFERENCES orders(id),  
+    provider             TEXT          NOT NULL DEFAULT 'ctrader', 
+    provider_position_id TEXT          NOT NULL,   
+    provider_acct_id     TEXT          NOT NULL,   
     symbol_id            UUID          NOT NULL REFERENCES symbols(id),
     side                 TEXT          NOT NULL CHECK (side IN ('BUY', 'SELL')),
-    volume               BIGINT        NOT NULL,   -- in provider units (e.g. cTrader: 100 = 0.01 lots)
-    tier                 SMALLINT      NOT NULL DEFAULT 0, -- confluence tier (0=normal … 3=very strong)
+    volume               BIGINT        NOT NULL,   
+    tier                 SMALLINT      NOT NULL DEFAULT 0, 
 
-    open_price           NUMERIC(12,5),            -- average entry price
-    current_sl           NUMERIC(12,5),            -- current stop loss level
-    current_tp           NUMERIC(12,5),            -- current take profit level
+    open_price           NUMERIC(12,5),            
+    current_sl           NUMERIC(12,5),            
+    current_tp           NUMERIC(12,5),            
 
-    -- High-water marks tracked by the watcher across M1 candles, written on close.
-    -- max_favorable: best price reached in trade direction (peak unrealized profit level).
-    -- max_adverse:   worst price reached against trade direction (how close to SL we got).
+
     max_favorable        NUMERIC(12,5),
     max_adverse          NUMERIC(12,5),
 
-    -- Costs accumulated while position is open (real currency amounts)
     swap                 NUMERIC(18,4) NOT NULL DEFAULT 0,
     commission           NUMERIC(18,4) NOT NULL DEFAULT 0,
     used_margin          NUMERIC(18,4),
@@ -36,7 +31,7 @@ CREATE TABLE positions (
     open_timestamp       TIMESTAMPTZ,
     close_timestamp      TIMESTAMPTZ,
 
-    raw_payload          BYTEA,        -- full provider response bytes, nothing lost
+    raw_payload          BYTEA,        
 
     created_at           TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
     updated_at           TIMESTAMPTZ   NOT NULL DEFAULT NOW(),

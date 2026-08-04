@@ -7,10 +7,10 @@ CREATE TABLE price_ticks (
     ask              NUMERIC(12,5) NOT NULL,
     mid              NUMERIC(12,5) NOT NULL GENERATED ALWAYS AS ((bid + ask) / 2) STORED,
     spread           NUMERIC(8,5)  NOT NULL GENERATED ALWAYS AS (ask - bid) STORED,
-    session_close    NUMERIC(12,5),           -- closing price of the current session if sent
-    provider_timestamp TIMESTAMPTZ,           -- timestamp inside the provider's own message
-    received_at      TIMESTAMPTZ   NOT NULL DEFAULT NOW(), -- when our bot received this tick
-    processing_us    BIGINT        NOT NULL DEFAULT 0,     -- microseconds from tick received to stored in DB
+    session_close    NUMERIC(12,5),           
+    provider_timestamp TIMESTAMPTZ,           
+    received_at      TIMESTAMPTZ   NOT NULL DEFAULT NOW(), 
+    processing_us    BIGINT        NOT NULL DEFAULT 0,     
     PRIMARY KEY (id, received_at)
 );
 

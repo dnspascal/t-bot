@@ -40,6 +40,7 @@ type Config struct {
 
 	RiskPercent     float64
 	MaxDailyLossPct float64
+	EnableRiskMgmt  bool
 
 	Period string
 
@@ -128,6 +129,7 @@ func Load() (*Config, error) {
 		Binance:         binanceCfg,
 		RiskPercent:     riskPercent,
 		MaxDailyLossPct: maxDailyLossPct,
+		EnableRiskMgmt:  getEnv("ENABLE_RISK_MGMT", "true") == "true",
 
 		EnableCTrader: getEnv("ENABLE_CTRADER", "true") == "true",
 		CTraderSymbol: getEnv("CTRADER_SYMBOL", "EURUSD"),
