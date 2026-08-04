@@ -1,12 +1,8 @@
--- Strategy configuration per symbol.
--- Same symbol can have different strategy settings (e.g., EMA on EURUSD, Range on BTCUSD).
--- When Strategy #2 is added, just insert new rows — no migration needed.
 CREATE TABLE strategy_configs (
     id              UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     symbol_id       UUID            NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
     strategy_name   TEXT            NOT NULL,  -- combined_ema_rsi, range_trader, etc
 
-    -- Strategy-specific parameters (stored as JSONB for flexibility)
     -- combined_ema_rsi: {"fast_period": 9, "slow_period": 21, "rsi_period": 14, "rsi_overbought": 70, "rsi_oversold": 30, ...}
     -- range_trader:     {"lookback_bars": 20, "support_offset": 10, "resistance_offset": 10, ...}
     config          JSONB           NOT NULL,

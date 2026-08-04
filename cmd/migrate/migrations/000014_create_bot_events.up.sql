@@ -1,5 +1,3 @@
--- Full lifecycle audit log for the bot process.
--- detail is JSONB so every event carries structured queryable data.
 CREATE TABLE bot_events (
     id          UUID        NOT NULL DEFAULT gen_random_uuid(),
     event_type  TEXT        NOT NULL,  -- free-form: started | stopped | auth_ok | order_sent | error | ...
