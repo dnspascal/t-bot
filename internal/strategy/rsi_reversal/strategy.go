@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	rsiBuyThreshold  = 28.0 // H1 RSI below this → oversold → BUY
-	rsiSellThreshold = 72.0 // H1 RSI above this → overbought → SELL
+	rsiBuyThreshold  = 28.0 
+	rsiSellThreshold = 72.0 
 	slATRMult        = 1.0
 	tpATRMult        = 1.5
 )
@@ -42,15 +42,14 @@ func (s *RSIReversal) Evaluate(states map[string]indicator.MarketState, currentP
 		return hold("H1 RSI not at extreme")
 	}
 
-	// Skip when H1 is trending hard in the same direction — RSI can stay extreme in strong trends
-	if dir == config.SignalBuy && h1.Regime == config.TrendingDown {
-		return hold("H1 strongly trending down — RSI oversold may persist")
+	
+	if dir == config.SignalBuy && (h1.Regime == config.TrendingDown || h1.EMAFast < h1.EMASlow) {
+		return hold("H1 trending down or EMA bearish — RSI oversold may persist")
 	}
-	if dir == config.SignalSell && h1.Regime == config.TrendingUp {
-		return hold("H1 strongly trending up — RSI overbought may persist")
+	if dir == config.SignalSell && (h1.Regime == config.TrendingUp || h1.EMAFast > h1.EMASlow) {
+		return hold("H1 trending up or EMA bullish — RSI overbought may persist")
 	}
 
-	// M5 confirmation: candle body must agree with reversal direction
 	m5, ok := states[config.PeriodM5]
 	if !ok || !m5.IsWarmedUp {
 		return hold("M5 not warmed up")
@@ -62,7 +61,6 @@ func (s *RSIReversal) Evaluate(states map[string]indicator.MarketState, currentP
 		return hold("M5 not showing bearish reversal candle")
 	}
 
-	// H1 EMA50 filter: don't sell into an uptrend or buy into a downtrend
 	if h1.EMA50 > 0 {
 		if dir == config.SignalBuy && currentPrice > h1.EMA50 {
 			return hold("BUY blocked — price above H1 EMA50 despite oversold RSI")
