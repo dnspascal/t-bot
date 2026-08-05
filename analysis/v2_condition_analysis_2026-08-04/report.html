@@ -1,0 +1,507 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<title>Strategy Condition Analysis — t-bot</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1c2128;
+  --border: #30363d;
+  --text: #c9d1d9;
+  --muted: #8b949e;
+  --accent: #388bfd;
+  --green: #3fb950;
+  --amber: #d29922;
+  --red: #f85149;
+  --tag-up: #1b3545;
+  --tag-down: #3d1f1f;
+  --tag-range: #1c2128;
+  --tag-break: #2d2600;
+  --tag-bull: #1b3a26;
+  --tag-bear: #3a1b1b;
+  --tag-high: #1b3a26;
+  --tag-mid: #2d2600;
+  --tag-low: #3a1b1b;
+  --tag-trend: #162a45;
+  --tag-weak: #252525;
+  font-size: 13px;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f8fa; --surface: #ffffff; --surface2: #f0f3f6; --border: #d0d7de;
+    --text: #1f2328; --muted: #636c76; --accent: #0969da; --green: #1a7f37;
+    --amber: #9a6700; --red: #cf222e;
+    --tag-up: #ddf4ff; --tag-down: #ffebe9; --tag-range: #f0f3f6; --tag-break: #fffae6;
+    --tag-bull: #dafbe1; --tag-bear: #ffebe9; --tag-high: #dafbe1; --tag-mid: #fffae6;
+    --tag-low: #ffebe9; --tag-trend: #ddf4ff; --tag-weak: #f0f3f6;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1117; --surface: #161b22; --surface2: #1c2128; --border: #30363d;
+  --text: #c9d1d9; --muted: #8b949e; --accent: #388bfd; --green: #3fb950;
+  --amber: #d29922; --red: #f85149;
+  --tag-up: #1b3545; --tag-down: #3d1f1f; --tag-range: #1c2128; --tag-break: #2d2600;
+  --tag-bull: #1b3a26; --tag-bear: #3a1b1b; --tag-high: #1b3a26; --tag-mid: #2d2600;
+  --tag-low: #3a1b1b; --tag-trend: #162a45; --tag-weak: #252525;
+}
+:root[data-theme="light"] {
+  --bg: #f6f8fa; --surface: #ffffff; --surface2: #f0f3f6; --border: #d0d7de;
+  --text: #1f2328; --muted: #636c76; --accent: #0969da; --green: #1a7f37;
+  --amber: #9a6700; --red: #cf222e;
+  --tag-up: #ddf4ff; --tag-down: #ffebe9; --tag-range: #f0f3f6; --tag-break: #fffae6;
+  --tag-bull: #dafbe1; --tag-bear: #ffebe9; --tag-high: #dafbe1; --tag-mid: #fffae6;
+  --tag-low: #ffebe9; --tag-trend: #ddf4ff; --tag-weak: #f0f3f6;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Lato', 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+.header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 18px 24px; display: flex; align-items: center; gap: 16px; }
+.header-logo { font-family: monospace; font-size: 18px; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; }
+.header-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.stats { display: flex; gap: 0; border-bottom: 1px solid var(--border); overflow-x: auto; }
+.stat { padding: 16px 24px; border-right: 1px solid var(--border); white-space: nowrap; min-width: 130px; }
+.stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+.stat-value { font-size: 22px; font-weight: 700; font-family: monospace; font-variant-numeric: tabular-nums; }
+.stat-value.green { color: var(--green); }
+.stat-value.amber { color: var(--amber); }
+.stat-value.muted { color: var(--muted); }
+
+.insights { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
+.insight { background: var(--surface); padding: 20px 24px; }
+.insight-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+.insight-body { font-size: 13px; line-height: 1.6; color: var(--text); }
+.insight-body strong { color: var(--text); font-weight: 700; }
+.insight-body .hi { color: var(--green); font-weight: 800; font-family: monospace; }
+.insight-body .lo { color: var(--red); font-weight: 600; }
+.insight-body .mid { color: var(--amber); font-weight: 600; }
+.insight-body code { background: var(--surface2); padding: 1px 4px; border-radius: 3px; font-size: 11px; }
+
+.filters { background: var(--surface2); border-bottom: 1px solid var(--border); padding: 10px 24px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.filter-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+select, input[type=number] { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 4px; font-size: 12px; outline: none; }
+select:focus, input[type=number]:focus { border-color: var(--accent); }
+.filter-group { display: flex; align-items: center; gap: 6px; }
+.sort-hint { font-size: 11px; color: var(--muted); margin-left: auto; }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead tr { background: var(--surface); position: sticky; top: 0; z-index: 10; }
+th { padding: 8px 10px; text-align: left; white-space: nowrap; border-bottom: 2px solid var(--border); border-right: 1px solid var(--border); color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; user-select: none; }
+th:hover { color: var(--text); background: var(--surface2); }
+th.sort-asc::after { content: ' ↑'; color: var(--accent); }
+th.sort-desc::after { content: ' ↓'; color: var(--accent); }
+th.gb { border-right: 2px solid var(--border); }
+td { padding: 6px 10px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
+td.gb { border-right: 2px solid var(--border); }
+.row-even td { background: var(--surface); }
+.row-odd td { background: var(--bg); }
+tr:hover td { background: var(--surface2) !important; }
+
+.badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 700; font-family: monospace; white-space: nowrap; }
+.b-up { background: var(--tag-up); color: #58a6ff; }
+.b-down { background: var(--tag-down); color: #ff7b72; }
+.b-ranging { background: var(--tag-range); color: var(--muted); }
+.b-breakout { background: var(--tag-break); color: #e3b341; }
+.b-unknown { background: var(--tag-range); color: var(--muted); }
+.b-bull { background: var(--tag-bull); color: #3fb950; }
+.b-bear { background: var(--tag-bear); color: #ff7b72; }
+.b-rsi-high { background: var(--tag-high); color: #3fb950; }
+.b-rsi-mid { background: var(--tag-mid); color: #e3b341; }
+.b-rsi-low { background: var(--tag-low); color: #ff7b72; }
+.b-trending { background: var(--tag-trend); color: #58a6ff; }
+.b-weak { background: var(--tag-weak); color: var(--muted); }
+.b-mom { background: var(--tag-range); color: var(--muted); font-size: 9px; }
+
+.wr { font-family: monospace; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 12px; text-align: right; }
+.n-cell { font-family: monospace; color: var(--muted); text-align: right; font-size: 11px; }
+.dir-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 700; font-family: monospace; }
+.dir-buy { background: rgba(63,185,80,0.15); color: var(--green); }
+.dir-sell { background: rgba(248,81,73,0.15); color: var(--red); }
+.dir-none { background: rgba(139,148,158,0.1); color: var(--muted); }
+
+.empty { padding: 48px; text-align: center; color: var(--muted); font-size: 14px; }
+.footer { padding: 16px 24px; color: var(--muted); font-size: 11px; border-top: 1px solid var(--border); line-height: 1.7; }
+</style>
+
+<div class="header">
+  <div>
+    <div class="header-logo">t-bot / stratanalysis</div>
+    <div class="header-sub">Data-driven signal discovery &nbsp;·&nbsp; 55 days &nbsp;·&nbsp; XAUUSD + EURUSD &nbsp;·&nbsp; TP=1.5×ATR &nbsp; SL=0.5×ATR &nbsp;·&nbsp; Sequential breach detection</div>
+  </div>
+</div>
+
+<div class="stats" id="statsBar"></div>
+<div class="insights" id="insightsPanel"></div>
+
+<div class="filters">
+  <span class="filter-label">Filter</span>
+  <div class="filter-group"><label class="filter-label">H1</label>
+    <select id="fH1"><option value="">All H1</option><option value="trending_up">trending_up</option><option value="trending_down">trending_down</option><option value="ranging">ranging</option><option value="breakout">breakout</option></select></div>
+  <div class="filter-group"><label class="filter-label">M15</label>
+    <select id="fM15"><option value="">All M15</option><option value="trending_up">trending_up</option><option value="trending_down">trending_down</option><option value="ranging">ranging</option><option value="breakout">breakout</option></select></div>
+  <div class="filter-group"><label class="filter-label">M5 ADX</label>
+    <select id="fADX"><option value="">All ADX</option><option value="trending">trending ≥25</option><option value="weak">weak &lt;25</option></select></div>
+  <div class="filter-group"><label class="filter-label">EMA</label>
+    <select id="fEMA"><option value="">All EMA</option><option value="bull">bull</option><option value="bear">bear</option></select></div>
+  <div class="filter-group"><label class="filter-label">RSI</label>
+    <select id="fRSI"><option value="">All RSI</option><option value="high">high ≥60</option><option value="mid">mid 50–59</option><option value="low">low &lt;50</option></select></div>
+  <div class="filter-group"><label class="filter-label">Min N</label>
+    <input type="number" id="fMinN" value="30" min="30" max="1000" style="width:65px"></div>
+  <div class="filter-group"><label class="filter-label">Min win%</label>
+    <input type="number" id="fMinWin" value="0" min="0" max="100" style="width:55px"></div>
+  <span class="sort-hint">Click headers to sort &nbsp;·&nbsp; Break-even = 25% with 3:1 R:R</span>
+</div>
+
+<div class="table-wrap">
+  <table id="mainTable">
+    <thead><tr>
+      <th data-col="h1" class="gb">H1</th>
+      <th data-col="m15">M15</th>
+      <th data-col="m5">M5</th>
+      <th data-col="ema">EMA</th>
+      <th data-col="rsi">RSI</th>
+      <th data-col="adx">ADX</th>
+      <th data-col="mom" class="gb">Mom</th>
+      <th data-col="n" class="gb">N</th>
+      <th data-col="best" class="gb">Best dir</th>
+      <th data-col="b10">Buy 10m</th><th data-col="s10" class="gb">Sell 10m</th>
+      <th data-col="b30">Buy 30m</th><th data-col="s30" class="gb">Sell 30m</th>
+      <th data-col="b60">Buy 1h</th><th data-col="s60" class="gb">Sell 1h</th>
+      <th data-col="b120">Buy 2h</th><th data-col="s120" class="gb">Sell 2h</th>
+      <th data-col="b240">Buy 4h</th><th data-col="s240">Sell 4h</th>
+    </tr></thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+  <div class="empty" id="emptyMsg" style="display:none">No rows match the current filters.</div>
+</div>
+
+<div class="footer">
+  TP = 1.5× M5 ATR above entry &nbsp;·&nbsp; SL = 0.5× M5 ATR below entry &nbsp;·&nbsp; R:R = 3:1 &nbsp;·&nbsp; Break-even win rate = 25%<br>
+  Sequential breach detection: candles stepped in order — on a same-candle breach, the side with greater distance from entry wins.<br>
+  Signals deduplicated by (symbol_id, M5 state id). Each unique M5 bar = one data point. 15,636 moments, 2 symbols, 55 days.
+</div>
+
+<script>
+const RAW = `trending_down|breakout|trending_down|bear|low|trending|stable|34|58.8|14.7|70.6|17.6|70.6|17.6|70.6|17.6|70.6|17.6
+trending_down|trending_down|breakout|bear|low|trending|falling|31|38.7|0.0|64.5|3.2|67.7|3.2|67.7|3.2|67.7|3.2
+ranging|breakout|breakout|bull|high|weak|rising|59|40.7|3.4|61.0|6.8|64.4|6.8|64.4|6.8|64.4|6.8
+ranging|trending_down|ranging|bear|mid|weak|stable|37|24.3|5.4|51.4|10.8|62.2|10.8|62.2|13.5|62.2|13.5
+ranging|ranging|breakout|bull|mid|weak|stable|71|49.3|1.4|57.7|9.9|59.2|11.3|60.6|11.3|60.6|11.3
+breakout|breakout|breakout|bear|low|trending|falling|129|40.3|15.5|52.7|17.1|56.6|17.1|58.1|17.8|58.1|17.8
+trending_down|trending_down|breakout|bull|mid|weak|stable|32|31.2|0.0|40.6|3.1|50.0|6.2|56.2|9.4|56.2|9.4
+ranging|ranging|breakout|bull|high|trending|rising|110|37.3|8.2|48.2|11.8|55.5|12.7|55.5|12.7|55.5|12.7
+trending_down|ranging|ranging|bear|low|weak|falling|56|28.6|7.1|51.8|12.5|53.6|12.5|55.4|12.5|55.4|12.5
+trending_up|breakout|breakout|bear|low|weak|falling|47|34.0|6.4|53.2|8.5|55.3|8.5|55.3|8.5|55.3|8.5
+trending_down|trending_up|ranging|bull|mid|weak|stable|42|21.4|7.1|42.9|9.5|47.6|9.5|54.8|9.5|54.8|9.5
+trending_down|trending_down|trending_down|bear|low|trending|stable|44|11.4|2.3|22.7|13.6|31.8|13.6|45.5|13.6|54.5|13.6
+breakout|breakout|trending_down|bear|low|trending|falling|103|37.9|6.8|52.4|7.8|53.4|7.8|54.4|8.7|54.4|8.7
+trending_down|ranging|breakout|bear|low|weak|falling|75|32.0|14.7|48.0|14.7|52.0|16.0|53.3|16.0|53.3|16.0
+trending_down|ranging|breakout|bull|high|weak|rising|47|31.9|0.0|48.9|6.4|53.2|10.6|53.2|10.6|53.2|10.6
+trending_down|trending_down|ranging|bear|low|weak|stable|127|24.4|3.1|39.4|3.1|51.2|3.1|52.0|3.1|52.8|3.1
+ranging|trending_up|breakout|bear|low|weak|falling|38|39.5|10.5|50.0|13.2|52.6|13.2|52.6|13.2|52.6|13.2
+ranging|breakout|ranging|bull|high|weak|rising|59|25.4|3.4|44.1|10.2|52.5|15.3|52.5|15.3|52.5|15.3
+ranging|breakout|breakout|bear|low|weak|falling|79|31.6|5.1|40.5|10.1|49.4|11.4|51.9|11.4|51.9|11.4
+trending_up|breakout|ranging|bear|low|weak|falling|31|38.7|3.2|45.2|6.5|51.6|6.5|51.6|6.5|51.6|6.5
+trending_up|trending_up|breakout|bear|low|trending|falling|39|33.3|2.6|48.7|10.3|48.7|10.3|51.3|10.3|51.3|12.8
+ranging|breakout|breakout|bear|low|trending|falling|159|30.2|6.9|47.2|13.2|50.3|13.2|50.3|13.2|50.3|13.2
+breakout|trending_up|breakout|bull|high|trending|rising|30|30.0|0.0|43.3|6.7|46.7|13.3|50.0|13.3|50.0|16.7
+trending_down|ranging|ranging|bull|high|weak|rising|40|20.0|0.0|32.5|0.0|37.5|2.5|45.0|2.5|50.0|2.5
+ranging|breakout|trending_down|bear|low|trending|falling|89|23.6|7.9|42.7|11.2|47.2|14.6|49.4|14.6|49.4|14.6
+breakout|breakout|breakout|bull|high|trending|rising|77|24.7|0.0|41.6|10.4|48.1|15.6|49.4|15.6|49.4|16.9
+trending_up|breakout|trending_down|bear|low|trending|falling|65|27.7|3.1|41.5|7.7|46.2|7.7|49.2|9.2|49.2|9.2
+ranging|ranging|breakout|bear|low|trending|falling|102|28.4|3.9|40.2|5.9|44.1|6.9|48.0|6.9|49.0|6.9
+breakout|trending_down|breakout|bear|low|trending|falling|47|31.9|4.3|40.4|14.9|46.8|14.9|48.9|14.9|48.9|14.9
+ranging|breakout|trending_up|bull|mid|trending|stable|37|24.3|0.0|45.9|5.4|45.9|8.1|48.6|8.1|48.6|8.1
+ranging|breakout|trending_down|bear|low|trending|stable|134|27.6|7.5|40.3|11.9|47.0|13.4|48.5|14.2|48.5|14.2
+breakout|breakout|trending_up|bull|mid|trending|stable|31|25.8|0.0|41.9|19.4|45.2|19.4|48.4|19.4|48.4|19.4
+breakout|breakout|trending_down|bear|low|trending|stable|172|27.3|7.0|43.6|9.3|47.1|11.0|47.1|11.6|48.3|12.8
+breakout|trending_up|ranging|bull|mid|weak|stable|48|8.3|0.0|29.2|6.2|35.4|10.4|47.9|12.5|47.9|12.5
+breakout|ranging|ranging|bear|low|trending|stable|48|35.4|0.0|47.9|2.1|47.9|4.2|47.9|4.2|47.9|4.2
+ranging|ranging|ranging|bull|high|trending|rising|42|26.2|7.1|42.9|9.5|47.6|21.4|47.6|26.2|47.6|26.2
+ranging|ranging|breakout|bear|low|weak|falling|274|29.9|6.6|43.4|12.0|46.4|15.0|47.1|15.0|47.4|15.0
+ranging|trending_down|breakout|bear|low|trending|falling|38|13.2|2.6|42.1|10.5|47.4|10.5|47.4|10.5|47.4|10.5
+ranging|trending_up|ranging|bull|mid|weak|stable|70|15.7|14.3|35.7|21.4|45.7|24.3|47.1|24.3|47.1|24.3
+trending_up|ranging|ranging|bear|low|weak|falling|66|30.3|7.6|43.9|9.1|47.0|13.6|47.0|15.2|47.0|15.2
+ranging|trending_down|breakout|bear|low|weak|falling|47|27.7|2.1|44.7|8.5|46.8|8.5|46.8|8.5|46.8|8.5
+trending_down|breakout|breakout|bear|low|trending|falling|30|30.0|13.3|46.7|20.0|46.7|20.0|46.7|20.0|46.7|20.0
+trending_up|trending_up|ranging|bull|high|weak|rising|43|4.7|2.3|18.6|11.6|39.5|18.6|46.5|18.6|46.5|18.6
+ranging|ranging|ranging|bear|low|weak|falling|193|31.1|7.3|40.4|12.4|42.5|13.5|44.0|14.0|44.0|14.0
+ranging|ranging|ranging|bear|low|trending|falling|50|24.0|6.0|28.0|12.0|38.0|14.0|44.0|14.0|44.0|14.0
+trending_down|ranging|ranging|bear|low|weak|stable|207|25.6|10.1|39.1|17.4|43.5|19.3|44.0|21.3|44.0|21.3
+ranging|breakout|ranging|bear|low|weak|falling|66|31.8|13.6|37.9|18.2|42.4|19.7|43.9|19.7|43.9|19.7
+ranging|ranging|breakout|bull|high|weak|rising|196|21.9|3.6|38.3|10.7|43.9|14.3|43.9|15.3|43.9|15.8
+breakout|breakout|ranging|bear|low|weak|stable|39|25.6|2.6|38.5|7.7|41.0|10.3|41.0|10.3|43.6|10.3
+trending_down|trending_down|ranging|bull|low|weak|stable|46|10.9|0.0|19.6|6.5|30.4|8.7|43.5|8.7|43.5|8.7
+trending_down|trending_down|ranging|bear|mid|weak|stable|53|20.8|1.9|32.1|1.9|41.5|1.9|43.4|3.8|43.4|3.8
+unknown|ranging|ranging|bull|mid|weak|stable|35|25.7|14.3|40.0|22.9|42.9|28.6|42.9|28.6|42.9|28.6
+trending_up|ranging|ranging|bull|low|weak|stable|56|17.9|5.4|37.5|12.5|42.9|16.1|42.9|16.1|42.9|16.1
+trending_down|breakout|breakout|bull|high|trending|rising|54|22.2|3.7|31.5|11.1|42.6|14.8|42.6|16.7|42.6|16.7
+breakout|ranging|ranging|bull|mid|weak|stable|83|28.9|7.2|41.0|13.3|42.2|20.5|42.2|20.5|42.2|20.5
+breakout|ranging|ranging|bear|mid|weak|stable|38|26.3|7.9|39.5|10.5|39.5|13.2|42.1|13.2|42.1|13.2
+ranging|trending_down|trending_down|bear|low|trending|falling|50|24.0|4.0|40.0|8.0|42.0|8.0|42.0|8.0|42.0|8.0
+trending_up|ranging|ranging|bear|low|trending|stable|36|19.4|8.3|33.3|13.9|41.7|16.7|41.7|22.2|41.7|22.2
+ranging|breakout|ranging|bear|low|trending|stable|48|25.0|0.0|35.4|8.3|39.6|8.3|41.7|8.3|41.7|8.3
+ranging|ranging|ranging|bear|low|weak|stable|889|21.3|5.7|33.6|11.6|39.7|16.0|41.2|16.6|41.6|16.9
+ranging|ranging|ranging|bull|low|weak|stable|222|23.4|5.9|37.4|14.9|39.6|18.9|40.5|18.9|41.4|18.9
+breakout|trending_down|ranging|bear|mid|weak|stable|51|15.7|5.9|21.6|11.8|39.2|13.7|41.2|13.7|41.2|13.7
+breakout|trending_down|trending_down|bear|low|trending|falling|111|22.5|7.2|36.9|8.1|40.5|9.0|40.5|14.4|40.5|14.4
+ranging|ranging|ranging|bull|mid|weak|stable|636|19.2|5.0|33.8|14.5|38.2|18.1|40.1|18.7|40.3|18.7
+ranging|ranging|ranging|bear|mid|weak|stable|264|21.2|4.9|34.1|10.2|38.3|16.7|39.8|18.6|39.8|18.9
+unknown|ranging|ranging|bear|low|weak|stable|78|32.1|12.8|34.6|16.7|37.2|20.5|39.7|20.5|39.7|20.5
+trending_up|trending_up|breakout|bear|low|weak|falling|56|16.1|10.7|28.6|16.1|35.7|16.1|39.3|16.1|39.3|16.1
+trending_up|ranging|breakout|bull|high|weak|rising|46|19.6|4.3|32.6|13.0|39.1|15.2|39.1|17.4|39.1|17.4
+trending_down|ranging|trending_up|bull|high|trending|rising|31|9.7|6.5|25.8|12.9|29.0|16.1|38.7|22.6|38.7|22.6
+breakout|ranging|breakout|bear|low|weak|falling|31|19.4|16.1|25.8|35.5|29.0|38.7|29.0|38.7|29.0|38.7
+ranging|breakout|ranging|bear|low|weak|stable|137|16.8|5.8|32.1|10.2|34.3|12.4|37.2|13.1|38.7|13.1
+ranging|trending_down|ranging|bull|low|weak|stable|34|23.5|8.8|38.2|20.6|38.2|20.6|38.2|20.6|38.2|20.6
+breakout|breakout|breakout|bear|low|weak|falling|34|17.6|8.8|32.4|11.8|38.2|11.8|38.2|17.6|38.2|17.6
+ranging|ranging|trending_up|bull|mid|trending|stable|71|21.1|5.6|28.2|9.9|33.8|12.7|33.8|14.1|38.0|14.1
+breakout|trending_down|ranging|bull|mid|weak|stable|79|10.1|3.8|25.3|11.4|35.4|15.2|38.0|15.2|38.0|15.2
+ranging|ranging|trending_down|bear|low|trending|stable|159|14.5|8.8|21.4|15.1|25.2|17.0|35.8|18.2|37.7|18.2
+ranging|ranging|ranging|bear|low|trending|stable|80|15.0|6.2|31.2|7.5|36.2|7.5|37.5|7.5|37.5|7.5
+trending_up|trending_up|trending_up|bull|high|trending|rising|32|25.0|6.2|31.2|28.1|34.4|34.4|37.5|34.4|37.5|34.4
+trending_up|ranging|ranging|bull|high|weak|rising|35|17.1|2.9|25.7|22.9|28.6|28.6|28.6|37.1|28.6|37.1
+trending_down|trending_down|ranging|bull|mid|weak|stable|119|15.1|1.7|26.9|9.2|34.5|14.3|37.0|15.1|37.0|15.1
+breakout|trending_down|ranging|bear|low|weak|stable|120|15.8|4.2|29.2|10.8|31.7|12.5|32.5|15.8|36.7|15.8
+trending_up|ranging|ranging|bear|mid|weak|stable|74|17.6|4.1|24.3|12.2|33.8|23.0|36.5|27.0|36.5|27.0
+trending_down|ranging|ranging|bull|mid|weak|stable|225|17.3|4.4|29.8|9.3|33.8|13.3|36.4|15.6|36.4|16.0
+ranging|trending_up|ranging|bear|low|weak|stable|99|24.2|5.1|34.3|13.1|36.4|17.2|36.4|17.2|36.4|17.2
+ranging|trending_up|trending_up|bull|high|trending|rising|42|26.2|4.8|35.7|16.7|35.7|19.0|35.7|19.0|35.7|19.0
+ranging|breakout|trending_up|bull|high|trending|stable|79|20.3|0.0|32.9|6.3|35.4|11.4|35.4|11.4|35.4|11.4
+ranging|trending_down|ranging|bear|low|weak|stable|161|18.0|8.7|31.1|14.3|34.8|17.4|35.4|19.3|35.4|19.3
+trending_up|ranging|breakout|bear|low|weak|falling|91|20.9|6.6|25.3|7.7|31.9|7.7|35.2|7.7|35.2|7.7
+breakout|trending_down|ranging|bear|low|trending|stable|40|7.5|0.0|20.0|5.0|27.5|12.5|35.0|17.5|35.0|17.5
+breakout|trending_down|trending_down|bear|low|trending|stable|245|17.6|6.5|27.8|10.2|30.2|17.1|31.4|20.0|34.7|20.8
+ranging|breakout|trending_up|bull|high|trending|rising|102|12.7|2.0|27.5|3.9|32.4|4.9|34.3|5.9|34.3|6.9
+ranging|ranging|ranging|bull|mid|trending|stable|44|18.2|4.5|31.8|22.7|34.1|29.5|34.1|29.5|34.1|29.5
+ranging|ranging|ranging|bull|high|weak|rising|203|13.8|5.9|25.1|15.8|32.0|19.7|33.5|23.2|33.5|23.2
+trending_up|trending_up|trending_up|bull|mid|trending|stable|33|18.2|12.1|24.2|21.2|24.2|24.2|33.3|30.3|33.3|30.3
+trending_up|breakout|trending_down|bear|low|trending|stable|82|17.1|12.2|30.5|18.3|32.9|23.2|32.9|24.4|32.9|24.4
+ranging|breakout|ranging|bull|mid|weak|stable|87|19.5|8.0|32.2|14.9|32.2|18.4|32.2|19.5|32.2|19.5
+ranging|trending_down|ranging|bull|mid|weak|stable|100|12.0|8.0|22.0|17.0|29.0|22.0|32.0|22.0|32.0|22.0
+breakout|ranging|ranging|bear|low|weak|stable|117|14.5|6.0|27.4|13.7|29.1|14.5|31.6|16.2|31.6|16.2
+trending_up|trending_down|trending_down|bear|low|trending|falling|35|14.3|0.0|28.6|8.6|31.4|11.4|31.4|11.4|31.4|11.4
+trending_up|ranging|ranging|bear|low|weak|stable|240|20.0|5.8|28.3|15.0|31.2|18.3|31.2|19.6|31.2|19.6
+trending_up|trending_up|ranging|bear|low|weak|stable|141|19.9|7.1|28.4|17.7|30.5|24.1|31.2|24.8|31.2|24.8
+breakout|breakout|trending_up|bull|high|trending|rising|93|10.8|3.2|23.7|9.7|29.0|15.1|30.1|16.1|31.2|16.1
+breakout|ranging|trending_down|bear|low|trending|stable|62|24.2|4.8|29.0|6.5|29.0|12.9|29.0|12.9|30.6|12.9
+ranging|ranging|trending_up|bull|high|trending|rising|62|16.1|6.5|27.4|17.7|29.0|19.4|29.0|19.4|30.6|19.4
+trending_up|trending_up|ranging|bull|low|weak|stable|36|8.3|8.3|16.7|22.2|19.4|27.8|19.4|30.6|19.4|30.6
+breakout|trending_down|trending_down|bear|mid|trending|stable|46|6.5|4.3|26.1|10.9|30.4|15.2|30.4|19.6|30.4|19.6
+trending_down|breakout|trending_up|bull|high|trending|rising|51|15.7|7.8|23.5|13.7|29.4|17.6|29.4|23.5|29.4|23.5
+ranging|ranging|trending_down|bear|low|trending|falling|58|13.8|13.8|19.0|22.4|25.9|24.1|27.6|24.1|29.3|24.1
+trending_up|breakout|ranging|bear|low|weak|stable|55|18.2|9.1|23.6|10.9|29.1|12.7|29.1|16.4|29.1|16.4
+trending_up|ranging|trending_down|bear|low|trending|falling|31|16.1|3.2|25.8|6.5|25.8|12.9|29.0|12.9|29.0|12.9
+trending_down|trending_down|breakout|bull|high|weak|rising|38|23.7|15.8|28.9|18.4|28.9|26.3|28.9|26.3|28.9|26.3
+breakout|trending_up|trending_up|bull|high|trending|stable|63|6.3|1.6|15.9|3.2|23.8|7.9|28.6|15.9|28.6|15.9
+ranging|trending_up|ranging|bear|mid|weak|stable|32|9.4|6.2|25.0|9.4|28.1|25.0|28.1|25.0|28.1|25.0
+ranging|trending_up|trending_up|bull|mid|trending|stable|64|9.4|3.1|21.9|18.8|25.0|20.3|26.6|20.3|28.1|20.3
+ranging|trending_down|trending_down|bear|low|trending|stable|140|15.0|6.4|21.4|17.1|25.7|20.7|27.9|25.0|27.9|25.7
+trending_down|ranging|ranging|bear|mid|weak|stable|69|14.5|4.3|27.5|13.0|27.5|13.0|27.5|13.0|27.5|13.0
+breakout|breakout|trending_up|bull|high|trending|stable|90|12.2|2.2|20.0|6.7|25.6|16.7|26.7|23.3|26.7|23.3
+trending_up|trending_up|ranging|bull|mid|weak|stable|109|8.3|5.5|19.3|13.8|24.8|23.9|26.6|26.6|26.6|26.6
+breakout|trending_down|trending_up|bull|mid|trending|stable|38|13.2|2.6|23.7|5.3|26.3|15.8|26.3|15.8|26.3|18.4
+trending_down|ranging|ranging|bull|low|weak|stable|57|10.5|7.0|17.5|10.5|22.8|15.8|26.3|15.8|26.3|15.8
+ranging|trending_down|ranging|bull|high|weak|rising|32|6.2|0.0|18.8|15.6|25.0|18.8|25.0|18.8|25.0|18.8
+trending_up|ranging|ranging|bull|mid|weak|stable|141|12.8|4.3|22.7|14.2|24.1|18.4|24.1|20.6|24.1|20.6
+breakout|trending_up|trending_up|bull|mid|trending|stable|104|10.6|2.9|14.4|7.7|15.4|11.5|19.2|12.5|23.1|12.5
+trending_up|ranging|trending_down|bear|low|trending|stable|66|18.2|3.0|22.7|9.1|22.7|13.6|22.7|15.2|22.7|16.7
+trending_up|trending_down|trending_down|bear|low|trending|stable|69|14.5|5.8|18.8|10.1|20.3|14.5|20.3|14.5|20.3|17.4
+breakout|trending_up|trending_up|bull|high|trending|rising|91|4.4|1.1|7.7|6.6|13.2|13.2|17.6|17.6|18.7|19.8
+trending_up|trending_up|trending_down|bear|low|trending|stable|41|4.9|2.4|7.3|17.1|12.2|19.5|19.5|19.5|19.5|19.5
+trending_up|trending_up|ranging|bear|mid|weak|stable|39|7.7|0.0|15.4|0.0|17.9|5.1|17.9|5.1|17.9|7.7`;
+
+function parseData(raw) {
+  return raw.trim().split('\n').map(line => {
+    const f = line.split('|');
+    return {
+      h1:f[0], m15:f[1], m5:f[2], ema:f[3], rsi:f[4], adx:f[5], mom:f[6],
+      n:+f[7],
+      b10:+f[8], s10:+f[9],
+      b30:+f[10], s30:+f[11],
+      b60:+f[12], s60:+f[13],
+      b120:+f[14], s120:+f[15],
+      b240:+f[16], s240:+f[17],
+    };
+  });
+}
+
+const ALL = parseData(RAW);
+let sortCol = 'b240', sortDir = -1;
+
+const REGIME_LABEL = {trending_up:'↑ up', trending_down:'↓ dn', ranging:'⟷ rng', breakout:'⚡ brk', unknown:'?'};
+const REGIME_CLS   = {trending_up:'b-up', trending_down:'b-down', ranging:'b-ranging', breakout:'b-breakout', unknown:'b-unknown'};
+
+function badge(cls, txt) { return `<span class="badge ${cls}">${txt}</span>`; }
+function regimeBadge(v) { return badge(REGIME_CLS[v]||'b-unknown', REGIME_LABEL[v]||v); }
+function emaBadge(v)    { return badge(v==='bull'?'b-bull':'b-bear', v); }
+function rsiBadge(v)    { return badge(`b-rsi-${v}`, v); }
+function adxBadge(v)    { return badge(v==='trending'?'b-trending':'b-weak', v); }
+function momBadge(v)    { return badge('b-mom', v); }
+
+function wrStyle(p) {
+  if (p >= 60) return 'color:#3fb950;font-weight:800';
+  if (p >= 50) return 'color:#56d364;font-weight:700';
+  if (p >= 40) return 'color:#a3e635;font-weight:600';
+  if (p >= 30) return 'color:#d29922;font-weight:600';
+  if (p >= 25) return 'color:#e3b341';
+  return 'color:#484f58';
+}
+
+function wrCell(p, cls='') {
+  if (p === 0) return `<td class="wr ${cls}" style="color:#30363d">—</td>`;
+  const star = p >= 60 ? '★ ' : p >= 50 ? '▲ ' : '';
+  return `<td class="wr ${cls}" style="${wrStyle(p)}">${star}${p.toFixed(1)}%</td>`;
+}
+
+function bestDir(r) {
+  const b = r.b240, s = r.s240;
+  if (b >= 40 && b > s + 3) return `<span class="dir-badge dir-buy">BUY ${b.toFixed(0)}%</span>`;
+  if (s >= 40 && s > b + 3) return `<span class="dir-badge dir-sell">SELL ${s.toFixed(0)}%</span>`;
+  if (b >= 30 && b > s)     return `<span class="dir-badge dir-buy" style="opacity:.7">BUY?</span>`;
+  if (s >= 30 && s > b)     return `<span class="dir-badge dir-sell" style="opacity:.7">SELL?</span>`;
+  return `<span class="dir-badge dir-none">—</span>`;
+}
+
+function getFiltered() {
+  const h1  = document.getElementById('fH1').value;
+  const m15 = document.getElementById('fM15').value;
+  const adx = document.getElementById('fADX').value;
+  const ema = document.getElementById('fEMA').value;
+  const rsi = document.getElementById('fRSI').value;
+  const minN = +document.getElementById('fMinN').value || 30;
+  const minW = +document.getElementById('fMinWin').value || 0;
+  return ALL.filter(r =>
+    (!h1  || r.h1  === h1)  &&
+    (!m15 || r.m15 === m15) &&
+    (!adx || r.adx === adx) &&
+    (!ema || r.ema === ema) &&
+    (!rsi || r.rsi === rsi) &&
+    r.n >= minN &&
+    (r.b240 >= minW || r.s240 >= minW)
+  );
+}
+
+const COL_KEY = {
+  h1:'h1',m15:'m15',m5:'m5',ema:'ema',rsi:'rsi',adx:'adx',mom:'mom',n:'n',
+  b10:'b10',s10:'s10',b30:'b30',s30:'s30',b60:'b60',s60:'s60',
+  b120:'b120',s120:'s120',b240:'b240',s240:'s240',best:'b240'
+};
+
+function render() {
+  const rows = getFiltered();
+  rows.sort((a, b) => {
+    const k = COL_KEY[sortCol];
+    const av = a[k], bv = b[k];
+    if (typeof av === 'string') return av.localeCompare(bv) * sortDir;
+    return (av - bv) * sortDir;
+  });
+
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyMsg');
+  if (rows.length === 0) { tbody.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = rows.map((r, i) => `
+    <tr class="row-${i%2===0?'even':'odd'}">
+      <td class="gb">${regimeBadge(r.h1)}</td>
+      <td>${regimeBadge(r.m15)}</td>
+      <td>${regimeBadge(r.m5)}</td>
+      <td>${emaBadge(r.ema)}</td>
+      <td>${rsiBadge(r.rsi)}</td>
+      <td>${adxBadge(r.adx)}</td>
+      <td class="gb">${momBadge(r.mom)}</td>
+      <td class="n-cell gb">${r.n}</td>
+      <td class="gb">${bestDir(r)}</td>
+      ${wrCell(r.b10)}${wrCell(r.s10,'gb')}
+      ${wrCell(r.b30)}${wrCell(r.s30,'gb')}
+      ${wrCell(r.b60)}${wrCell(r.s60,'gb')}
+      ${wrCell(r.b120)}${wrCell(r.s120,'gb')}
+      ${wrCell(r.b240)}${wrCell(r.s240)}
+    </tr>`).join('');
+}
+
+function buildStats() {
+  const best   = ALL.reduce((a,b) => b.b240 > a.b240 ? b : a);
+  const bsell  = ALL.reduce((a,b) => b.s240 > a.s240 ? b : a);
+  const totalN = ALL.reduce((s,r) => s + r.n, 0);
+  const above50 = ALL.filter(r => r.b240 >= 50 || r.s240 >= 50).length;
+  const above40 = ALL.filter(r => r.b240 >= 40 || r.s240 >= 40).length;
+
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat"><div class="stat-label">Moments analyzed</div><div class="stat-value">${totalN.toLocaleString()}</div></div>
+    <div class="stat"><div class="stat-label">Condition groups</div><div class="stat-value">${ALL.length}</div></div>
+    <div class="stat"><div class="stat-label">Best BUY @ 4h</div><div class="stat-value green">${best.b240.toFixed(1)}%</div></div>
+    <div class="stat"><div class="stat-label">Best SELL @ 4h</div><div class="stat-value amber">${bsell.s240.toFixed(1)}%</div></div>
+    <div class="stat"><div class="stat-label">Groups ≥50% win</div><div class="stat-value">${above50} <span style="font-size:13px;color:var(--muted)">of ${ALL.length}</span></div></div>
+    <div class="stat"><div class="stat-label">Groups ≥40% win</div><div class="stat-value">${above40} <span style="font-size:13px;color:var(--muted)">of ${ALL.length}</span></div></div>
+    <div class="stat"><div class="stat-label">Break-even (3:1)</div><div class="stat-value muted">25%</div></div>
+  `;
+}
+
+function buildInsights() {
+  document.getElementById('insightsPanel').innerHTML = `
+    <div class="insight">
+      <div class="insight-title">Pattern 1 — Oversold Bounce in Downtrend</div>
+      <div class="insight-body">
+        When <strong>H1 trending_down + M15 breakout + M5 trending_down</strong> with <span class="lo">bear EMA, low RSI</span>,
+        and <strong>trending ADX (≥25)</strong> — BUY wins <span class="hi">70.6%</span> at 4h (n=34).
+        Same setup with M5 in breakout: <span class="hi">67.7%</span> (n=31).
+        Everything looks bearish, but strong ADX + oversold RSI = price is over-extended.
+        <strong>Current strategies SELL here — data says BUY.</strong>
+        Bounce resolves fast: win rate stabilizes at 30m.
+      </div>
+    </div>
+    <div class="insight">
+      <div class="insight-title">Pattern 2 — Ranging Market + M5 Breakout</div>
+      <div class="insight-body">
+        <strong>Ranging H1 + breakout/ranging M15 + breakout M5 + bull EMA</strong>:
+        high RSI → <span class="hi">64.4%</span> BUY (n=59);
+        mid RSI → <span class="hi">60.6%</span> (n=71).
+        ADX weak or strong, both work (different rows, both above 55%).
+        Ranging higher timeframes give the breakout room — no macro headwind.
+        The <code>session_open</code> strategy is close to this pattern but lacked M5 EMA/RSI gates.
+      </div>
+    </div>
+    <div class="insight">
+      <div class="insight-title">Pattern 3 — SELL Signals Are Structurally Weak</div>
+      <div class="insight-body">
+        Best SELL win across all groups: only <span class="mid">38.7%</span>
+        (<code>breakout|ranging|breakout|bear low weak falling</code>, n=31).
+        Most SELL conditions are below 25% — <span class="lo">losing even with 3:1 R:R</span>.
+        XAUUSD + EURUSD were in a bullish phase during this 55-day window.
+        <strong>Takeaway:</strong> require stricter confirmation for SELL signals (e.g., trending ADX + bear EMA + RSI high falling), or reduce SELL lot size vs BUY.
+      </div>
+    </div>
+  `;
+}
+
+// Header click sorting
+document.querySelectorAll('th[data-col]').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.dataset.col;
+    sortDir = (sortCol === col) ? sortDir * -1 : -1;
+    sortCol = col;
+    document.querySelectorAll('th').forEach(t => t.classList.remove('sort-asc','sort-desc'));
+    th.classList.add(sortDir === -1 ? 'sort-desc' : 'sort-asc');
+    render();
+  });
+});
+
+// Filters
+['fH1','fM15','fADX','fEMA','fRSI','fMinN','fMinWin'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('change', render);
+  el.addEventListener('input', render);
+});
+
+// Initial sort indicator
+document.querySelector('th[data-col="b240"]').classList.add('sort-desc');
+
+buildStats();
+buildInsights();
+render();
+</script>
