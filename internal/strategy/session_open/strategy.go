@@ -63,6 +63,32 @@ func (s *SessionOpen) Evaluate(states map[string]indicator.MarketState, currentP
 		}
 	}
 
+	// Require M5 to confirm the breakout direction. A breakout with M5 regime or EMA
+	// against the direction is a fakeout — the same pattern that immediately triggers
+	// the watcher's ema_cross_against + regime_against signals and forces an early close.
+	m5, ok := states[config.PeriodM5]
+	if !ok || !m5.IsWarmedUp {
+		return hold("M5 not warmed up")
+	}
+	if dir == config.SignalBuy && m5.Regime != config.TrendingUp {
+		return hold("M5 regime not confirming BUY breakout")
+	}
+	if dir == config.SignalSell && m5.Regime != config.TrendingDown {
+		return hold("M5 regime not confirming SELL breakout")
+	}
+	if dir == config.SignalBuy && m5.EMAFast < m5.EMASlow {
+		return hold("M5 EMA bearish — BUY breakout not confirmed")
+	}
+	if dir == config.SignalSell && m5.EMAFast > m5.EMASlow {
+		return hold("M5 EMA bullish — SELL breakout not confirmed")
+	}
+	if dir == config.SignalBuy && m5.RSI < 50 {
+		return hold("M5 RSI below 50 — BUY breakout momentum weak")
+	}
+	if dir == config.SignalSell && m5.RSI > 50 {
+		return hold("M5 RSI above 50 — SELL breakout momentum weak")
+	}
+
 	atr := m15.ATR
 	var slPrice, tpPrice float64
 	if dir == config.SignalBuy {
