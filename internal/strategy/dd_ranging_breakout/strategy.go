@@ -57,6 +57,14 @@ func (s *DDRangingBreakout) Evaluate(states map[string]indicator.MarketState, cu
 		return hold("M5 ATR not ready")
 	}
 
+	m15, ok := states[config.PeriodM15]
+	if !ok || !m15.IsWarmedUp {
+		return hold("M15 not warmed up")
+	}
+	if m15.ADX < 20 {
+		return hold("M15 ADX too low — breakout has no real momentum")
+	}
+
 	slPrice := currentPrice - slATRMult*m5.ATR
 	tpPrice := currentPrice + tpATRMult*m5.ATR
 	slPips := math.Abs(currentPrice-slPrice) / pipSize
