@@ -181,6 +181,9 @@ func (b *Bot) checkPeakDrawback(ctx context.Context, currentPrice float64) {
 		if !ok {
 			continue
 		}
+
+		b.checkBreakEven(ctx, pos)
+
 		if pct := peakDrawbackPct(pos, currentPrice, b.pipSize); pct >= peakDrawbackThreshold {
 			reason := fmt.Sprintf("peak_drawback=%.0f%%", pct)
 			slog.Info("peak drawback — closing position",
@@ -190,6 +193,74 @@ func (b *Bot) checkPeakDrawback(ctx context.Context, currentPrice float64) {
 			)
 			b.closeTrackedPosition(ctx, pos, reason)
 		}
+	}
+}
+
+func (b *Bot) checkBreakEven(ctx context.Context, pos trackedPosition) {
+	if pos.BreakEvenActive {
+		return
+	}
+
+	tpDist := pos.TPPrice - pos.OpenPrice
+	if pos.Side == config.SignalSell {
+		tpDist = pos.OpenPrice - pos.TPPrice
+	}
+	if tpDist <= 0 {
+		return
+	}
+
+	var peakGain float64
+	if pos.Side == config.SignalBuy {
+		peakGain = pos.MaxFavorable - pos.OpenPrice
+	} else {
+		peakGain = pos.OpenPrice - pos.MaxFavorable
+	}
+
+	if peakGain < 0.40*tpDist {
+		return
+	}
+
+	var newSL float64
+	if pos.Side == config.SignalBuy {
+		newSL = pos.OpenPrice + 2*b.pipSize
+	} else {
+		newSL = pos.OpenPrice - 2*b.pipSize
+	}
+
+	if err := b.provider.AmendPositionSL(ctx, pos.ProviderPositionID, newSL); err != nil {
+		slog.Error("checkBreakEven: AmendPositionSL failed",
+			"posID", pos.ProviderPositionID, "newSL", newSL, "err", err,
+		)
+		return
+	}
+
+	slog.Info("break-even stop set",
+		"posID", pos.ProviderPositionID,
+		"side", pos.Side,
+		"openPrice", pos.OpenPrice,
+		"oldSL", pos.SLPrice,
+		"newSL", newSL,
+		"peakGain", peakGain,
+		"tpDist", tpDist,
+	)
+
+	b.registry.SetBreakEven(pos.ProviderPositionID)
+
+	posUUID, err := b.positions.IDByProviderPositionID(ctx, b.provider.Name(), pos.ProviderPositionID)
+	if err != nil {
+		slog.Warn("checkBreakEven: could not resolve position UUID for adjustment record",
+			"posID", pos.ProviderPositionID, "err", err,
+		)
+		return
+	}
+	if _, err := b.db.Exec(ctx,
+		`INSERT INTO position_adjustments (position_id, old_sl, new_sl, reason)
+		 VALUES ($1, $2, $3, $4)`,
+		posUUID, pos.SLPrice, newSL, "break_even",
+	); err != nil {
+		slog.Warn("checkBreakEven: failed to record adjustment in DB",
+			"posUUID", posUUID, "err", err,
+		)
 	}
 }
 

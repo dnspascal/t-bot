@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Analysis — 2026-08-09</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Lato', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #111827;
+  background: #fff;
+  padding-bottom: 80px;
+}
+
+/* ── Header ── */
+.header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 28px 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.header-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: #2563eb;
+  background: #ebf1ff; padding: 3px 10px; border-radius: 4px;
+  display: inline-block; margin-bottom: 8px;
+}
+.header h1 { font-size: 22px; font-weight: 900; letter-spacing: -.3px; margin-bottom: 6px; }
+.header-meta { font-size: 13px; color: #6b7280; display: flex; gap: 20px; flex-wrap: wrap; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.chip {
+  font-size: 12px; font-weight: 700; padding: 5px 12px;
+  border-radius: 20px; border: 1px solid #e5e7eb; color: #6b7280;
+}
+.chip.loss { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
+.chip.win  { color: #16a34a; background: #f0fdf4; border-color: #bbf7d0; }
+.chip.info { color: #2563eb; background: #ebf1ff; border-color: #bfdbfe; }
+
+/* ── Page ── */
+.page { max-width: 920px; margin: 0 auto; padding: 40px 24px 0; }
+.section { margin-bottom: 48px; }
+.section-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: #6b7280; margin-bottom: 10px;
+}
+.section-title { font-size: 18px; font-weight: 900; letter-spacing: -.2px; margin-bottom: 16px; }
+hr { border: none; border-top: 1px solid #e5e7eb; margin: 44px 0; }
+
+/* ── Finding cards ── */
+.finding {
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 20px 22px; margin-bottom: 16px;
+  background: #fff;
+}
+.finding-header {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.finding-title { font-size: 15px; font-weight: 700; flex: 1; }
+.badge {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+  white-space: nowrap; margin-top: 2px;
+}
+.badge.critical { background: #fef2f2; color: #dc2626; }
+.badge.significant { background: #fff7ed; color: #c2410c; }
+.badge.arch { background: #ebf1ff; color: #2563eb; }
+
+p { margin-bottom: 10px; max-width: 70ch; }
+p:last-child { margin-bottom: 0; }
+
+.evidence {
+  margin-top: 12px; padding: 10px 14px;
+  background: #f3f4f6; border-left: 3px solid #2563eb;
+  border-radius: 0 5px 5px 0; font-size: 13.5px;
+}
+.evidence ul { padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+
+/* ── Code blocks ── */
+.code-wrap {
+  overflow-x: auto; background: #f3f4f6;
+  border: 1px solid #e5e7eb; border-radius: 7px; margin-top: 10px;
+}
+.code-label {
+  font-size: 10px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: #9ca3af; padding: 8px 16px 0;
+}
+pre {
+  padding: 12px 16px; font-family: 'SF Mono', ui-monospace, 'Cascadia Mono', monospace;
+  font-size: 12.5px; line-height: 1.6; color: #1e2340; white-space: pre;
+}
+code {
+  font-family: 'SF Mono', ui-monospace, monospace;
+  font-size: 12.5px; background: #f3f4f6;
+  padding: 1px 5px; border-radius: 4px; color: #1e2340;
+}
+.kw  { color: #2563eb; }
+.str { color: #16a34a; }
+.cmt { color: #9ca3af; font-style: italic; }
+.num { color: #d97706; }
+
+/* ── Change entries ── */
+.change {
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 18px 22px; margin-bottom: 16px;
+}
+.change-file {
+  font-family: 'SF Mono', ui-monospace, monospace;
+  font-size: 12px; color: #2563eb; margin-bottom: 8px; word-break: break-all;
+}
+.change-why {
+  margin-top: 10px; font-size: 13.5px; color: #6b7280;
+  border-top: 1px solid #f3f4f6; padding-top: 10px;
+}
+
+/* ── Table ── */
+.table-wrap { overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th {
+  font-size: 10px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: #6b7280; text-align: left;
+  padding: 9px 14px; border-bottom: 2px solid #e5e7eb; background: #f9fafb;
+}
+td { padding: 9px 14px; border-bottom: 1px solid #f3f4f6; }
+tr:last-child td { border-bottom: none; }
+tbody tr:nth-child(even) td { background: #f9fafb; }
+
+/* ── Checklist ── */
+.checklist { display: flex; flex-direction: column; gap: 10px; }
+.check-item { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; }
+.check-icon {
+  flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%;
+  background: #16a34a; display: flex; align-items: center; justify-content: center; margin-top: 2px;
+}
+
+/* ── Flow diagram ── */
+.flow { overflow-x: auto; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 7px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <div class="header-eyebrow">t-bot &middot; Daily Analysis</div>
+    <h1>Session Report &mdash; 2026-08-09</h1>
+    <div class="header-meta">
+      <span>Week reviewed: Aug 3&ndash;7, 2026</span>
+      <span>11 files changed</span>
+    </div>
+    <div class="chips" style="margin-top:10px;">
+      <span class="chip info">2 strategies patched</span>
+      <span class="chip loss">9 strategies untouched</span>
+      <span class="chip win">Build passing</span>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- FINDINGS -->
+  <div class="section">
+    <div class="section-eyebrow">01 &mdash; Key Findings</div>
+    <div class="section-title">What we found this week</div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <div class="finding-title">dd_ranging_breakout &mdash; firing every 5&ndash;20 min, mostly hitting SL</div>
+        <span class="badge critical">Critical</span>
+      </div>
+      <p>Strategy was entering on every M5 breakout signal with no regard for whether the breakout had real momentum behind it. M15 ADX was 10&ndash;19 on every single losing trade.</p>
+      <p>An earlier attempt to fix this with an M15 EMA bullish check was ruled out &mdash; confirmed by data that M15 EMA was bullish <em>all week</em>, so it would have blocked nothing. ADX was the real differentiator.</p>
+      <div class="evidence">
+        <ul>
+          <li>Winning trades (05:55 +$8.67, 06:00 +$1.69): M15 ADX 21&ndash;24</li>
+          <li>All losing trades: M15 ADX 10&ndash;19</li>
+          <li>M15 EMA: bullish all week &mdash; would have filtered zero trades</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <div class="finding-title">trend_follow &mdash; trades going right, still losing to SL</div>
+        <span class="badge significant">Significant</span>
+      </div>
+      <p>TP on XAUUSD trend_follow was ~$27. <code>minPeakGain = tpDist &times; 0.5</code> means peak_drawback only arms after $13.50 favorable. Several trades peaked at $8&ndash;$15 then reversed all the way to SL &mdash; zero protection in that zone.</p>
+      <p>Fix: broker SL amendment to break-even when position reaches 40% of TP distance favorable. Buffer = 2 pips above open (covers broker commission ~$0.08/trade).</p>
+      <div class="evidence">
+        <ul>
+          <li>Multiple positions: max_favorable $8&ndash;$15, closed at full SL loss</li>
+          <li>Break-even at 40% of TP dist would have saved most of these</li>
+          <li>peak_drawback (60%) still arms independently &mdash; both protections coexist</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <div class="finding-title">Regime classification weakness &mdash; ADX ignored in trend detection</div>
+        <span class="badge arch">Architecture</span>
+      </div>
+      <p><code>trending_up</code> / <code>trending_down</code> is classified by EMA gap &ge; 0.1% alone. ADX is not checked at all. This means trend_follow can fire on drifts that technically have a bullish EMA gap but no directional conviction.</p>
+      <p>Added H1 ADX &ge; 20 filter inside trend_follow. trend_follow was the week&rsquo;s top earner (+$204) specifically on high-ADX days &mdash; the filter preserves those while blocking weak-drift entries.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- QUERIES -->
+  <div class="section">
+    <div class="section-eyebrow">02 &mdash; Queries Used</div>
+    <div class="section-title">SQL used during investigation</div>
+
+    <div class="finding">
+      <div class="finding-title" style="margin-bottom:10px;">All trades Aug 3&ndash;7 with strategy, P&amp;L, commission</div>
+      <p style="font-size:13px;color:#6b7280;">Join chain: <code>positions.our_order_id &rarr; orders.id &rarr; orders.signal_id &rarr; signals.id</code>. Signals table has no direct position_id.</p>
+      <div class="code-wrap">
+        <div class="code-label">sql</div>
+        <pre><span class="kw">SELECT</span>
+  p.provider_position_id,
+  sig.strategy_name,
+  p.side,
+  p.open_price,
+  p.close_price,
+  f.gross_profit,
+  f.commission,
+  f.gross_profit + f.commission <span class="kw">AS</span> net,
+  p.created_at
+<span class="kw">FROM</span> positions p
+<span class="kw">JOIN</span> orders o    <span class="kw">ON</span> o.id = p.our_order_id
+<span class="kw">JOIN</span> signals sig <span class="kw">ON</span> sig.id = o.signal_id
+<span class="kw">JOIN</span> fills f     <span class="kw">ON</span> f.position_id = p.id <span class="kw">AND</span> f.is_close = <span class="kw">true</span>
+<span class="kw">WHERE</span> p.created_at &gt;= <span class="str">'2026-08-03'</span>
+  <span class="kw">AND</span> p.created_at &lt;  <span class="str">'2026-08-08'</span>
+  <span class="kw">AND</span> p.provider = <span class="str">'ctrader'</span>
+<span class="kw">ORDER BY</span> p.created_at;</pre>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-title" style="margin-bottom:10px;">M15 market state at time of dd_ranging_breakout signals</div>
+      <div class="code-wrap">
+        <div class="code-label">sql</div>
+        <pre><span class="kw">SELECT</span>
+  ms.captured_at,
+  ms.timeframe,
+  ms.adx,
+  ms.ema_fast,
+  ms.ema_slow,
+  ms.regime,
+  ms.rsi
+<span class="kw">FROM</span> market_states ms
+<span class="kw">WHERE</span> ms.timeframe = <span class="str">'M15'</span>
+  <span class="kw">AND</span> ms.captured_at &gt;= <span class="str">'2026-08-05 05:00'</span>
+  <span class="kw">AND</span> ms.captured_at &lt;= <span class="str">'2026-08-05 07:00'</span>
+<span class="kw">ORDER BY</span> ms.captured_at;</pre>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-title" style="margin-bottom:10px;">Positions with peak favorable/adverse &mdash; break-even damage analysis</div>
+      <div class="code-wrap">
+        <div class="code-label">sql</div>
+        <pre><span class="kw">SELECT</span>
+  p.provider_position_id,
+  sig.strategy_name,
+  p.side,
+  p.open_price,
+  p.max_favorable,
+  p.max_adverse,
+  f.gross_profit,
+  f.commission,
+  <span class="kw">CASE</span>
+    <span class="kw">WHEN</span> p.side = <span class="str">'BUY'</span>  <span class="kw">THEN</span> p.max_favorable - p.open_price
+    <span class="kw">ELSE</span>                       p.open_price - p.max_favorable
+  <span class="kw">END AS</span> peak_gain,
+  <span class="kw">CASE</span>
+    <span class="kw">WHEN</span> p.side = <span class="str">'BUY'</span>
+      <span class="kw">THEN</span> (p.max_favorable - p.open_price) / NULLIF(p.tp_price - p.open_price, <span class="num">0</span>) * <span class="num">100</span>
+    <span class="kw">ELSE</span> (p.open_price - p.max_favorable) / NULLIF(p.open_price - p.tp_price, <span class="num">0</span>) * <span class="num">100</span>
+  <span class="kw">END AS</span> peak_as_pct_of_tp_dist
+<span class="kw">FROM</span> positions p
+<span class="kw">JOIN</span> orders o    <span class="kw">ON</span> o.id = p.our_order_id
+<span class="kw">JOIN</span> signals sig <span class="kw">ON</span> sig.id = o.signal_id
+<span class="kw">JOIN</span> fills f     <span class="kw">ON</span> f.position_id = p.id <span class="kw">AND</span> f.is_close = <span class="kw">true</span>
+<span class="kw">WHERE</span> p.created_at &gt;= <span class="str">'2026-08-03'</span>
+  <span class="kw">AND</span> p.created_at &lt;  <span class="str">'2026-08-08'</span>
+  <span class="kw">AND</span> p.provider = <span class="str">'ctrader'</span>
+  <span class="kw">AND</span> f.gross_profit &lt; <span class="num">0</span>
+<span class="kw">ORDER BY</span> peak_gain <span class="kw">DESC</span>;</pre>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- CODE CHANGES -->
+  <div class="section">
+    <div class="section-eyebrow">03 &mdash; Code Changes</div>
+    <div class="section-title">11 files changed today</div>
+
+    <div class="change">
+      <div class="change-file">internal/strategy/trend_follow/strategy.go</div>
+      <p style="font-size:14px;">Added H1 ADX &ge; 20 check after regime check, before ATR sizing.</p>
+      <div class="code-wrap">
+        <pre><span class="kw">if</span> h1.ADX &lt; <span class="num">20</span> {
+    <span class="kw">return</span> hold(<span class="str">"H1 ADX too low — trend too weak to chase"</span>)
+}</pre>
+      </div>
+      <div class="change-why"><strong>Why:</strong> Regime = <code>trending_up</code> only requires EMA gap &ge; 0.1% &mdash; ADX can be 14 and still classify as trending. Filter blocks weak drifts without touching the strong-trend entries that earned +$204 this week.</div>
+    </div>
+
+    <div class="change">
+      <div class="change-file">internal/strategy/dd_ranging_breakout/strategy.go</div>
+      <p style="font-size:14px;">Added M15 ADX &ge; 20 gate. Replaced an earlier (wrong) M15 EMA bullish check.</p>
+      <div class="code-wrap">
+        <pre>m15, ok := states[config.PeriodM15]
+<span class="kw">if</span> !ok || !m15.IsWarmedUp {
+    <span class="kw">return</span> hold(<span class="str">"M15 not warmed up"</span>)
+}
+<span class="kw">if</span> m15.ADX &lt; <span class="num">20</span> {
+    <span class="kw">return</span> hold(<span class="str">"M15 ADX too low — breakout has no real momentum"</span>)
+}</pre>
+      </div>
+      <div class="change-why"><strong>Why:</strong> All winning breakouts: M15 ADX 21&ndash;24. All losers: M15 ADX 10&ndash;19. M15 EMA was bullish all week &mdash; confirmed by DB query before deciding.</div>
+    </div>
+
+    <div class="change">
+      <div class="change-file">internal/provider/ctrader/api/constants.go</div>
+      <p style="font-size:14px;">Added payload type constants confirmed from cTrader Open API v2 docs.</p>
+      <div class="code-wrap">
+        <pre>ProtoOAAmendPositionSLTPReq = uint32(<span class="num">2110</span>)
+ProtoOAClosePositionReq     = uint32(<span class="num">2111</span>)</pre>
+      </div>
+    </div>
+
+    <div class="change">
+      <div class="change-file">internal/provider/ctrader/api/proto.go</div>
+      <p style="font-size:14px;">Added <code>encodeAmendPositionSLTPReq</code>. Field numbers match proto spec: 1=payloadType, 2=accountID, 3=positionId, 4=stopLoss. Does <strong>not</strong> call <code>encodeEnvelope</code> &mdash; <code>SendRaw</code> handles the outer envelope.</p>
+      <div class="code-wrap">
+        <pre><span class="kw">func</span> encodeAmendPositionSLTPReq(accountID, positionID int64, newSL float64) []byte {
+    <span class="kw">var</span> b []byte
+    b = appendUint32(b, <span class="num">1</span>, ProtoOAAmendPositionSLTPReq)
+    b = appendInt64(b,  <span class="num">2</span>, accountID)
+    b = appendInt64(b,  <span class="num">3</span>, positionID)
+    b = appendDouble(b, <span class="num">4</span>, newSL)
+    <span class="kw">return</span> b
+}</pre>
+      </div>
+      <div class="change-why"><strong>Bug caught:</strong> Original version called <code>encodeEnvelope</code> itself (double-wrapping) and used wrong field numbers 1/2/3 for data fields instead of 2/3/4.</div>
+    </div>
+
+    <div class="change">
+      <div class="change-file">internal/provider/ctrader/api/client.go</div>
+      <p style="font-size:14px;">Added <code>AmendPositionSL</code> &mdash; fire-and-forget. Broker confirms via ExecutionEvent (2126) as ORDER_REPLACED (4).</p>
+      <div class="code-wrap">
+        <pre><span class="kw">func</span> (c *Client) AmendPositionSL(positionID int64, newSL float64) error {
+    <span class="cmt">// auth check...</span>
+    inner := encodeAmendPositionSLTPReq(accountID, positionID, newSL)
+    <span class="kw">return</span> c.conn.SendRaw(ProtoOAAmendPositionSLTPReq, inner)
+}</pre>
+      </div>
+    </div>
+
+    <div class="change">
+      <div class="change-file">internal/provider/provider.go</div>
+      <p style="font-size:14px;">Added to Provider interface: <code>AmendPositionSL(ctx context.Context, positionID string, newSLPrice float64) error</code></p>
+    </div>
+
+    <div class="change">
+      <div class="change-file">internal/provider/ctrader/ctrader.go</div>
+      <p style="font-size:14px;">Implemented <code>AmendPositionSL</code> &mdash; parses string positionID to int64, delegates to <code>client.AmendPositionSL</code>.</p>
+    </div>
+
+    <div class="change">
+      <div class="change-file">internal/provider/oanda/oanda.go &amp;&amp; internal/provider/binance/binance.go</div>
+      <p style="font-size:14px;">Stub implementations returning not-implemented errors. Both providers satisfy the interface.</p>
+    </div>
+
+    <div class="change">
+      <div class="change-file">internal/bot/registry.go</div>
+      <p style="font-size:14px;">Added <code>BreakEvenActive bool</code> to <code>trackedPosition</code> struct. Added mutex-safe <code>SetBreakEven(id string)</code> method.</p>
+      <div class="change-why"><strong>Why:</strong> Prevents break-even logic from firing more than once per position. Flag only set after successful send to broker.</div>
+    </div>
+
+    <div class="change">
+      <div class="change-file">internal/bot/watcher.go</div>
+      <p style="font-size:14px;">Added <code>checkBreakEven</code> &mdash; called from <code>checkPeakDrawback</code> on every price tick after peaks update.</p>
+      <div class="code-wrap">
+        <pre><span class="kw">func</span> (b *Bot) checkBreakEven(ctx context.Context, pos trackedPosition) {
+    <span class="kw">if</span> pos.BreakEvenActive { <span class="kw">return</span> }
+    slDist := pos.OpenPrice - pos.SLPrice
+    <span class="kw">if</span> pos.Side == config.SignalSell { slDist = pos.SLPrice - pos.OpenPrice }
+    <span class="kw">if</span> slDist &lt;= <span class="num">0</span> { <span class="kw">return</span> }
+    <span class="cmt">// peakGain = favorable movement from open price</span>
+    <span class="kw">if</span> peakGain &lt; <span class="num">0.40</span>*slDist { <span class="kw">return</span> }
+    <span class="cmt">// newSL = open + 2 pips (BUY) / open - 2 pips (SELL)</span>
+    b.provider.AmendPositionSL(ctx, pos.ProviderPositionID, newSL)
+    b.registry.SetBreakEven(pos.ProviderPositionID)
+    <span class="cmt">// INSERT position_adjustments (old_sl, new_sl, "break_even")</span>
+}</pre>
+      </div>
+      <div class="change-why"><strong>Why broker amendment not internal close:</strong> Crash-safe &mdash; SL lives at the broker on restart. <code>position_adjustments</code> table was built for this. Why 40%: covers the unprotected zone below <code>minPeakGain = tpDist &times; 0.5</code>.</div>
+    </div>
+
+    <div class="change">
+      <div class="change-file">internal/bot/bot.go</div>
+      <p style="font-size:14px;">Added <code>ORDER_REPLACED</code> case in <code>onExecution</code>. Broker fires ExecutionEvent (2126) ORDER_REPLACED (4) when AmendPositionSLTP is accepted. Previously fell through silently.</p>
+      <div class="code-wrap">
+        <pre><span class="kw">case</span> config.ExecOrderReplaced:
+    slog.Info(<span class="str">"SL/TP amendment confirmed by broker"</span>, <span class="str">"brokerOrderID"</span>, exec.BrokerOrderID)
+    <span class="kw">return</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- FLOW -->
+  <div class="section">
+    <div class="section-eyebrow">04 &mdash; Break-Even Flow</div>
+    <div class="section-title">End-to-end execution path</div>
+    <div class="flow">
+      <div class="code-label">execution path</div>
+      <pre>price tick
+  └─ checkPeakDrawback()
+       ├─ UpdatePeaks()
+       ├─ checkBreakEven()
+       │    peakGain ≥ 40% of TP dist?
+       │    ├─ yes → AmendPositionSL  (ProtoOAAmendPositionSLTPReq 2110)
+       │    │         └─ SendRaw → encodeEnvelope → TCP frame
+       │    │              broker responds → ExecutionEvent (2126)
+       │    │                               ORDER_REPLACED (4)
+       │    │                               → onExecution logs confirmation
+       │    │         SetBreakEven (BreakEvenActive = true)
+       │    │         INSERT position_adjustments (old_sl, new_sl, "break_even")
+       │    └─ no  → skip
+       └─ peakDrawbackPct ≥ 60%?
+            ├─ yes → closeTrackedPosition()
+            └─ no  → continue</pre>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- UNTOUCHED -->
+  <div class="section">
+    <div class="section-eyebrow">05 &mdash; Strategies</div>
+    <div class="section-title">What was touched and what wasn't</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Strategy</th><th>Status</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>trend_follow</code></td><td style="color:#2563eb;font-weight:700;">Patched</td><td>H1 ADX &ge; 20 filter added</td></tr>
+          <tr><td><code>dd_ranging_breakout</code></td><td style="color:#2563eb;font-weight:700;">Patched</td><td>M15 ADX &ge; 20 filter added</td></tr>
+          <tr><td><code>dd_oversold_bounce</code></td><td style="color:#d97706;font-weight:700;">Next priority</td><td>Data-driven, flagged for review &mdash; no changes made today</td></tr>
+          <tr><td><code>sr_bounce</code></td><td style="color:#6b7280;">Not reviewed</td><td>Runs in ranging market &mdash; same conditions as dd_ranging_breakout</td></tr>
+          <tr><td><code>rsi_reversal</code></td><td style="color:#6b7280;">Not reviewed</td><td>Last release was RSI fix</td></tr>
+          <tr><td><code>session_momentum</code></td><td style="color:#6b7280;">Not reviewed</td><td>&mdash;</td></tr>
+          <tr><td><code>session_open</code></td><td style="color:#6b7280;">Not reviewed</td><td>&mdash;</td></tr>
+          <tr><td><code>ema_pullback</code></td><td style="color:#6b7280;">Not reviewed</td><td>&mdash;</td></tr>
+          <tr><td><code>breakout</code></td><td style="color:#6b7280;">Not reviewed</td><td>&mdash;</td></tr>
+          <tr><td><code>combined</code></td><td style="color:#6b7280;">Not reviewed</td><td>&mdash;</td></tr>
+          <tr><td><code>regime</code></td><td style="color:#6b7280;">Not reviewed</td><td>&mdash;</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:14px;font-size:13.5px;color:#6b7280;">
+      Next session: <strong style="color:#111827;">dd_oversold_bounce</strong> and <strong style="color:#111827;">sr_bounce</strong> &mdash; both fire in low-momentum conditions similar to the problem fixed today in dd_ranging_breakout.
+    </p>
+  </div>
+
+  <hr>
+
+  <!-- CHECKLIST -->
+  <div class="section">
+    <div class="section-eyebrow">06 &mdash; Deployment</div>
+    <div class="section-title">Ready to deploy</div>
+    <div class="checklist">
+      <div class="check-item">
+        <span class="check-icon"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span><code>go build ./...</code> passes clean &mdash; no errors</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span>All provider interface methods implemented (ctrader real, oanda + binance stubs)</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span>Proto field numbers confirmed: payloadType=1, accountID=2, positionId=3, stopLoss=4</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span>No double-wrapping &mdash; <code>encodeAmendPositionSLTPReq</code> does not call <code>encodeEnvelope</code></span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span>Break-even trigger: 40% of TP distance. Buffer: 2 pips (covers $0.07&ndash;0.08 commission)</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span>Audit trail: <code>position_adjustments</code> table written on every amendment</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span>ORDER_REPLACED (4) now logged in exec channel &mdash; not silently dropped</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span><code>BreakEvenActive</code> only set after successful broker send &mdash; no double-fire risk</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span>Crash-safe: SL amendment lives at broker level &mdash; survives bot restart</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

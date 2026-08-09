@@ -152,6 +152,10 @@ func (o *OANDA) ClosePosition(ctx context.Context, positionID string, volume int
 	return "", fmt.Errorf("ClosePosition not yet implemented for OANDA")
 }
 
+func (o *OANDA) AmendPositionSL(ctx context.Context, positionID string, newSLPrice float64) error {
+	return fmt.Errorf("AmendPositionSL not yet implemented for OANDA")
+}
+
 func (o *OANDA) ReconcilePositions(ctx context.Context) ([]provider.Position, error) {
 	return []provider.Position{}, nil
 }

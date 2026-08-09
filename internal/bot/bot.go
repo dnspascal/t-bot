@@ -673,6 +673,9 @@ func (b *Bot) onExecution(ctx context.Context, exec provider.ExecutionEvent) {
 					b.brokerOrderIDs[exec.BrokerOrderID] = exec.ClientOrderID
 				}
 			}
+		case config.ExecOrderReplaced:
+			slog.Info("SL/TP amendment confirmed by broker", "brokerOrderID", exec.BrokerOrderID)
+			return
 		case config.ExecOrderCancelled:
 			return
 		case config.ExecOrderRejected, config.ExecOrderExpired:
