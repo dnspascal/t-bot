@@ -164,6 +164,8 @@ type Provider interface {
 		volume int64,
 	) (closeOrderID string, err error)
 
+	AmendPositionSL(ctx context.Context, positionID string, newSLPrice float64) error
+
 	ReconcilePositions(ctx context.Context) ([]Position, error)
 
 	// === MARKET DATA & SUBSCRIPTIONS ===

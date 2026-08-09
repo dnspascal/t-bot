@@ -373,6 +373,14 @@ func (c *CTrader) ClosePosition(ctx context.Context, positionID string, volume i
 	return "", nil
 }
 
+func (c *CTrader) AmendPositionSL(ctx context.Context, positionID string, newSLPrice float64) error {
+	var posID int64
+	if _, err := fmt.Sscanf(positionID, "%d", &posID); err != nil {
+		return fmt.Errorf("invalid positionID %q: %w", positionID, err)
+	}
+	return c.client.AmendPositionSL(posID, newSLPrice)
+}
+
 // ClosePositionVariant sends a close with alternative proto field numbers.
 // Used by the /testclose diagnostic to detect field-number mismatches.
 func (c *CTrader) ClosePositionVariant(positionID string, volume int64, posIDField, volField int) error {
