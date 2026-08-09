@@ -25,6 +25,7 @@ type trackedPosition struct {
 	MaxFavorable       float64 // best price in trade direction (peak profit level)
 	MaxAdverse         float64 // worst price against trade direction (closest to SL)
 	StrategyName       string
+	BreakEvenActive    bool // true once position reached 40% of SL distance favorable
 }
 
 type PositionRegistry struct {
@@ -78,6 +79,14 @@ func (r *PositionRegistry) Register(pos trackedPosition) {
 		pos.MaxAdverse = pos.OpenPrice
 	}
 	r.positions[pos.ProviderPositionID] = &pos
+}
+
+func (r *PositionRegistry) SetBreakEven(id string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if p, ok := r.positions[id]; ok {
+		p.BreakEvenActive = true
+	}
 }
 
 func (r *PositionRegistry) Remove(id string) {
