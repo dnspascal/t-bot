@@ -261,6 +261,25 @@ func (c *Client) ClosePositionVariant(positionID, volume int64, posIDField, volF
 	return nil
 }
 
+func (c *Client) AmendPositionSL(positionID int64, newSL float64) error {
+	c.mu.Lock()
+	authed := c.authed
+	accountID := c.accountID
+	c.mu.Unlock()
+
+	if !authed {
+		return fmt.Errorf("not authenticated")
+	}
+
+	inner := encodeAmendPositionSLTPReq(accountID, positionID, newSL)
+	slog.Info("amending position SL to break-even",
+		"positionID", positionID,
+		"newSL", newSL,
+	)
+
+	return c.conn.SendRaw(ProtoOAAmendPositionSLTPReq, inner)
+}
+
 func (c *Client) ClosePosition(positionID, volume int64) error {
 	c.mu.Lock()
 	authed := c.authed

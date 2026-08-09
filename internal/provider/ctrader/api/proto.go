@@ -85,6 +85,15 @@ func encodeSubscribeSpotsReq(accountID, symbolID int64) []byte {
 	return b
 }
 
+func encodeAmendPositionSLTPReq(accountID, positionID int64, newSL float64) []byte {
+	var b []byte
+	b = appendUint32(b, 1, ProtoOAAmendPositionSLTPReq)
+	b = appendInt64(b, 2, accountID)
+	b = appendInt64(b, 3, positionID)
+	b = appendDouble(b, 4, newSL)
+	return b
+}
+
 func encodeClosePositionReq(accountID, positionID, volume int64) []byte {
 	var b []byte
 	b = appendUint32(b, 1, ProtoOAClosePositionReq)

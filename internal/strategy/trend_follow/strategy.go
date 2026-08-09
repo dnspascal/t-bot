@@ -67,6 +67,10 @@ func (s *TrendFollow) Evaluate(states map[string]indicator.MarketState, currentP
 		return hold("M5 regime not confirming H1 downtrend")
 	}
 
+	if h1.ADX < 20 {
+		return hold("H1 ADX too low — trend too weak to chase")
+	}
+
 	m15, ok := states[config.PeriodM15]
 	if !ok || !m15.IsWarmedUp || m15.ATR <= 0 {
 		return hold("M15 ATR not ready")
