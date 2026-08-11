@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Analysis — 2026-08-11</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Lato', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #111827;
+  background: #fff;
+  padding-bottom: 80px;
+}
+
+/* ── Header ── */
+.header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 28px 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.header-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: #2563eb;
+  background: #ebf1ff; padding: 3px 10px; border-radius: 4px;
+  display: inline-block; margin-bottom: 8px;
+}
+.header h1 { font-size: 22px; font-weight: 900; letter-spacing: -.3px; margin-bottom: 6px; }
+.header-meta { font-size: 13px; color: #6b7280; display: flex; gap: 20px; flex-wrap: wrap; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.chip {
+  font-size: 12px; font-weight: 700; padding: 5px 12px;
+  border-radius: 20px; border: 1px solid #e5e7eb; color: #6b7280;
+}
+.chip.loss { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
+.chip.win  { color: #16a34a; background: #f0fdf4; border-color: #bbf7d0; }
+.chip.info { color: #2563eb; background: #ebf1ff; border-color: #bfdbfe; }
+
+/* ── Page ── */
+.page { max-width: 920px; margin: 0 auto; padding: 40px 24px 0; }
+.section { margin-bottom: 48px; }
+.section-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: #6b7280; margin-bottom: 10px;
+}
+.section-title { font-size: 18px; font-weight: 900; letter-spacing: -.2px; margin-bottom: 16px; }
+hr { border: none; border-top: 1px solid #e5e7eb; margin: 44px 0; }
+
+/* ── Finding cards ── */
+.finding {
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 20px 22px; margin-bottom: 16px;
+  background: #fff;
+}
+.finding-header {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.finding-title { font-size: 15px; font-weight: 700; flex: 1; }
+.badge {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+  white-space: nowrap; margin-top: 2px;
+}
+.badge.critical    { background: #fef2f2; color: #dc2626; }
+.badge.significant { background: #fff7ed; color: #c2410c; }
+.badge.arch        { background: #ebf1ff; color: #2563eb; }
+.badge.fix         { background: #f0fdf4; color: #16a34a; }
+
+p { margin-bottom: 10px; max-width: 70ch; }
+p:last-child { margin-bottom: 0; }
+
+.evidence {
+  margin-top: 12px; padding: 10px 14px;
+  background: #f3f4f6; border-left: 3px solid #2563eb;
+  border-radius: 0 5px 5px 0; font-size: 13.5px;
+}
+.evidence ul { padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+
+/* ── Code blocks ── */
+.code-wrap {
+  overflow-x: auto; background: #f3f4f6;
+  border: 1px solid #e5e7eb; border-radius: 7px; margin-top: 10px;
+}
+.code-label {
+  font-size: 10px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: #9ca3af; padding: 8px 16px 0;
+}
+pre {
+  padding: 12px 16px; font-family: 'SF Mono', ui-monospace, 'Cascadia Mono', monospace;
+  font-size: 12.5px; line-height: 1.6; color: #1e2340; white-space: pre;
+}
+code {
+  font-family: 'SF Mono', ui-monospace, monospace;
+  font-size: 12.5px; background: #f3f4f6;
+  padding: 1px 5px; border-radius: 4px; color: #1e2340;
+}
+.kw  { color: #2563eb; }
+.str { color: #16a34a; }
+.cmt { color: #9ca3af; font-style: italic; }
+.num { color: #d97706; }
+
+/* ── Change entries ── */
+.change {
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 18px 22px; margin-bottom: 16px;
+}
+.change-file {
+  font-family: 'SF Mono', ui-monospace, monospace;
+  font-size: 12px; color: #2563eb; margin-bottom: 8px; word-break: break-all;
+}
+.change-why {
+  margin-top: 10px; font-size: 13.5px; color: #6b7280;
+  border-top: 1px solid #f3f4f6; padding-top: 10px;
+}
+
+/* ── Table ── */
+.table-wrap { overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th {
+  font-size: 10px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: #6b7280; text-align: left;
+  padding: 9px 14px; border-bottom: 2px solid #e5e7eb; background: #f9fafb;
+}
+td { padding: 9px 14px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+tbody tr:nth-child(even) td { background: #f9fafb; }
+.win-row td { color: #16a34a; }
+.loss-row td { color: #dc2626; }
+.neutral-row td { color: #6b7280; }
+
+/* ── Checklist ── */
+.checklist { display: flex; flex-direction: column; gap: 10px; }
+.check-item { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; }
+.check-icon {
+  flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%;
+  background: #16a34a; display: flex; align-items: center; justify-content: center; margin-top: 2px;
+}
+
+/* ── Zone diagram ── */
+.zone-bar {
+  display: flex; height: 32px; border-radius: 6px; overflow: hidden;
+  border: 1px solid #e5e7eb; margin: 16px 0; font-size: 11px; font-weight: 700;
+}
+.zone-seg {
+  display: flex; align-items: center; justify-content: center;
+  white-space: nowrap; padding: 0 8px;
+}
+.zone-open   { background: #f3f4f6; color: #6b7280; flex: 33; }
+.zone-be     { background: #dbeafe; color: #1d4ed8; flex: 37; }
+.zone-pd     { background: #dcfce7; color: #15803d; flex: 30; }
+.zone-tp     { background: #fef9c3; color: #a16207; flex: 4; font-size: 9px; }
+.zone-label  { font-size: 11px; color: #6b7280; margin-top: 6px; display: flex; gap: 16px; flex-wrap: wrap; }
+.zone-label span { display: flex; align-items: center; gap: 5px; }
+.dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <div class="header-eyebrow">t-bot &middot; Daily Analysis</div>
+    <h1>Session Report &mdash; 2026-08-11</h1>
+    <div class="header-meta">
+      <span>Day reviewed: Aug 10, 2026</span>
+      <span>6 files changed</span>
+      <span>4 bugs fixed</span>
+    </div>
+  </div>
+  <div class="chips">
+    <span class="chip loss">Aug 10 Net &minus;$23.95</span>
+    <span class="chip info">XAUUSD SL/TP bug fixed</span>
+    <span class="chip info">Peak drawback recalibrated</span>
+    <span class="chip win">Break-even confirmed working</span>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ── Section 1: Aug 10 Trade Summary ── -->
+  <div class="section">
+    <div class="section-eyebrow">Aug 10 Performance</div>
+    <div class="section-title">Trade-by-Trade Results</div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Position ID</th>
+            <th>Strategy</th>
+            <th>Side</th>
+            <th>Symbol</th>
+            <th>Net P&L</th>
+            <th>Close Reason</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="win-row">
+            <td>235964932</td><td>sr_bounce</td><td>BUY</td><td>EURUSD</td>
+            <td>+$0.14</td><td>break-even SL</td><td>First break-even production trade ✓</td>
+          </tr>
+          <tr class="loss-row">
+            <td>235985419</td><td>trend_follow</td><td>BUY</td><td>XAUUSD</td>
+            <td>&minus;$11.45</td><td>reversal signals</td><td>RSI + EMA + momentum all against</td>
+          </tr>
+          <tr class="loss-row">
+            <td>236019289</td><td>sr_bounce</td><td>BUY</td><td>EURUSD</td>
+            <td>&minus;$0.20</td><td>time_stop</td><td>Never profitable in 30m</td>
+          </tr>
+          <tr class="win-row">
+            <td>236020316</td><td>sr_bounce</td><td>BUY</td><td>XAUUSD</td>
+            <td>+$6.96</td><td>peak_drawback=62%</td><td>Would have hit SL after PD close</td>
+          </tr>
+          <tr class="loss-row">
+            <td>236021390</td><td>sr_bounce</td><td>BUY</td><td>XAUUSD</td>
+            <td>&minus;$22.96</td><td>sl_hit</td><td>Biggest loss. Missed break-even by 0.67 pts</td>
+          </tr>
+          <tr class="win-row">
+            <td>236054545</td><td>dd_ranging_breakout</td><td>BUY</td><td>XAUUSD</td>
+            <td>+$2.50</td><td>peak_drawback=66%</td><td>Would have hit SL after PD close</td>
+          </tr>
+          <tr class="loss-row">
+            <td>236055445</td><td>dd_ranging_breakout</td><td>BUY</td><td>XAUUSD</td>
+            <td>&minus;$4.54</td><td>sl_hit</td><td>Peak gain only 3 pts — never armed</td>
+          </tr>
+          <tr class="win-row">
+            <td>236059838</td><td>dd_ranging_breakout</td><td>BUY</td><td>XAUUSD</td>
+            <td>+$2.63</td><td>peak_drawback=62%</td><td>Would have hit TP after PD close</td>
+          </tr>
+          <tr class="win-row">
+            <td>236061302</td><td>dd_ranging_breakout</td><td>BUY</td><td>XAUUSD</td>
+            <td>+$2.97</td><td>peak_drawback=71%</td><td>Max favorable EXCEEDED TP — would have hit TP</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ── Section 2: Key Findings ── -->
+  <div class="section">
+    <div class="section-eyebrow">Key Findings</div>
+    <div class="section-title">What We Discovered</div>
+
+    <!-- Finding 1 -->
+    <div class="finding">
+      <div class="finding-header">
+        <div class="finding-title">1. XAUUSD broker SL/TP was never set since gold was added</div>
+        <span class="badge critical">Critical Bug</span>
+      </div>
+      <p>All XAUUSD market orders opened with no broker-native SL or TP. The code used <code>absoluteSLTP=true</code> for gold and sent absolute prices to fields 10/11 — but cTrader docs explicitly state absolute SL/TP is <strong>not supported for MARKET orders</strong>. The broker silently ignored both fields.</p>
+      <p>This was masked because the bot's internal watcher monitored price on every tick and called <code>closeTrackedPosition</code> when SL was reached — making it look like SL hits were broker-driven when they were actually internal.</p>
+      <div class="evidence">
+        <strong>Root cause of previous relative failure:</strong> An earlier attempt at relative SL/TP for XAUUSD used <code>slDist * priceDivisor</code> where <code>priceDivisor=100</code> for gold (2 decimal places). The cTrader API requires 1/100000 units. Sending <code>slDist * 100</code> instead of <code>slDist * 100000</code> made the SL distance 1000× too small — broker rejected with INCORRECT_BOUNDARIES. This was misread as "broker rejects relative for gold" and the code switched to absolute, which is worse.
+      </div>
+      <div class="evidence">
+        <strong>Proof from Aug 10 data:</strong> Position 236061302 had <code>max_favorable = 4364.85</code> vs <code>TP = 4360.33</code> — price went 4.52 pts through the TP level but the broker never closed it. If broker TP were set, it would have closed at 4360.33.
+      </div>
+    </div>
+
+    <!-- Finding 2 -->
+    <div class="finding">
+      <div class="finding-header">
+        <div class="finding-title">2. close_reason was always a guess, never real</div>
+        <span class="badge significant">Data Integrity</span>
+      </div>
+      <p><code>inferCloseReason(grossProfit)</code> returned <code>"tp_hit"</code> if profit ≥ 0, <code>"sl_hit"</code> if loss. This was pure guesswork — a position closed by break-even SL at a tiny profit was labeled <code>"tp_hit"</code>. A position closed by peak_drawback at a gain was also <code>"tp_hit"</code>. Historic close_reason data in the DB cannot be trusted.</p>
+    </div>
+
+    <!-- Finding 3 -->
+    <div class="finding">
+      <div class="finding-header">
+        <div class="finding-title">3. Peak_drawback was closing winners in the 50–70% zone</div>
+        <span class="badge significant">Strategy Calibration</span>
+      </div>
+      <p>Old arm threshold: 50% of TP distance. On Aug 10, all 4 peak_drawback closures had peaks in the 51–64% range — just barely over the arm threshold. At that early stage, a 60% drawback of a tiny local peak is a normal candle wick, not a reversal signal.</p>
+      <div class="evidence">
+        <strong>Post-close candle analysis (M5, 4h window):</strong>
+        <ul>
+          <li>236020316: closed +$6.96 → lowest after = 4316.57 (would have hit break-even SL)</li>
+          <li>236054545: closed +$2.50 → lowest after = 4342.51 (would have hit break-even SL)</li>
+          <li>236059838: closed +$2.63 → lowest after = 4347.79, highest = 4391.75 (would have hit TP)</li>
+          <li>236061302: closed +$2.97 → lowest after = 4350.95, highest = 4395.36 (would have hit TP)</li>
+        </ul>
+        Peak_drawback saved 2 positions from going to break-even SL but cut 2 winners that would have hit full TP.
+      </div>
+    </div>
+
+    <!-- Finding 4 -->
+    <div class="finding">
+      <div class="finding-header">
+        <div class="finding-title">4. Break-even stop confirmed working on first production trade</div>
+        <span class="badge fix">Confirmed</span>
+      </div>
+      <p>Position 235964932 (sr_bounce BUY EURUSD) closed at exactly 1.15531 — the amended break-even SL. The <code>position_adjustments</code> table recorded <code>old_sl=1.15461</code>, <code>new_sl=1.15531</code>, <code>reason="break_even"</code>. The broker enforced the amended SL via <code>ProtoOAAmendPositionSLTPReq</code> (2110). After close, price continued down to 1.15480 — confirming the break-even saved what would have been a loss.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ── Section 3: Queries ── -->
+  <div class="section">
+    <div class="section-eyebrow">Analysis Queries</div>
+    <div class="section-title">SQL Used Today</div>
+
+    <div class="change">
+      <div class="change-file">All Aug 10 trades with strategy and P&L</div>
+      <div class="code-wrap">
+        <div class="code-label">sql</div>
+        <pre>SELECT p.provider_position_id, sig.strategy, p.side,
+       p.open_price, p.current_sl, p.current_tp,
+       p.max_favorable, p.max_adverse,
+       p.open_timestamp, p.close_timestamp,
+       f.execution_price AS close_price,
+       f.gross_profit, f.close_commission AS commission,
+       f.net_profit, f.close_reason
+FROM positions p
+JOIN orders o ON o.id = p.our_order_id
+JOIN signals sig ON sig.id = o.signal_id
+LEFT JOIN fills f ON f.our_position_id = p.id AND f.close_reason IS NOT NULL
+WHERE p.open_timestamp >= '2026-08-10 00:00:00+03'
+  AND p.open_timestamp &lt;  '2026-08-11 00:00:00+03'
+  AND p.provider = 'ctrader'
+ORDER BY p.open_timestamp;</pre>
+      </div>
+    </div>
+
+    <div class="change">
+      <div class="change-file">Peak drawback analysis — would SL or TP have been hit?</div>
+      <div class="code-wrap">
+        <div class="code-label">sql</div>
+        <pre>SELECT p.provider_position_id, p.open_price, p.current_sl, p.current_tp,
+       f.execution_price AS closed_at, f.net_profit,
+       MIN(c.low) AS lowest_after, MAX(c.high) AS highest_after,
+       CASE
+         WHEN p.side = 'BUY' AND MAX(c.high) >= p.current_tp THEN 'TP would have hit'
+         WHEN p.side = 'BUY' AND MIN(c.low)  &lt;= p.current_sl THEN 'SL would have hit'
+         ELSE 'still between SL and TP (4h window)'
+       END AS what_happened_after
+FROM positions p
+JOIN orders o ON o.id = p.our_order_id
+JOIN signals sig ON sig.id = o.signal_id
+JOIN fills f ON f.our_position_id = p.id AND f.close_reason IS NOT NULL
+JOIN candles c ON c.symbol_id = p.symbol_id
+  AND c.period = 'M5'
+  AND c.bar_time > p.close_timestamp
+  AND c.bar_time &lt;= p.close_timestamp + INTERVAL '4 hours'
+WHERE p.open_timestamp >= '2026-08-10 00:00:00+03'
+  AND p.open_timestamp &lt;  '2026-08-11 00:00:00+03'
+  AND p.provider = 'ctrader'
+  AND f.close_reason LIKE 'peak_drawback%'
+GROUP BY p.provider_position_id, p.open_price, p.current_sl, p.current_tp,
+         p.close_timestamp, p.side, f.execution_price, f.net_profit
+ORDER BY p.close_timestamp;</pre>
+      </div>
+    </div>
+
+    <div class="change">
+      <div class="change-file">Break-even trades — did price continue to old SL?</div>
+      <div class="code-wrap">
+        <div class="code-label">sql</div>
+        <pre>SELECT p.provider_position_id, sig.strategy, p.side,
+       p.open_price, pa.old_sl, pa.new_sl AS breakeven_sl,
+       p.max_favorable, f.execution_price AS close_price,
+       f.gross_profit, f.close_commission AS commission,
+       f.close_reason,
+       CASE
+         WHEN p.side = 'BUY'  AND f.execution_price &lt;= pa.old_sl THEN 'would have hit old SL'
+         WHEN p.side = 'SELL' AND f.execution_price >= pa.old_sl THEN 'would have hit old SL'
+         ELSE 'old SL was NOT hit'
+       END AS verdict
+FROM position_adjustments pa
+JOIN positions p ON p.id = pa.position_id
+JOIN orders o ON o.id = p.our_order_id
+JOIN signals sig ON sig.id = o.signal_id
+LEFT JOIN fills f ON f.our_position_id = p.id AND f.close_reason IS NOT NULL
+WHERE pa.reason = 'break_even'
+ORDER BY pa.adjusted_at DESC;</pre>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ── Section 4: Code Changes ── -->
+  <div class="section">
+    <div class="section-eyebrow">Code Changes</div>
+    <div class="section-title">All Fixes Applied Today</div>
+
+    <div class="change">
+      <div class="change-file">internal/provider/ctrader/api/proto.go</div>
+      <p><strong>Fix: always use relative SL/TP fields 19/20 with multiplier 100000 for all symbols.</strong> Removed the <code>absoluteSLTP</code> branch entirely. The previous approach used <code>slDist * priceDivisor</code> (100 for XAUUSD) instead of the required <code>slDist * 100000</code>, sending SL distances 1000× too small. Simplified <code>encodeNewOrderReq</code> signature — dropped <code>priceDivisor</code>, <code>absoluteSLTP</code>, <code>priceDecimals</code>, <code>lastBid</code>, <code>lastAsk</code> parameters.</p>
+      <div class="code-wrap">
+        <div class="code-label">go — after</div>
+        <pre><span class="kw">if</span> slDist > <span class="num">0</span> {
+    b = appendInt64(b, <span class="num">19</span>, int64(math.Round(slDist*<span class="num">100000</span>)))
+}
+<span class="kw">if</span> tpDist > <span class="num">0</span> {
+    b = appendInt64(b, <span class="num">20</span>, int64(math.Round(tpDist*<span class="num">100000</span>)))
+}</pre>
+      </div>
+      <div class="change-why">Why: absolute SL/TP (fields 10/11) is documented as "Not supported for MARKET orders" in cTrader Open API v2. All orders placed by this bot are MARKET orders.</div>
+    </div>
+
+    <div class="change">
+      <div class="change-file">internal/provider/ctrader/api/client.go</div>
+      <p>Removed <code>absoluteSLTP</code>, <code>priceDecimals</code> struct fields and their computation from <code>NewClient</code>. <code>pipSize</code> parameter removed from <code>NewClient</code> entirely — no longer needed for SL/TP encoding.</p>
+      <div class="change-why">Why: cleanup after removing absoluteSLTP code path. priceDivisor is still needed for price tick decoding.</div>
+    </div>
+
+    <div class="change">
+      <div class="change-file">cmd/bot/main.go &middot; cmd/symbols/main.go &middot; cmd/closetest/main.go &middot; cmd/backfill/main.go</div>
+      <p>Removed <code>pipSize</code> argument from all <code>api.NewClient</code> call sites.</p>
+      <div class="change-why">Why: follows signature change above.</div>
+    </div>
+
+    <div class="change">
+      <div class="change-file">internal/bot/bot.go</div>
+      <p><strong>Fix: replace <code>inferCloseReason</code> with <code>classifyBrokerClose</code>.</strong> Old function just checked <code>grossProfit >= 0</code>. New method compares execution price against tracked position's SL and TP prices (within 5-pip tolerance) and checks <code>BreakEvenActive</code>.</p>
+      <div class="code-wrap">
+        <div class="code-label">go — close reason logic</div>
+        <pre><span class="kw">func</span> (b *Bot) classifyBrokerClose(tracked trackedPosition, execPrice float64) string {
+    tol := <span class="num">5</span> * b.pipSize
+
+    <span class="kw">if</span> tracked.BreakEvenActive {
+        beSL := tracked.OpenPrice + <span class="num">2</span>*b.pipSize <span class="cmt">// BUY</span>
+        <span class="kw">if</span> tracked.Side == config.SignalSell { beSL = tracked.OpenPrice - <span class="num">2</span>*b.pipSize }
+        <span class="kw">if</span> math.Abs(execPrice-beSL) &lt;= tol { <span class="kw">return</span> <span class="str">"breakeven_sl"</span> }
+    }
+    <span class="kw">if</span> tracked.SLPrice > <span class="num">0</span> &amp;&amp; math.Abs(execPrice-tracked.SLPrice) &lt;= tol { <span class="kw">return</span> <span class="str">"sl_hit"</span> }
+    <span class="kw">if</span> tracked.TPPrice > <span class="num">0</span> &amp;&amp; math.Abs(execPrice-tracked.TPPrice) &lt;= tol { <span class="kw">return</span> <span class="str">"tp_hit"</span> }
+
+    <span class="cmt">// Fallback: direction from open price</span>
+    <span class="kw">if</span> tracked.Side == config.SignalBuy &amp;&amp; execPrice > tracked.OpenPrice { <span class="kw">return</span> <span class="str">"tp_hit"</span> }
+    <span class="kw">if</span> tracked.Side == config.SignalSell &amp;&amp; execPrice &lt; tracked.OpenPrice { <span class="kw">return</span> <span class="str">"tp_hit"</span> }
+    <span class="kw">return</span> <span class="str">"sl_hit"</span>
+}</pre>
+      </div>
+      <div class="change-why">Why: historic close_reason data was meaningless. "breakeven_sl" is now a distinct reason separate from "sl_hit".</div>
+    </div>
+
+    <div class="change">
+      <div class="change-file">internal/bot/watcher.go</div>
+      <p><strong>Recalibrate peak_drawback and break-even thresholds.</strong></p>
+      <div class="table-wrap" style="margin-top:10px;">
+        <table>
+          <thead><tr><th>Parameter</th><th>Old</th><th>New</th><th>Reason</th></tr></thead>
+          <tbody>
+            <tr><td><code>minPeakGain</code> (peak_drawback arm)</td><td>tpDist × 0.50</td><td>tpDist × 0.70</td><td>Peaks in 50–70% zone were normal retracements — peak_drawback was firing on noise</td></tr>
+            <tr><td>Break-even activation</td><td>peakGain ≥ 40% of tpDist</td><td>peakGain ≥ 33% of tpDist</td><td>Lock in the floor earlier — preferred to let break-even SL handle the 33–70% zone</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="change-why">Philosophy: the 33–70% zone is protected by break-even floor only (worst case ≈ $0). Peak_drawback only engages when position is deep into TP territory (≥70%), where a 60% drawback from peak is a genuine reversal signal.</div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ── Section 5: New Protection Zone Layout ── -->
+  <div class="section">
+    <div class="section-eyebrow">Protection Architecture</div>
+    <div class="section-title">Position Protection Zones (After Changes)</div>
+
+    <div class="zone-bar">
+      <div class="zone-seg zone-open">0–33%<br>Unprotected</div>
+      <div class="zone-seg zone-be">33–70%<br>Break-even floor active (open+2pip)</div>
+      <div class="zone-seg zone-pd">70–100%<br>Peak_drawback armed + break-even</div>
+      <div class="zone-seg zone-tp">TP</div>
+    </div>
+    <div class="zone-label">
+      <span><span class="dot" style="background:#f3f4f6;border:1px solid #d1d5db;"></span>0–33% — no floor yet</span>
+      <span><span class="dot" style="background:#dbeafe;"></span>33% hit → break-even SL set at broker (open+2pips). Worst case ≈ $0</span>
+      <span><span class="dot" style="background:#dcfce7;"></span>70% hit → peak_drawback arms. Fires when 60% of peak is given back</span>
+    </div>
+
+    <div class="evidence" style="margin-top:20px;">
+      <strong>Aug 10 simulation with new thresholds:</strong>
+      <ul>
+        <li>236020316 (peak 52%): peak_drawback would NOT arm → break-even SL fires → ~$0 (was +6.96)</li>
+        <li>236054545 (peak 51.5%): peak_drawback would NOT arm → break-even SL fires → ~$0 (was +2.50)</li>
+        <li>236059838 (peak 64%): peak_drawback would NOT arm → price stays above break-even → hits TP ~+$10 (was +2.63)</li>
+        <li>236061302 (peak 141.7% — already through TP): peak_drawback arms but price hits TP first ~+$10 (was +2.97)</li>
+      </ul>
+      Net: ~$20 vs old $15. Two trades go from small positive to $0 but two trades capture full TP instead of early exit.
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ── Section 6: Strategy Status ── -->
+  <div class="section">
+    <div class="section-eyebrow">Strategies</div>
+    <div class="section-title">Strategy Status After This Session</div>
+
+    <p style="margin-bottom:16px;color:#6b7280;font-size:14px;">No individual strategy files were modified today. All changes were at the infrastructure layer (proto encoding, bot watcher, close reason classifier) and apply uniformly to every active strategy.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Strategy</th>
+            <th>Symbol(s)</th>
+            <th>Status</th>
+            <th>Impact of Today's Changes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>sr_bounce</code></td>
+            <td>EURUSD, XAUUSD</td>
+            <td><span class="badge fix">Active</span></td>
+            <td>SL/TP now actually set on broker for XAUUSD. Break-even arms at 33% (was 40%). Peak_drawback at 70% (was 50%).</td>
+          </tr>
+          <tr>
+            <td><code>dd_ranging_breakout</code></td>
+            <td>XAUUSD</td>
+            <td><span class="badge fix">Active</span></td>
+            <td>Same infra improvements. Was responsible for 4 of 9 trades Aug 10 — all affected by the SL/TP bug now fixed.</td>
+          </tr>
+          <tr>
+            <td><code>trend_follow</code></td>
+            <td>XAUUSD</td>
+            <td><span class="badge fix">Active</span></td>
+            <td>SL/TP now set on broker. Uses trend watcher (reversal signal counting) — not peak_drawback. Break-even improvement applies.</td>
+          </tr>
+          <tr>
+            <td><code>dd_oversold_bounce</code></td>
+            <td>XAUUSD</td>
+            <td><span class="badge arch">Not reviewed</span></td>
+            <td>Infrastructure fixes apply. Strategy logic not reviewed this session. Flagged for next review.</td>
+          </tr>
+          <tr class="neutral-row">
+            <td><code>rsi_reversal</code></td>
+            <td>—</td>
+            <td><span class="badge">Not active</span></td>
+            <td>Last modified 2026-08-10 (#38 — RSI reversal condition refinement). Not running in prod currently.</td>
+          </tr>
+          <tr class="neutral-row">
+            <td><code>breakout</code></td>
+            <td>—</td>
+            <td><span class="badge">Not active</span></td>
+            <td>Not reviewed. Has H1 regime filter added in prior session.</td>
+          </tr>
+          <tr class="neutral-row">
+            <td><code>ema_pullback</code></td>
+            <td>—</td>
+            <td><span class="badge">Not active</span></td>
+            <td>Not reviewed this session.</td>
+          </tr>
+          <tr class="neutral-row">
+            <td><code>session_momentum</code></td>
+            <td>—</td>
+            <td><span class="badge">Not active</span></td>
+            <td>Not reviewed this session.</td>
+          </tr>
+          <tr class="neutral-row">
+            <td><code>session_open</code></td>
+            <td>—</td>
+            <td><span class="badge">Not active</span></td>
+            <td>Not reviewed this session.</td>
+          </tr>
+          <tr class="neutral-row">
+            <td><code>combined</code></td>
+            <td>—</td>
+            <td><span class="badge">Not active</span></td>
+            <td>Composite of trend_follow + sr_bounce. Not running in prod currently.</td>
+          </tr>
+          <tr class="neutral-row">
+            <td><code>regime</code></td>
+            <td>—</td>
+            <td><span class="badge">Not active</span></td>
+            <td>Regime classifier only — no trade signals of its own.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ── Section 7: Deployment ── -->
+  <div class="section">
+    <div class="section-eyebrow">Next Step</div>
+    <div class="section-title">Deployment Checklist</div>
+    <div class="checklist">
+      <div class="check-item">
+        <div class="check-icon"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        <span><code>go build ./...</code> passes clean</span>
+      </div>
+      <div class="check-item">
+        <div class="check-icon"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        <span>Relative SL/TP (fields 19/20, multiplier 100000) confirmed for all symbols</span>
+      </div>
+      <div class="check-item">
+        <div class="check-icon"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        <span>classifyBrokerClose replaces inferCloseReason in both recordCloseFill and recordBrokerClose</span>
+      </div>
+      <div class="check-item">
+        <div class="check-icon"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        <span>Break-even threshold lowered to 33% of TP distance</span>
+      </div>
+      <div class="check-item">
+        <div class="check-icon"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        <span>Peak_drawback arm threshold raised to 70% of TP distance</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

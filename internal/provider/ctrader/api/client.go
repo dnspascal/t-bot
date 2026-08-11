@@ -40,8 +40,6 @@ type Client struct {
 	accountID     int64
 	symbolID      int64
 	priceDivisor  float64
-	absoluteSLTP  bool
-	priceDecimals int
 	mu            sync.Mutex
 	authed        bool
 	lastBid       float64
@@ -61,17 +59,11 @@ type Client struct {
 	pendingCloses   atomic.Int32
 }
 
-func NewClient(demo bool, accountID, symbolID int64, priceDivisor float64, pipSize float64) *Client {
-	priceDecimals := 0
-	for v := pipSize / 10; v < 1; v *= 10 {
-		priceDecimals++
-	}
+func NewClient(demo bool, accountID, symbolID int64, priceDivisor float64) *Client {
 	c := &Client{
-		accountID:       accountID,
-		symbolID:        symbolID,
-		priceDivisor:    priceDivisor,
-		absoluteSLTP:    pipSize >= 0.01,
-		priceDecimals:   priceDecimals,
+		accountID:    accountID,
+		symbolID:     symbolID,
+		priceDivisor: priceDivisor,
 		PriceCh:         make(chan PriceEvent, 100),
 		ExecutionCh:     make(chan ExecutionEvent, 10),
 		TrendbarCh:      make(chan Trendbar, 10),
@@ -306,7 +298,6 @@ func (c *Client) ClosePosition(positionID, volume int64) error {
 func (c *Client) PlaceMarketOrder(side uint32, volume int64, slDist, tpDist float64, clientOrderID string) error {
 	c.mu.Lock()
 	authed := c.authed
-	lastBid, lastAsk := c.lastBid, c.lastAsk
 	c.mu.Unlock()
 
 	if !authed {
@@ -320,8 +311,7 @@ func (c *Client) PlaceMarketOrder(side uint32, volume int64, slDist, tpDist floa
 		"tpDist", tpDist,
 	)
 	return c.conn.SendRaw(ProtoOANewOrderReq,
-		encodeNewOrderReq(c.accountID, c.symbolID, side, volume, slDist, tpDist,
-			c.priceDivisor, c.absoluteSLTP, c.priceDecimals, lastBid, lastAsk, clientOrderID))
+		encodeNewOrderReq(c.accountID, c.symbolID, side, volume, slDist, tpDist, clientOrderID))
 }
 
 func (c *Client) handleMessage(payloadType uint32, payload []byte) {

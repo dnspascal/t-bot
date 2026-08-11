@@ -369,7 +369,10 @@ func (b *Bot) reconcileOfflineClose(ctx context.Context, p position.Position) {
 		closeSide = config.SignalBuy
 	}
 	provPosID := posID
-	reason := inferCloseReason(cl.GrossProfit)
+	reason := "sl_hit"
+	if cl.GrossProfit >= 0 {
+		reason = "tp_hit"
+	}
 	dealID := fmt.Sprintf("%d", deal.DealID)
 	orderID := fmt.Sprintf("%d", deal.OrderID)
 	entryPrice := cl.EntryPrice
@@ -1032,7 +1035,7 @@ func (b *Bot) recordCloseFill(ctx context.Context, exec provider.ExecutionEvent)
 		closeReason = &pc.reason
 		delete(b.pendingCloseReasons, provPosID)
 	} else {
-		r := inferCloseReason(cl.GrossProfit)
+		r := b.classifyBrokerClose(tracked, deal.ExecutionPrice)
 		closeReason = &r
 	}
 	b.registry.Remove(provPosID)
@@ -1172,7 +1175,7 @@ func (b *Bot) recordBrokerClose(ctx context.Context, exec provider.ExecutionEven
 			closeSide = "BUY"
 		}
 		if closeReason == "" {
-			closeReason = inferCloseReason(estimatedPnL)
+			closeReason = b.classifyBrokerClose(tracked, mid)
 		}
 		if !tracked.OpenTime.IsZero() {
 			d := exec.Timestamp.Sub(tracked.OpenTime).Milliseconds()
@@ -1450,8 +1453,34 @@ func (b *Bot) sendTestPosition(ctx context.Context) {
 	}
 }
 
-func inferCloseReason(grossProfit float64) string {
-	if grossProfit >= 0 {
+func (b *Bot) classifyBrokerClose(tracked trackedPosition, execPrice float64) string {
+	tol := 5 * b.pipSize
+
+	if tracked.BreakEvenActive {
+		var beSL float64
+		if tracked.Side == config.SignalBuy {
+			beSL = tracked.OpenPrice + 2*b.pipSize
+		} else {
+			beSL = tracked.OpenPrice - 2*b.pipSize
+		}
+		if math.Abs(execPrice-beSL) <= tol {
+			return "breakeven_sl"
+		}
+	}
+
+	if tracked.SLPrice > 0 && math.Abs(execPrice-tracked.SLPrice) <= tol {
+		return "sl_hit"
+	}
+
+	if tracked.TPPrice > 0 && math.Abs(execPrice-tracked.TPPrice) <= tol {
+		return "tp_hit"
+	}
+
+	// Fallback: direction from open price
+	if tracked.Side == config.SignalBuy && execPrice > tracked.OpenPrice {
+		return "tp_hit"
+	}
+	if tracked.Side == config.SignalSell && execPrice < tracked.OpenPrice {
 		return "tp_hit"
 	}
 	return "sl_hit"

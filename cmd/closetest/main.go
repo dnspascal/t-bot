@@ -29,7 +29,7 @@ func main() {
 	slog.Info("closetest starting", "demo", demo, "symbolID", symbolID)
 
 	// Use accountID=0 initially; we'll discover the real ID from GetAccountList.
-	client := api.NewClient(demo, 0, symbolID, 100000.0, 0.0001)
+	client := api.NewClient(demo, 0, symbolID, 100000.0)
 
 	if err := client.Connect(); err != nil {
 		log.Fatal("connect:", err)
