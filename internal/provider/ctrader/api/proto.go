@@ -112,7 +112,7 @@ func EncodeClosePositionReqVariant(accountID, positionID, volume int64, posIDFie
 	return b
 }
 
-func encodeNewOrderReq(accountID, symbolID int64, side uint32, volume int64, slDist, tpDist, priceDivisor float64, absoluteSLTP bool, priceDecimals int, lastBid, lastAsk float64, clientOrderID string) []byte {
+func encodeNewOrderReq(accountID, symbolID int64, side uint32, volume int64, slDist, tpDist float64, clientOrderID string) []byte {
 	var b []byte
 	b = appendUint32(b, 1, ProtoOANewOrderReq)
 	b = appendInt64(b, 2, accountID)
@@ -124,33 +124,13 @@ func encodeNewOrderReq(accountID, symbolID int64, side uint32, volume int64, slD
 	if clientOrderID != "" {
 		b = appendString(b, 18, clientOrderID)
 	}
-	if absoluteSLTP {
-		mid := lastBid
-		if lastBid > 0 && lastAsk > 0 {
-			mid = (lastBid + lastAsk) / 2
-		}
-		scale := math.Pow(10, float64(priceDecimals))
-		var slPrice, tpPrice float64
-		if side == 1 { 
-			slPrice = math.Round((mid-slDist)*scale) / scale
-			tpPrice = math.Round((mid+tpDist)*scale) / scale
-		} else { 
-			slPrice = math.Round((mid+slDist)*scale) / scale
-			tpPrice = math.Round((mid-tpDist)*scale) / scale
-		}
-		if slDist > 0 {
-			b = appendDouble(b, 11, slPrice)
-		}
-		if tpDist > 0 {
-			b = appendDouble(b, 12, tpPrice)
-		}
-	} else {
-		if slDist > 0 {
-			b = appendInt64(b, 19, int64(math.Round(slDist*priceDivisor)))
-		}
-		if tpDist > 0 {
-			b = appendInt64(b, 20, int64(math.Round(tpDist*priceDivisor)))
-		}
+	// Relative SL/TP in 1/100000 of a price unit (API spec, fields 19/20).
+	// Absolute SL/TP (fields 10/11) is not supported for MARKET orders per cTrader docs.
+	if slDist > 0 {
+		b = appendInt64(b, 19, int64(math.Round(slDist*100000)))
+	}
+	if tpDist > 0 {
+		b = appendInt64(b, 20, int64(math.Round(tpDist*100000)))
 	}
 	return b
 }

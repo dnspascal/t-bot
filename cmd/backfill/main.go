@@ -61,7 +61,7 @@ func main() {
 
 	for _, s := range symbols {
 
-		conn := api.NewClient(cfg.CTrader.Demo, cfg.CTrader.AccountID, s.id, 100000, 0.00001)
+		conn := api.NewClient(cfg.CTrader.Demo, cfg.CTrader.AccountID, s.id, 100000)
 		if err := conn.Connect(); err != nil {
 			log.Fatal("Connect:", err)
 		}

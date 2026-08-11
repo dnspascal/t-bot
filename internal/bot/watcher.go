@@ -137,7 +137,7 @@ func peakDrawbackPct(pos trackedPosition, currentPrice, pipSize float64) float64
 	} else {
 		tpDist = pos.OpenPrice - pos.TPPrice
 	}
-	minPeakGain := tpDist * 0.5
+	minPeakGain := tpDist * 0.7
 	if minPeakGain <= 0 {
 		minPeakGain = 3 * pipSize 
 	}
@@ -216,7 +216,7 @@ func (b *Bot) checkBreakEven(ctx context.Context, pos trackedPosition) {
 		peakGain = pos.OpenPrice - pos.MaxFavorable
 	}
 
-	if peakGain < 0.40*tpDist {
+	if peakGain < 0.33*tpDist {
 		return
 	}
 
