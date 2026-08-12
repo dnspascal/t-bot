@@ -1,7 +1,3 @@
-// closetest: diagnostic command that opens a 1-micro-lot BUY on EURUSD (demo),
-// immediately tries to close it, and logs every step including raw bytes.
-// If close is rejected with INCORRECT_BOUNDARIES it retries with shifted field
-// numbers (posID→field4, vol→field5) to test the proto-shift hypothesis.
 package main
 
 import (
@@ -22,21 +18,19 @@ func main() {
 
 	clientID := mustEnv("CTRADER_CLIENT_ID")
 	clientSecret := mustEnv("CTRADER_CLIENT_SECRET")
-	accessToken := mustEnv("CTRADER_ACCESS_TOKEN") //nolint:ineffassign — replaced after refresh
+	accessToken := mustEnv("CTRADER_ACCESS_TOKEN") 
 	symbolID := mustEnvInt64("CTRADER_SYMBOL_ID")
 	demo := os.Getenv("CTRADER_DEMO") != "false"
 
 	slog.Info("closetest starting", "demo", demo, "symbolID", symbolID)
 
-	// Use accountID=0 initially; we'll discover the real ID from GetAccountList.
-	client := api.NewClient(demo, 0, symbolID, 100000.0)
+	client := api.NewClient(demo, 0, symbolID, 100000.0, 0.0001)
 
 	if err := client.Connect(); err != nil {
 		log.Fatal("connect:", err)
 	}
 	defer client.Close()
 
-	// Refresh token first — the stored access token may be expired
 	refreshToken := mustEnv("CTRADER_REFRESH_TOKEN")
 	slog.Info("step 0: refreshing access token")
 	freshAccessToken, _, err := api.RefreshToken(clientID, clientSecret, refreshToken)
@@ -46,14 +40,12 @@ func main() {
 	accessToken = freshAccessToken
 	slog.Info("token refreshed")
 
-	// Auth app
 	slog.Info("step 1: authenticating app")
 	if err := client.AuthApp(clientID, clientSecret); err != nil {
 		log.Fatal("AuthApp:", err)
 	}
 	time.Sleep(500 * time.Millisecond)
 
-	// Discover account ID from the access token
 	slog.Info("step 1b: listing accounts to discover correct account ID")
 	accounts, err := client.GetAccountList(accessToken)
 	if err != nil {
@@ -65,28 +57,25 @@ func main() {
 	for _, a := range accounts {
 		slog.Info("found account", "ctidAccountID", a.CtidTraderAccountID, "login", a.TraderLogin, "isLive", a.IsLive, "broker", a.BrokerName)
 	}
-	// Pick demo or live account matching the requested mode
 	var chosenAccountID int64
 	for _, a := range accounts {
-		if a.IsLive != demo { // demo==true means we want IsLive==false
+		if a.IsLive != demo { 
 			chosenAccountID = a.CtidTraderAccountID
 			break
 		}
 	}
 	if chosenAccountID == 0 {
-		// fallback: just use the first account
 		chosenAccountID = accounts[0].CtidTraderAccountID
 	}
 	slog.Info("using account", "ctidAccountID", chosenAccountID)
 	client.SetAccountID(chosenAccountID)
 
-	// Auth account
 	slog.Info("step 2: authenticating account")
 	if err := client.AuthAccount(accessToken); err != nil {
 		log.Fatal("AuthAccount:", err)
 	}
 
-	// Subscribe spots to get current price
+
 	slog.Info("step 3: subscribing to spots")
 	if err := client.SubscribeSpots(); err != nil {
 		log.Fatal("SubscribeSpots:", err)
@@ -95,7 +84,6 @@ func main() {
 	slog.Info("step 4: waiting for first price tick (up to 10s)")
 	time.Sleep(3 * time.Second)
 
-	// Place the smallest possible BUY: 100,000 units, 50-pip SL, 100-pip TP
 	const volume = int64(100_000)
 	const slDist = 0.0050 // 50 pips
 	const tpDist = 0.0100 // 100 pips
@@ -105,7 +93,6 @@ func main() {
 		log.Fatal("PlaceMarketOrder:", err)
 	}
 
-	// Wait for the fill event to get position ID
 	slog.Info("step 6: waiting for ORDER_FILLED event (up to 15s)")
 	var positionID int64
 	var filledVolume int64
@@ -140,7 +127,6 @@ waitFill:
 		}
 	}
 
-	// Try close with STANDARD encoding: posID at field 3, volume at field 4
 	slog.Info("step 7: trying STANDARD close (posID=field3, vol=field4)",
 		"positionID", positionID, "volume", filledVolume)
 	if err := client.ClosePosition(positionID, filledVolume); err != nil {
@@ -185,7 +171,6 @@ waitFill:
 		return
 	}
 
-	// Try VARIANT encoding: posID at field 4, volume at field 5
 	slog.Info("step 9: trying VARIANT close (posID=field4, vol=field5)",
 		"positionID", positionID, "volume", filledVolume)
 	if err := client.ClosePositionVariant(positionID, filledVolume, 4, 5); err != nil {

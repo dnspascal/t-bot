@@ -112,7 +112,7 @@ func EncodeClosePositionReqVariant(accountID, positionID, volume int64, posIDFie
 	return b
 }
 
-func encodeNewOrderReq(accountID, symbolID int64, side uint32, volume int64, slDist, tpDist float64, clientOrderID string) []byte {
+func encodeNewOrderReq(accountID, symbolID int64, side uint32, volume int64, slDist, tpDist float64, priceDecimals int, clientOrderID string) []byte {
 	var b []byte
 	b = appendUint32(b, 1, ProtoOANewOrderReq)
 	b = appendInt64(b, 2, accountID)
@@ -126,11 +126,17 @@ func encodeNewOrderReq(accountID, symbolID int64, side uint32, volume int64, slD
 	}
 	// Relative SL/TP in 1/100000 of a price unit (API spec, fields 19/20).
 	// Absolute SL/TP (fields 10/11) is not supported for MARKET orders per cTrader docs.
+	// The distance must first be rounded to the symbol's real tradable precision
+	// (e.g. 2 decimals for XAUUSD) or the broker rejects it as INVALID_REQUEST /
+	// "invalid precision" even though the 100000 scale itself is correct.
+	scale := math.Pow(10, float64(priceDecimals))
 	if slDist > 0 {
-		b = appendInt64(b, 19, int64(math.Round(slDist*100000)))
+		roundedDist := math.Round(slDist*scale) / scale
+		b = appendInt64(b, 19, int64(math.Round(roundedDist*100000)))
 	}
 	if tpDist > 0 {
-		b = appendInt64(b, 20, int64(math.Round(tpDist*100000)))
+		roundedDist := math.Round(tpDist*scale) / scale
+		b = appendInt64(b, 20, int64(math.Round(roundedDist*100000)))
 	}
 	return b
 }
