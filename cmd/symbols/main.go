@@ -37,7 +37,7 @@ func main() {
 	}
 	fmt.Println("Token OK")
 
-	client := api.NewClient(cfg.CTrader.Demo, cfg.CTrader.AccountID, cfg.CTrader.SymbolID, 100000.0)
+	client := api.NewClient(cfg.CTrader.Demo, cfg.CTrader.AccountID, cfg.CTrader.SymbolID, 100000.0, 0.0001)
 	if err := client.Connect(); err != nil {
 		log.Fatal("connect:", err)
 	}

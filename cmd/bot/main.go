@@ -70,7 +70,11 @@ func main() {
 		if err != nil {
 			log.Fatal("get price divisor:", err)
 		}
-		ctraderClient := api.NewClient(cfg.CTrader.Demo, cfg.CTrader.AccountID, cfg.CTrader.SymbolID, priceDivisor)
+		pipSize, err := svc.Lookup.GetPipSize(cfg.CTraderSymbol)
+		if err != nil {
+			log.Fatal("get pip size:", err)
+		}
+		ctraderClient := api.NewClient(cfg.CTrader.Demo, cfg.CTrader.AccountID, cfg.CTrader.SymbolID, priceDivisor, pipSize)
 		if err := ctraderClient.Connect(); err != nil {
 			log.Fatal("ctrader connect:", err)
 		}
