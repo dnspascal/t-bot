@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"log/slog"
 	"math"
@@ -73,17 +74,54 @@ type DailyMetrics struct {
 }
 
 func (h *handler) metrics(w http.ResponseWriter, r *http.Request) {
-	date := r.URL.Query().Get("date")
-	if date == "" {
-		date = time.Now().Format("2006-01-02")
+	q := r.URL.Query()
+	date := q.Get("date")
+	fromStr := q.Get("from")
+	toStr := q.Get("to")
+	symbol := q.Get("symbol")
+
+	var start, end time.Time
+	var err error
+
+	switch {
+	case date != "":
+		start, err = time.Parse("2006-01-02", date)
+		if err != nil {
+			jsonErr(w, "invalid date", http.StatusBadRequest)
+			return
+		}
+		end = start.AddDate(0, 0, 1)
+	case fromStr != "" || toStr != "":
+		if fromStr != "" {
+			start, err = time.Parse("2006-01-02", fromStr)
+			if err != nil {
+				jsonErr(w, "invalid from", http.StatusBadRequest)
+				return
+			}
+		} else {
+			start = time.Now().AddDate(0, -1, 0)
+		}
+		if toStr != "" {
+			end, err = time.Parse("2006-01-02", toStr)
+			if err != nil {
+				jsonErr(w, "invalid to", http.StatusBadRequest)
+				return
+			}
+			end = end.AddDate(0, 0, 1)
+		} else {
+			end = time.Now().AddDate(0, 0, 1)
+		}
+	default:
+		start = time.Now().Truncate(24 * time.Hour)
+		end = start.AddDate(0, 0, 1)
 	}
 
-	start, err := time.Parse("2006-01-02", date)
-	if err != nil {
-		jsonErr(w, "invalid date", http.StatusBadRequest)
-		return
+	args := []any{start, end}
+	symbolFilter := ""
+	if symbol != "" {
+		args = append(args, symbol)
+		symbolFilter = fmt.Sprintf("AND sym.symbol = $%d", len(args))
 	}
-	end := start.AddDate(0, 0, 1)
 
 	row := h.db.QueryRow(r.Context(), `
 		SELECT
@@ -98,13 +136,15 @@ func (h *handler) metrics(w http.ResponseWriter, r *http.Request) {
 			COALESCE(MAX(f.net_profit), 0)                                   AS largest_win,
 			COALESCE(MIN(f.net_profit), 0)                                   AS largest_loss
 		FROM positions p
+		JOIN symbols sym ON sym.id = p.symbol_id
 		JOIN fills f ON f.our_position_id = p.id AND f.close_reason IS NOT NULL
 		WHERE p.open_timestamp >= $1 AND p.open_timestamp < $2
 		  AND p.provider = 'ctrader'
-	`, start, end)
+		  `+symbolFilter+`
+	`, args...)
 
 	var m DailyMetrics
-	m.Date = date
+	m.Date = start.Format("2006-01-02")
 	if err := row.Scan(
 		&m.TradeCount, &m.WinCount, &m.LossCount,
 		&m.GrossPnL, &m.NetPnL, &m.TotalCommission,
@@ -143,6 +183,27 @@ type Trade struct {
 	OpenAt             string  `json:"open_at"`
 	CloseAt            string  `json:"close_at"`
 	DurationMinutes    int     `json:"duration_minutes"`
+	PipsMove           float64 `json:"pips_move"`
+	PipsToTP           float64 `json:"pips_to_tp"`
+	PipsToSL           float64 `json:"pips_to_sl"`
+}
+
+// pipsFields computes the pip-denominated fields for a trade from its raw prices and pip size.
+func pipsFields(t *Trade, pipSize float64) {
+	if pipSize <= 0 {
+		return
+	}
+	diff := t.ClosePrice - t.OpenPrice
+	if t.Side == "SELL" {
+		diff = -diff
+	}
+	t.PipsMove = math.Round(diff/pipSize*10) / 10
+	if t.TPPrice > 0 {
+		t.PipsToTP = math.Round(math.Abs(t.TPPrice-t.OpenPrice)/pipSize*10) / 10
+	}
+	if t.SLPrice > 0 {
+		t.PipsToSL = math.Round(math.Abs(t.SLPrice-t.OpenPrice)/pipSize*10) / 10
+	}
 }
 
 type TradesResponse struct {
@@ -159,7 +220,10 @@ func (h *handler) trades(w http.ResponseWriter, r *http.Request) {
 	if page < 1 {
 		page = 1
 	}
-	pageSize := 20
+	pageSize, _ := strconv.Atoi(q.Get("page_size"))
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
 	offset := (page - 1) * pageSize
 
 	var start, end time.Time
@@ -193,29 +257,43 @@ func (h *handler) trades(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	const baseQuery = `
+	symbol := q.Get("symbol")
+	args := []any{start, end}
+	symbolFilter := ""
+	if symbol != "" {
+		args = append(args, symbol)
+		symbolFilter = fmt.Sprintf("AND sym.symbol = $%d", len(args))
+	}
+
+	baseQuery := `
 		FROM positions p
 		JOIN orders o ON o.id = p.our_order_id
 		JOIN signals sig ON sig.id = o.signal_id
 		JOIN symbols sym ON sym.id = p.symbol_id
+		LEFT JOIN symbol_configs sc ON sc.symbol_id = sym.id AND sc.deleted_at IS NULL
 		JOIN fills f ON f.our_position_id = p.id AND f.close_reason IS NOT NULL
 		WHERE p.open_timestamp >= $1 AND p.open_timestamp < $2
 		  AND p.provider = 'ctrader'
+		  ` + symbolFilter + `
 	`
 
 	var total int
-	if err := h.db.QueryRow(r.Context(), "SELECT COUNT(*) "+baseQuery, start, end).Scan(&total); err != nil {
+	if err := h.db.QueryRow(r.Context(), "SELECT COUNT(*) "+baseQuery, args...).Scan(&total); err != nil {
 		jsonErr(w, "count failed", http.StatusInternalServerError)
 		slog.Error("trades count", "err", err)
 		return
 	}
+
+	limitArg := len(args) + 1
+	offsetArg := len(args) + 2
+	queryArgs := append(append([]any{}, args...), pageSize, offset)
 
 	rows, err := h.db.Query(r.Context(), `
 		SELECT
 			p.id,
 			p.provider_position_id,
 			sig.strategy,
-			sym.name,
+			sym.symbol,
 			p.side,
 			COALESCE(p.open_price, 0),
 			COALESCE(f.execution_price, 0),
@@ -229,11 +307,12 @@ func (h *handler) trades(w http.ResponseWriter, r *http.Request) {
 			COALESCE(f.close_reason, ''),
 			p.open_timestamp,
 			COALESCE(p.close_timestamp, NOW()),
-			EXTRACT(EPOCH FROM (COALESCE(p.close_timestamp, NOW()) - p.open_timestamp))::int / 60
-		`+baseQuery+`
+			EXTRACT(EPOCH FROM (COALESCE(p.close_timestamp, NOW()) - p.open_timestamp))::int / 60,
+			COALESCE(sc.pip_size, 0)
+		`+baseQuery+fmt.Sprintf(`
 		ORDER BY p.open_timestamp DESC
-		LIMIT $3 OFFSET $4
-	`, start, end, pageSize, offset)
+		LIMIT $%d OFFSET $%d
+	`, limitArg, offsetArg), queryArgs...)
 	if err != nil {
 		jsonErr(w, "query failed", http.StatusInternalServerError)
 		slog.Error("trades query", "err", err)
@@ -245,18 +324,20 @@ func (h *handler) trades(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var t Trade
 		var openAt, closeAt time.Time
+		var pipSize float64
 		if err := rows.Scan(
 			&t.ID, &t.ProviderPositionID, &t.Strategy, &t.Symbol,
 			&t.Side, &t.OpenPrice, &t.ClosePrice, &t.SLPrice, &t.TPPrice,
 			&t.MaxFavorable, &t.MaxAdverse,
 			&t.GrossProfit, &t.Commission, &t.NetProfit, &t.CloseReason,
-			&openAt, &closeAt, &t.DurationMinutes,
+			&openAt, &closeAt, &t.DurationMinutes, &pipSize,
 		); err != nil {
 			slog.Error("trades scan", "err", err)
 			continue
 		}
 		t.OpenAt = openAt.Format(time.RFC3339)
 		t.CloseAt = closeAt.Format(time.RFC3339)
+		pipsFields(&t, pipSize)
 		trades = append(trades, t)
 	}
 
@@ -289,13 +370,14 @@ func (h *handler) trade(w http.ResponseWriter, r *http.Request) {
 	var t Trade
 	var openAt, closeAt time.Time
 	var symbolID string
+	var pipSize float64
 
 	err := h.db.QueryRow(r.Context(), `
 		SELECT
 			p.id,
 			p.provider_position_id,
 			sig.strategy,
-			sym.name,
+			sym.symbol,
 			sym.id,
 			p.side,
 			COALESCE(p.open_price, 0),
@@ -310,11 +392,13 @@ func (h *handler) trade(w http.ResponseWriter, r *http.Request) {
 			COALESCE(f.close_reason, ''),
 			p.open_timestamp,
 			COALESCE(p.close_timestamp, NOW()),
-			EXTRACT(EPOCH FROM (COALESCE(p.close_timestamp, NOW()) - p.open_timestamp))::int / 60
+			EXTRACT(EPOCH FROM (COALESCE(p.close_timestamp, NOW()) - p.open_timestamp))::int / 60,
+			COALESCE(sc.pip_size, 0)
 		FROM positions p
 		JOIN orders o ON o.id = p.our_order_id
 		JOIN signals sig ON sig.id = o.signal_id
 		JOIN symbols sym ON sym.id = p.symbol_id
+		LEFT JOIN symbol_configs sc ON sc.symbol_id = sym.id AND sc.deleted_at IS NULL
 		JOIN fills f ON f.our_position_id = p.id AND f.close_reason IS NOT NULL
 		WHERE p.id = $1
 	`, id).Scan(
@@ -322,7 +406,7 @@ func (h *handler) trade(w http.ResponseWriter, r *http.Request) {
 		&t.Side, &t.OpenPrice, &t.ClosePrice, &t.SLPrice, &t.TPPrice,
 		&t.MaxFavorable, &t.MaxAdverse,
 		&t.GrossProfit, &t.Commission, &t.NetProfit, &t.CloseReason,
-		&openAt, &closeAt, &t.DurationMinutes,
+		&openAt, &closeAt, &t.DurationMinutes, &pipSize,
 	)
 	if err != nil {
 		jsonErr(w, "not found", http.StatusNotFound)
@@ -330,6 +414,7 @@ func (h *handler) trade(w http.ResponseWriter, r *http.Request) {
 	}
 	t.OpenAt = openAt.Format(time.RFC3339)
 	t.CloseAt = closeAt.Format(time.RFC3339)
+	pipsFields(&t, pipSize)
 
 	// Fetch M5 candles: open_at - 2 bars before, close_at + 2 bars after
 	candleStart := openAt.Add(-10 * time.Minute)
@@ -352,6 +437,7 @@ func (h *handler) trade(w http.ResponseWriter, r *http.Request) {
 		defer rows.Close()
 		for rows.Next() {
 			var c Candle
+			
 			var bt time.Time
 			if err := rows.Scan(&bt, &c.Open, &c.High, &c.Low, &c.Close); err != nil {
 				continue

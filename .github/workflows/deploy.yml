@@ -32,6 +32,9 @@ jobs:
       - name: Build seed binary
         run: GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o seed ./cmd/seed
 
+      - name: Build api binary
+        run: GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o api ./cmd/api
+
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -44,6 +47,7 @@ jobs:
           scp -i ~/.ssh/id_ed25519 bot ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/srv/tbot/bot.new
           scp -i ~/.ssh/id_ed25519 migrate ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/srv/tbot/migrate.new
           scp -i ~/.ssh/id_ed25519 seed ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/srv/tbot/seed.new
+          scp -i ~/.ssh/id_ed25519 api ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/srv/tbot-api/api.new
 
       - name: Stop bots before migrations
         run: |
@@ -70,4 +74,12 @@ jobs:
             mv /srv/tbot/seed.new /srv/tbot/seed &&
             sudo systemctl restart tbot.service &&
             sudo systemctl restart tbot-gold.service 2>/dev/null; true
+          "
+
+      - name: Swap api binary and restart
+        run: |
+          ssh -i ~/.ssh/id_ed25519 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "
+            mv /srv/tbot-api/api /srv/tbot-api/api.old 2>/dev/null || true &&
+            mv /srv/tbot-api/api.new /srv/tbot-api/api &&
+            sudo systemctl restart tbot-api.service
           "
