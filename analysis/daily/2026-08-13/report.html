@@ -122,16 +122,16 @@ footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; f
 <div class="header">
   <div>
     <span class="header-eyebrow">Daily Analysis</span>
-    <h1>2026-08-13 — Gold, dd_ranging_breakout & breakout Fixes</h1>
+    <h1>2026-08-13 — Gold, dd_ranging_breakout, breakout & ema_pullback Fixes</h1>
     <div class="header-meta">
       <span>Bot: T-Bot (cTrader, XAUUSD + EURUSD)</span>
       <span>Prepared for production incident follow-up</span>
     </div>
   </div>
   <div class="chips">
-    <span class="chip win">4 production fixes shipped</span>
-    <span class="chip loss">breakout: -$62.75 net all-time</span>
-    <span class="chip win">breakout: confirmation + position cap shipped</span>
+    <span class="chip win">5 production fixes shipped</span>
+    <span class="chip loss">ema_pullback: 12 trades, -$6.21 in 90min</span>
+    <span class="chip win">ema_pullback: cooldown + ADX floor shipped</span>
   </div>
 </div>
 
@@ -323,6 +323,44 @@ if strategyCount >= maxPerStrategy {
     return false, "max positions for this strategy reached"
 }</pre>
     <p><span class="mono">internal/strategy/breakout/strategy.go</span> and <span class="mono">internal/bot/registry.go</span> (<code>maxPerStrategy = 2</code>). Ships through the same <code>feat → dev (squash) → main (merge) → tag</code> flow as today's other fixes.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 5 — ema_pullback strategy</div>
+    <div class="section-title">Same disease as breakout, worse: zero cooldown, and a trend label that never checks trend strength</div>
+
+    <p>Spotted while reviewing today's trades: <code>ema_pullback</code> had exactly 1 trade in its entire history before today (July, net -$13.46). Today it fired <strong>12 trades in 90 minutes</strong> — all XAUUSD SELL, all clustered in a tight $7 band (4387–4394), almost all closing within 5 minutes via the same reversal-signal bail-out, net -$6.21 for the day, capped off by a real <code>sl_hit</code> for -$11.12 on the 12th.</p>
+
+    <div class="section-eyebrow" style="margin-top:24px;">Not the same bug as breakout — a different one</div>
+    <p>The per-strategy position cap shipped earlier today (Part 4) caps <em>concurrent</em> positions at 2. Checking the actual timestamps, 10 of these 12 trades never overlapped at all — each closed before the next opened. Only one pair briefly ran 2 at once, which the cap correctly allowed. The cap was never going to touch this: it's a strategy closing a position and immediately opening a near-identical new one minutes later, not a pileup. That needs a cooldown, not a concurrency limit.</p>
+
+    <div class="section-eyebrow" style="margin-top:24px;">Root cause: a trend label that's blind to trend strength</div>
+    <p>H1 ADX during the entire 90-minute window sat at <strong>14–15</strong> — well below any real trend threshold:</p>
+    <table>
+      <tr><th>H1 bar</th><th>Regime</th><th class="num">ADX</th><th class="num">EMA9</th><th class="num">EMA21</th></tr>
+      <tr class="highlight"><td>12:00</td><td>trending_down</td><td class="num">14.98</td><td class="num">4381.84</td><td class="num">4391.77</td></tr>
+      <tr class="highlight"><td>13:00</td><td>trending_down</td><td class="num">14.26</td><td class="num">4388.77</td><td class="num">4395.22</td></tr>
+    </table>
+    <p><code>CalculateRegime</code> (<span class="mono">internal/indicator/regime.go:9-42</span>) takes an <code>adx</code> parameter and never references it in the function body — the trending label is decided purely by whether EMA fast sits meaningfully below/above EMA slow. A weak, sideways chop with a barely-tilted EMA reads exactly the same as a strong, ADX-confirmed trend. Other strategies here (<code>breakout</code>, <code>dd_ranging_breakout</code>, <code>dd_early_breakout</code>) all compensate by adding their own ADX filter on top of the regime label — <code>ema_pullback</code> never did, despite its entire thesis depending on a real trend existing to pull back into.</p>
+    <p>On top of that, it had <strong>no cooldown of any kind</strong> — not even the one-per-bar dedup <code>breakout</code> had before today's fix. Every ~5 minutes the M5/EMA-proximity conditions happened to align again, it fired a brand new trade with no memory of the one it just closed.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:8px;"><strong>ADX floor:</strong> require <code>h1.ADX ≥ 25</code> before trusting the trend label at all — same threshold other strategies here already use for "real trend."</p>
+      <p style="margin-bottom:0;"><strong>One entry per H1 bar:</strong> the setup is built entirely off the H1 trend/EMA, so it can't meaningfully change more than once per H1 close. Would have capped today's 12 entries down to at most 2 (the window spanned two H1 bars).</p>
+    </div>
+
+    <div class="section-eyebrow" style="margin-top:24px;">The fix, in code</div>
+    <pre>if h1.BarTime == s.lastEntryH1BarTime {
+    return hold("ema_pullback already signaled this H1 bar")
+}
+
+if h1.ADX < adxTrendFloor {
+    return hold("H1 ADX too weak — regime label isn't backed by a real trend")
+}</pre>
+    <p><span class="mono">internal/strategy/ema_pullback/strategy.go</span> (<code>adxTrendFloor = 25.0</code>). Scoped to this strategy only — a general cross-strategy cooldown mechanism (for the sequential-churn failure mode specifically) is a separate follow-up, not yet designed.</p>
   </div>
 
 </div>
