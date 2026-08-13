@@ -3,10 +3,13 @@ package bot
 import (
 	"sync"
 	"time"
+
+	"github.com/denismgaya/t-bot/internal/config"
 )
 
 const (
 	maxTotalPositions = 3
+	maxPerStrategy    = 2 // a strategy can't pile up more than this many concurrent positions
 	minScaleInPips    = 2 // existing position must be this many pips in profit before adding another
 )
 
@@ -14,7 +17,7 @@ var maxPerTier = [4]int{4, 3, 2, 1}
 
 type trackedPosition struct {
 	ProviderPositionID string
-	Side               string // "BUY" | "SELL"
+	Side               string 
 	Tier               int
 	Volume             int64
 	OpenPrice          float64
@@ -22,8 +25,8 @@ type trackedPosition struct {
 	TPPrice            float64
 	ATR                float64
 	OpenTime           time.Time
-	MaxFavorable       float64 // best price in trade direction (peak profit level)
-	MaxAdverse         float64 // worst price against trade direction (closest to SL)
+	MaxFavorable       float64 
+	MaxAdverse         float64 
 	StrategyName       string
 	BreakEvenActive    bool // true once position reached 40% of SL distance favorable
 }
@@ -37,7 +40,7 @@ func newPositionRegistry() *PositionRegistry {
 	return &PositionRegistry{positions: make(map[string]*trackedPosition)}
 }
 
-func (r *PositionRegistry) CanOpen(tier int, side string, currentPrice, pipSize float64) (bool, string) {
+func (r *PositionRegistry) CanOpen(tier int, side, strategyName string, currentPrice, pipSize float64) (bool, string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if len(r.positions) >= maxTotalPositions {
@@ -47,23 +50,30 @@ func (r *PositionRegistry) CanOpen(tier int, side string, currentPrice, pipSize 
 		return false, "invalid tier"
 	}
 	count := 0
+	strategyCount := 0
 	for _, p := range r.positions {
 		if p.Side != side {
 			return false, "conflicting direction — opposite position still open"
 		}
 		minDist := minScaleInPips * pipSize
-		if p.Side == "BUY" && currentPrice < p.OpenPrice+minDist {
+		if p.Side == config.SignalBuy && currentPrice < p.OpenPrice+minDist {
 			return false, "existing BUY not yet in profit"
 		}
-		if p.Side == "SELL" && currentPrice > p.OpenPrice-minDist {
+		if p.Side == config.SignalSell && currentPrice > p.OpenPrice-minDist {
 			return false, "existing SELL not yet in profit"
 		}
 		if p.Tier == tier {
 			count++
 		}
+		if p.StrategyName == strategyName {
+			strategyCount++
+		}
 	}
 	if count >= maxPerTier[tier] {
 		return false, "max positions for tier reached"
+	}
+	if strategyCount >= maxPerStrategy {
+		return false, "max positions for this strategy reached"
 	}
 	return true, ""
 }
@@ -121,8 +131,6 @@ func (r *PositionRegistry) Count() int {
 	return len(r.positions)
 }
 
-// UpdatePeaks updates MaxFavorable and MaxAdverse for a position based on the latest price.
-// Called on every M1 candle close while the position is alive.
 func (r *PositionRegistry) UpdatePeaks(id string, currentPrice float64) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -130,7 +138,7 @@ func (r *PositionRegistry) UpdatePeaks(id string, currentPrice float64) {
 	if !ok {
 		return
 	}
-	if p.Side == "BUY" {
+	if p.Side == config.SignalBuy {
 		if currentPrice > p.MaxFavorable {
 			p.MaxFavorable = currentPrice
 		}

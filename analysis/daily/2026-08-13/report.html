@@ -122,16 +122,16 @@ footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; f
 <div class="header">
   <div>
     <span class="header-eyebrow">Daily Analysis</span>
-    <h1>2026-08-13 — Gold Fixes & dd_ranging_breakout SL Review</h1>
+    <h1>2026-08-13 — Gold, dd_ranging_breakout & breakout Fixes</h1>
     <div class="header-meta">
       <span>Bot: T-Bot (cTrader, XAUUSD + EURUSD)</span>
       <span>Prepared for production incident follow-up</span>
     </div>
   </div>
   <div class="chips">
-    <span class="chip win">2 production fixes shipped</span>
-    <span class="chip loss">dd_ranging_breakout: -$7.38 net</span>
-    <span class="chip win">SL widened & shipped</span>
+    <span class="chip win">4 production fixes shipped</span>
+    <span class="chip loss">breakout: -$62.75 net all-time</span>
+    <span class="chip win">breakout: confirmation + position cap shipped</span>
   </div>
 </div>
 
@@ -249,6 +249,80 @@ footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; f
     <p><span class="mono">internal/strategy/dd_ranging_breakout/strategy.go:19-21</span> and the equivalent constant in <span class="mono">internal/strategy/dd_oversold_bounce/strategy.go</span>.</p>
     <p>This drops the reward:risk ratio from 3:1 to 1.5:1 — still solidly profitable at anywhere near the backtested 60–64% win rate (breakeven point moves from ~25% to ~40%, and the observed live win rate was already 40.6% even while getting clipped by noise). The real fix is giving the stop room to sit outside ordinary intrabar movement instead of inside it, which is what was actually costing trades — not the win rate itself.</p>
     <p>No other logic changes: entry conditions, TP distance, and position sizing stay exactly as backtested. Ships through the same <code>feat → dev (squash) → main (merge) → tag</code> flow used for today's other two fixes, once you confirm scope.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 4 — breakout strategy</div>
+    <div class="section-title">Two separate bugs: false-breakout entries, and no limit on piling up during a losing streak</div>
+
+    <p>Prompted by a specific trade: XAUUSD SELL opened 10:20, closed 10:48 via <code>sl_hit</code>, net -$12.45. <code>max_favorable</code> was only $0.40 from entry before it reversed and ran the full distance to the stop — barely any breathing room before the trade went wrong.</p>
+
+    <div class="section-eyebrow" style="margin-top:24px;">Bug 1 — a single candle was enough to confirm a "breakout"</div>
+    <p><code>BreakoutLevel</code> (<span class="mono">internal/indicator/structure.go:39-67</span>) looks at the prior 10 M15 candles (2.5 hours), takes the highest high and lowest low across them — call that the recent range. The moment the newest candle's high or low pokes past that range <em>and its close also ends up beyond it</em>, the old strategy treated that as a confirmed breakout and traded immediately. No requirement that the move hold beyond that one candle.</p>
+    <p>Across all 32 closed breakout trades ever, 18 (56%) show the same signature — barely move favorably before reversing:</p>
+
+    <table>
+      <tr>
+        <th>Close reason</th><th class="num">Trades</th><th class="num">Avg duration</th>
+        <th class="num">Avg % of SL distance reached favorably</th><th class="num">Net P&amp;L</th><th class="num">Closed within 5min</th>
+      </tr>
+      <tr class="highlight">
+        <td>reversal_signal_bail</td><td class="num">9</td><td class="num">6.1 min</td>
+        <td class="num">17.3%</td><td class="num">-$0.28</td><td class="num">5 of 9</td>
+      </tr>
+      <tr class="highlight">
+        <td>sl_hit</td><td class="num">9</td><td class="num">51 min</td>
+        <td class="num">44.7%</td><td class="num">-$23.71</td><td class="num">1 of 9</td>
+      </tr>
+      <tr>
+        <td>peak_drawback</td><td class="num">9</td><td class="num">9.2 hrs</td>
+        <td class="num">267.3%</td><td class="num">-$2.14</td><td class="num">0</td>
+      </tr>
+      <tr>
+        <td>tp_hit</td><td class="num">2</td><td class="num">29 min</td>
+        <td class="num">244.3%</td><td class="num">+$2.26</td><td class="num">0</td>
+      </tr>
+      <tr>
+        <td>other</td><td class="num">2</td><td class="num">13.7 hrs</td>
+        <td class="num">38.1%</td><td class="num">-$38.88</td><td class="num">0</td>
+      </tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">The <code>reversal_signal_bail</code> group nets to roughly breakeven — the position-watcher's exit logic (3 of 4 reversal signals against the trade) is doing its job there. The real damage is the <code>sl_hit</code> group: same weak entry signature (only 44.7% favorable reach), but the watcher didn't catch these in time, so they ran the entire remaining distance to the stop — the single biggest loss source in the strategy, at -$23.71.</p>
+
+    <div class="section-eyebrow" style="margin-top:24px;">Bug 2 — no limit on repeated entries during a losing streak</div>
+    <p>Because <code>BreakoutLevel</code> recalculates fresh every M15 bar from a rolling 10-bar window, a sustained one-directional move can look like a brand-new breakout on every subsequent bar. On 2026-07-27 — breakout's single worst trading day, -$41.96 net — the strategy tried to open <strong>10 fresh EURUSD SELL positions in a row</strong>, ~15 minutes apart, over more than 3 hours:</p>
+    <div class="quote">
+      10× EURUSD SELL, <code>NOT_ENOUGH_MONEY / ORDER_REJECTED</code>, 2026-07-27 13:50–17:10
+      <div class="src">all rejected by the broker for insufficient margin — not by any check in the strategy itself</div>
+    </div>
+    <p>The position registry (<span class="mono">internal/bot/registry.go</span>) had no concept of "how many trades is this specific strategy already running" — only global and per-tier caps that don't distinguish which strategy owns an open position. The account running out of margin is what actually stopped the pileup, not the strategy recognizing it was already exposed to the same move.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:8px;"><strong>Two-bar confirmation:</strong> the first M15 candle to close past the 10-bar range no longer trades immediately — it's marked pending. Only if the <em>next</em> M15 candle's close is still beyond that same level does it fire. If price closes back inside the range, the candidate is discarded. All existing filters (H1 trend alignment, ADX ≤ 35, min SL/TP distance) re-run at confirmation time, not just at first detection.</p>
+      <p style="margin-bottom:0;"><strong>Per-strategy position cap:</strong> <code>CanOpen</code> now caps any single strategy at 2 concurrent positions, counted live off the registry on every signal — applies to every strategy, not just breakout, so it also guards against the same pileup happening anywhere else.</p>
+    </div>
+
+    <div class="section-eyebrow" style="margin-top:24px;">The fix, in code</div>
+    <pre>// Confirmation: don't fire on the first bar, mark it pending instead.
+s.pendingDir = dir
+s.pendingLevel = m15.BreakoutLevel
+s.pendingBarTime = m15.BarTime
+return hold("breakout detected — awaiting next-bar confirmation")
+
+<span class="cmt">// Next bar: only fire if price is still beyond the same level.</span>
+held := (dir == config.SignalBuy && m15.Close > level) ||
+    (dir == config.SignalSell && m15.Close < level)
+if !held {
+    return hold("breakout not confirmed — price closed back inside the range")
+}</pre>
+    <pre><span class="cmt">// registry.go — new per-strategy cap, checked alongside the existing global/tier caps</span>
+if strategyCount >= maxPerStrategy {
+    return false, "max positions for this strategy reached"
+}</pre>
+    <p><span class="mono">internal/strategy/breakout/strategy.go</span> and <span class="mono">internal/bot/registry.go</span> (<code>maxPerStrategy = 2</code>). Ships through the same <code>feat → dev (squash) → main (merge) → tag</code> flow as today's other fixes.</p>
   </div>
 
 </div>

@@ -753,7 +753,7 @@ func (b *Bot) onTradeSignal(ctx context.Context, result strat.EntryResult, price
 		return
 	}
 
-	if ok, reason := b.registry.CanOpen(result.Tier, result.Signal, price.Mid, b.pipSize); !ok {
+	if ok, reason := b.registry.CanOpen(result.Tier, result.Signal, result.StrategyName, price.Mid, b.pipSize); !ok {
 		slog.Info("signal skipped — position limit", "reason", reason)
 		return
 	}
