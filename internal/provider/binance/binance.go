@@ -442,7 +442,7 @@ func (b *Binance) DisconnectedChan() <-chan struct{} {
 
 func (b *Binance) SaveBalanceSnapshot(_ context.Context, _ float64) {}
 
-func (b *Binance) AmendPositionSL(ctx context.Context, positionID string, newSLPrice float64) error {
+func (b *Binance) AmendPositionSL(ctx context.Context, positionID string, newSLPrice, tpPrice float64) error {
 	return fmt.Errorf("AmendPositionSL not yet implemented for Binance")
 }
 

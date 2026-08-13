@@ -234,8 +234,7 @@ func (c *Client) GetSymbolsByIds(ids []int64) ([]LightSymbol, error) {
 	}
 }
 
-// ClosePositionVariant sends a close with caller-specified proto field numbers.
-// Used by the closetest diagnostic command to try alternative field assignments.
+
 func (c *Client) ClosePositionVariant(positionID, volume int64, posIDField, volField int) error {
 	c.mu.Lock()
 	authed := c.authed
@@ -259,7 +258,7 @@ func (c *Client) ClosePositionVariant(positionID, volume int64, posIDField, volF
 	return nil
 }
 
-func (c *Client) AmendPositionSL(positionID int64, newSL float64) error {
+func (c *Client) AmendPositionSL(positionID int64, newSL, tp float64) error {
 	c.mu.Lock()
 	authed := c.authed
 	accountID := c.accountID
@@ -269,10 +268,11 @@ func (c *Client) AmendPositionSL(positionID int64, newSL float64) error {
 		return fmt.Errorf("not authenticated")
 	}
 
-	inner := encodeAmendPositionSLTPReq(accountID, positionID, newSL)
+	inner := encodeAmendPositionSLTPReq(accountID, positionID, newSL, tp)
 	slog.Info("amending position SL to break-even",
 		"positionID", positionID,
 		"newSL", newSL,
+		"tp", tp,
 	)
 
 	return c.conn.SendRaw(ProtoOAAmendPositionSLTPReq, inner)
