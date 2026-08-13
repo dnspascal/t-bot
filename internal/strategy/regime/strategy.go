@@ -20,11 +20,11 @@
 //
 // # Performance (35-day history, 85 trades, as at 2026-07)
 //
-//   regime       win%  trades
-//   breakout      10%     21
-//   ranging       20%     10
-//   trending_up   25%      8
-//   trending_down 46%     46  ← best path (HTF range bounce where M5 dips to S)
+//	regime       win%  trades
+//	breakout      10%     21
+//	ranging       20%     10
+//	trending_up   25%      8
+//	trending_down 46%     46  ← best path (HTF range bounce where M5 dips to S)
 //
 // # Known weaknesses
 //
@@ -37,24 +37,27 @@ package regime
 
 import (
 	"slices"
+	"time"
 
 	"github.com/denismgaya/t-bot/internal/indicator"
 	"github.com/denismgaya/t-bot/internal/strategy"
 )
 
 const (
-	rsiMidline      = 50.0
-	rsiOversold     = 40.0
-	rsiOverbought   = 60.0
-	srProximityMult = 1.5
-	srAlignmentPips = 7.0
-	slATRMult       = 1.5
-	tpATRMult       = 2.5
-	slRangeBuffer   = 0.25
-	tpRangeBuffer   = 0.15
-	minRR           = 1.5
-	minATRPips      = 3.0
-	minH1ADXTrend   = 20.0
+	rsiMidline                 = 50.0
+	rsiOversold                = 40.0
+	rsiOverbought              = 60.0
+	srProximityMult            = 1.5
+	srAlignmentPips            = 7.0
+	slATRMult                  = 1.5
+	tpATRMult                  = 2.5
+	slRangeBuffer              = 0.25
+	tpRangeBuffer              = 0.15
+	minRR                      = 1.5
+	minATRPips                 = 3.0
+	minH1ADXTrend              = 20.0
+	consecutiveFailsToCooldown = 2
+	cooldownDuration           = 30 * time.Minute
 )
 
 var confluenceTimeframes = []string{"M15", "M30", "H1", "H4"}
@@ -72,12 +75,48 @@ type rangeConfirmation struct {
 }
 
 // Regime is the multi-timeframe regime strategy.
-type Regime struct{}
+type Regime struct {
+	buyFailStreak  int
+	sellFailStreak int
+	cooldownDir    string
+	cooldownUntil  time.Time
+}
 
 func New() *Regime { return &Regime{} }
 
-func (r *Regime) Name() string            { return "regime" }
+func (r *Regime) Name() string           { return "regime" }
 func (r *Regime) UsesTrendWatcher() bool { return true }
+
+// OnClosed implements strategy.OutcomeAware.
+func (r *Regime) OnClosed(side, closeReason string, closeTime time.Time) {
+	switch strategy.ClassifyCloseReason(closeReason) {
+	case strategy.CloseInvalidated:
+		if side == "BUY" {
+			r.buyFailStreak++
+			if r.buyFailStreak >= consecutiveFailsToCooldown {
+				r.cooldownDir = "BUY"
+				r.cooldownUntil = closeTime.Add(cooldownDuration)
+			}
+		} else {
+			r.sellFailStreak++
+			if r.sellFailStreak >= consecutiveFailsToCooldown {
+				r.cooldownDir = "SELL"
+				r.cooldownUntil = closeTime.Add(cooldownDuration)
+			}
+		}
+	case strategy.CloseValidated:
+		if side == "BUY" {
+			r.buyFailStreak = 0
+		} else {
+			r.sellFailStreak = 0
+		}
+		if r.cooldownDir == side {
+			r.cooldownDir = ""
+		}
+	case strategy.CloseNeutral:
+		// Doesn't say anything about the setup either way — leave the streak alone.
+	}
+}
 
 func (r *Regime) Evaluate(states map[string]indicator.MarketState, currentPrice float64, pipSize float64) strategy.EntryResult {
 	hold := func(reason string) strategy.EntryResult {
@@ -199,6 +238,13 @@ func (r *Regime) Evaluate(states map[string]indicator.MarketState, currentPrice 
 
 		default:
 			return hold("no M5 trend trigger")
+		}
+	}
+
+	if direction == r.cooldownDir && !r.cooldownUntil.IsZero() {
+		now := time.Unix(m5.BarTime, 0)
+		if now.Before(r.cooldownUntil) {
+			return hold("cooling down after repeated same-direction invalidation")
 		}
 	}
 

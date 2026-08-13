@@ -2,6 +2,7 @@ package sessionopen
 
 import (
 	"math"
+	"time"
 
 	"github.com/denismgaya/t-bot/internal/config"
 	"github.com/denismgaya/t-bot/internal/indicator"
@@ -9,17 +10,55 @@ import (
 )
 
 const (
-	slATRMult    = 0.5 
-	tpRangeMult  = 1.5 
-	minRangePips = 5.0
+	slATRMult                  = 0.5
+	tpRangeMult                = 1.5
+	minRangePips               = 5.0
+	consecutiveFailsToCooldown = 2
+	cooldownDuration           = 30 * time.Minute
 )
 
-type SessionOpen struct{}
+type SessionOpen struct {
+	buyFailStreak  int
+	sellFailStreak int
+	cooldownDir    string
+	cooldownUntil  time.Time
+}
 
 func New() *SessionOpen { return &SessionOpen{} }
 
 func (s *SessionOpen) Name() string           { return "session_open" }
 func (s *SessionOpen) UsesTrendWatcher() bool { return true }
+
+// OnClosed implements strategy.OutcomeAware.
+func (s *SessionOpen) OnClosed(side, closeReason string, closeTime time.Time) {
+	switch strategy.ClassifyCloseReason(closeReason) {
+	case strategy.CloseInvalidated:
+		if side == config.SignalBuy {
+			s.buyFailStreak++
+			if s.buyFailStreak >= consecutiveFailsToCooldown {
+				s.cooldownDir = config.SignalBuy
+				s.cooldownUntil = closeTime.Add(cooldownDuration)
+			}
+		} else {
+			s.sellFailStreak++
+			if s.sellFailStreak >= consecutiveFailsToCooldown {
+				s.cooldownDir = config.SignalSell
+				s.cooldownUntil = closeTime.Add(cooldownDuration)
+			}
+		}
+	case strategy.CloseValidated:
+		if side == config.SignalBuy {
+			s.buyFailStreak = 0
+		} else {
+			s.sellFailStreak = 0
+		}
+		if s.cooldownDir == side {
+			s.cooldownDir = ""
+		}
+	case strategy.CloseNeutral:
+		// Doesn't say anything about the setup either way — leave the streak alone.
+	}
+}
 
 func (s *SessionOpen) Evaluate(states map[string]indicator.MarketState, currentPrice float64, pipSize float64) strategy.EntryResult {
 	hold := func(reason string) strategy.EntryResult {
@@ -52,6 +91,13 @@ func (s *SessionOpen) Evaluate(states map[string]indicator.MarketState, currentP
 		dir = config.SignalSell
 	default:
 		return hold("price inside pre-session range — no breakout")
+	}
+
+	if dir == s.cooldownDir && !s.cooldownUntil.IsZero() {
+		m15Now := time.Unix(m15.BarTime, 0)
+		if m15Now.Before(s.cooldownUntil) {
+			return hold("cooling down after repeated same-direction invalidation")
+		}
 	}
 
 	if h1, ok := states[config.PeriodH1]; ok && h1.IsWarmedUp {
