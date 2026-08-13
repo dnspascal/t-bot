@@ -20,6 +20,7 @@ import (
 	sessionopen "github.com/denismgaya/t-bot/internal/strategy/session_open"
 	sessionmomentum "github.com/denismgaya/t-bot/internal/strategy/session_momentum"
 	emapullback "github.com/denismgaya/t-bot/internal/strategy/ema_pullback"
+	ddearlybreakout "github.com/denismgaya/t-bot/internal/strategy/dd_early_breakout"
 	ddoversoldbounce "github.com/denismgaya/t-bot/internal/strategy/dd_oversold_bounce"
 	ddrangingbreakout "github.com/denismgaya/t-bot/internal/strategy/dd_ranging_breakout"
 	rsireversal "github.com/denismgaya/t-bot/internal/strategy/rsi_reversal"
@@ -114,6 +115,7 @@ func buildStrategies(name, symbol, mlModelDir, mlOnnxLib string) ([]strategy.Str
 			emapullback.New(),
 			ddoversoldbounce.New(),
 			ddrangingbreakout.New(),
+			ddearlybreakout.New(),
 		}, nil
 	case "regime":
 		return []strategy.Strategy{regime.New()}, nil
@@ -135,12 +137,14 @@ func buildStrategies(name, symbol, mlModelDir, mlOnnxLib string) ([]strategy.Str
 		return []strategy.Strategy{ddoversoldbounce.New()}, nil
 	case "dd_ranging_breakout":
 		return []strategy.Strategy{ddrangingbreakout.New()}, nil
+	case "dd_early_breakout":
+		return []strategy.Strategy{ddearlybreakout.New()}, nil
 	case "dd_all":
-		return []strategy.Strategy{ddoversoldbounce.New(), ddrangingbreakout.New()}, nil
+		return []strategy.Strategy{ddoversoldbounce.New(), ddrangingbreakout.New(), ddearlybreakout.New()}, nil
 	case "combined":
 		return []strategy.Strategy{combined.New(trendfollow.New(), newSRBounce())}, nil
 	default:
-		return nil, fmt.Errorf("unknown strategy %q — valid options: all, regime, sr_bounce, trend_follow, breakout, session_open, rsi_reversal, session_momentum, ema_pullback, combined, dd_oversold_bounce, dd_ranging_breakout, dd_all", name)
+		return nil, fmt.Errorf("unknown strategy %q — valid options: all, regime, sr_bounce, trend_follow, breakout, session_open, rsi_reversal, session_momentum, ema_pullback, combined, dd_oversold_bounce, dd_ranging_breakout, dd_early_breakout, dd_all", name)
 	}
 }
 
