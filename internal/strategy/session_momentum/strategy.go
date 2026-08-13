@@ -11,19 +11,56 @@ import (
 )
 
 const (
-	slATRMult       = 1.0
-	tpATRMult       = 2.0
-	minBodyATRRatio = 0.4 
+	slATRMult                  = 1.0
+	tpATRMult                  = 2.0
+	minBodyATRRatio            = 0.4
+	consecutiveFailsToCooldown = 2
+	cooldownDuration           = 30 * time.Minute
 )
 
 type SessionMomentum struct {
-	lastTradeSession string 
+	lastTradeSession string
+	buyFailStreak    int
+	sellFailStreak   int
+	cooldownDir      string
+	cooldownUntil    time.Time
 }
 
 func New() *SessionMomentum { return &SessionMomentum{} }
 
 func (s *SessionMomentum) Name() string           { return "session_momentum" }
 func (s *SessionMomentum) UsesTrendWatcher() bool { return false }
+
+// OnClosed implements strategy.OutcomeAware.
+func (s *SessionMomentum) OnClosed(side, closeReason string, closeTime time.Time) {
+	switch strategy.ClassifyCloseReason(closeReason) {
+	case strategy.CloseInvalidated:
+		if side == config.SignalBuy {
+			s.buyFailStreak++
+			if s.buyFailStreak >= consecutiveFailsToCooldown {
+				s.cooldownDir = config.SignalBuy
+				s.cooldownUntil = closeTime.Add(cooldownDuration)
+			}
+		} else {
+			s.sellFailStreak++
+			if s.sellFailStreak >= consecutiveFailsToCooldown {
+				s.cooldownDir = config.SignalSell
+				s.cooldownUntil = closeTime.Add(cooldownDuration)
+			}
+		}
+	case strategy.CloseValidated:
+		if side == config.SignalBuy {
+			s.buyFailStreak = 0
+		} else {
+			s.sellFailStreak = 0
+		}
+		if s.cooldownDir == side {
+			s.cooldownDir = ""
+		}
+	case strategy.CloseNeutral:
+		// Doesn't say anything about the setup either way — leave the streak alone.
+	}
+}
 
 func (s *SessionMomentum) Evaluate(states map[string]indicator.MarketState, currentPrice, pipSize float64) strategy.EntryResult {
 	hold := func(rsn string) strategy.EntryResult {
@@ -64,6 +101,12 @@ func (s *SessionMomentum) Evaluate(states map[string]indicator.MarketState, curr
 		dir = config.SignalBuy
 	} else {
 		dir = config.SignalSell
+	}
+
+	if dir == s.cooldownDir && !s.cooldownUntil.IsZero() {
+		if barTime.Before(s.cooldownUntil) {
+			return hold("cooling down after repeated same-direction invalidation")
+		}
 	}
 
 	if h1, ok := states[config.PeriodH1]; ok && h1.IsWarmedUp && h1.EMA50 > 0 {

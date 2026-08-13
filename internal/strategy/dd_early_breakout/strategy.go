@@ -2,6 +2,7 @@ package ddearlybreakout
 
 import (
 	"math"
+	"time"
 
 	"github.com/denismgaya/t-bot/internal/config"
 	"github.com/denismgaya/t-bot/internal/indicator"
@@ -27,16 +28,36 @@ import (
 // shows it costs nothing (SL isn't hit either way in the data) while hedging against the
 // sample being smaller than it looks.
 const (
-	tpATRMult = 1.5
-	slATRMult = 1.0
+	tpATRMult                  = 1.5
+	slATRMult                  = 1.0
+	consecutiveFailsToCooldown = 2
+	cooldownDuration           = 60 * time.Minute
 )
 
-type DDEarlyBreakout struct{}
+type DDEarlyBreakout struct {
+	failStreak    int
+	cooldownUntil time.Time
+}
 
 func New() *DDEarlyBreakout { return &DDEarlyBreakout{} }
 
-func (s *DDEarlyBreakout) Name() string          { return "dd_early_breakout" }
+func (s *DDEarlyBreakout) Name() string           { return "dd_early_breakout" }
 func (s *DDEarlyBreakout) UsesTrendWatcher() bool { return true }
+
+// OnClosed implements strategy.OutcomeAware. This strategy only ever signals BUY.
+func (s *DDEarlyBreakout) OnClosed(side, closeReason string, closeTime time.Time) {
+	switch strategy.ClassifyCloseReason(closeReason) {
+	case strategy.CloseInvalidated:
+		s.failStreak++
+		if s.failStreak >= consecutiveFailsToCooldown {
+			s.cooldownUntil = closeTime.Add(cooldownDuration)
+		}
+	case strategy.CloseValidated:
+		s.failStreak = 0
+	case strategy.CloseNeutral:
+		// Doesn't say anything about the setup either way — leave the streak alone.
+	}
+}
 
 func (s *DDEarlyBreakout) Evaluate(states map[string]indicator.MarketState, currentPrice, pipSize float64) strategy.EntryResult {
 	hold := func(reason string) strategy.EntryResult {
@@ -62,6 +83,13 @@ func (s *DDEarlyBreakout) Evaluate(states map[string]indicator.MarketState, curr
 	m5, ok := states[config.PeriodM5]
 	if !ok || !m5.IsWarmedUp {
 		return hold("M5 not warmed up")
+	}
+
+	if !s.cooldownUntil.IsZero() {
+		now := time.Unix(m5.BarTime, 0)
+		if now.Before(s.cooldownUntil) {
+			return hold("cooling down after repeated invalidation")
+		}
 	}
 	if m5.Regime != config.Breakout {
 		return hold("M5 not in breakout")

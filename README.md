@@ -17,6 +17,25 @@ Algorithmic trading bot for forex and commodities via cTrader.
 | `trend_follow` | EMA + ADX trend continuation |
 | `combined` | Runs both; first signal wins |
 
+### Outcome-aware cooldown
+
+Most strategies pause trading a direction after two consecutive "invalidated"
+closes in that direction (an SL hit, a time-stop, or the watcher's early-exit
+reversal signals — see `internal/strategy/close_reason.go`), so a strategy
+doesn't keep re-entering the same losing thesis while the market conditions
+that caused it haven't changed. A validated close (TP hit, break-even, peak
+drawback) resets the streak. Cooldown length is 60min for H1-regime-gated
+strategies, 30min for faster M5/M15 setups:
+
+**60min:** `ema_pullback`, `trend_follow`, `dd_oversold_bounce`,
+`dd_ranging_breakout`, `dd_early_breakout`
+
+**30min:** `breakout`, `rsi_reversal`, `session_momentum`, `sr_bounce`,
+`session_open`, `regime`
+
+`combined` has no cooldown of its own — it delegates to whichever sub-strategy
+actually signals.
+
 ## Configuration
 
 Copy `.env.example` and fill in credentials. Key vars:

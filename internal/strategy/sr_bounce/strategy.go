@@ -11,22 +11,28 @@ import (
 )
 
 const (
-	rsiBuyThreshold  = 32.0
-	rsiSellThreshold = 68.0
-	rsiBuyExtreme    = 25.0
-	rsiSellExtreme   = 75.0
-	srProximityATR   = 2.0
-	slATRMult        = 1.5
-	tpATRMult        = 2.5
-	minRR            = 1.5
-	minATRPips       = 3.0
+	rsiBuyThreshold            = 32.0
+	rsiSellThreshold           = 68.0
+	rsiBuyExtreme              = 25.0
+	rsiSellExtreme             = 75.0
+	srProximityATR             = 2.0
+	slATRMult                  = 1.5
+	tpATRMult                  = 2.5
+	minRR                      = 1.5
+	minATRPips                 = 3.0
+	consecutiveFailsToCooldown = 2
+	cooldownDuration           = 30 * time.Minute
 )
 
 type SRBounce struct {
-	predictor *ml.Predictor
-	threshold float32
-	symbolID  float32
-	prevRSI   float64
+	predictor      *ml.Predictor
+	threshold      float32
+	symbolID       float32
+	prevRSI        float64
+	buyFailStreak  int
+	sellFailStreak int
+	cooldownDir    string
+	cooldownUntil  time.Time
 }
 
 func New(predictor *ml.Predictor, threshold float32, symbolID float32) *SRBounce {
@@ -35,6 +41,37 @@ func New(predictor *ml.Predictor, threshold float32, symbolID float32) *SRBounce
 
 func (s *SRBounce) Name() string           { return "sr_bounce" }
 func (s *SRBounce) UsesTrendWatcher() bool { return false }
+
+// OnClosed implements strategy.OutcomeAware.
+func (s *SRBounce) OnClosed(side, closeReason string, closeTime time.Time) {
+	switch strategy.ClassifyCloseReason(closeReason) {
+	case strategy.CloseInvalidated:
+		if side == config.SignalBuy {
+			s.buyFailStreak++
+			if s.buyFailStreak >= consecutiveFailsToCooldown {
+				s.cooldownDir = config.SignalBuy
+				s.cooldownUntil = closeTime.Add(cooldownDuration)
+			}
+		} else {
+			s.sellFailStreak++
+			if s.sellFailStreak >= consecutiveFailsToCooldown {
+				s.cooldownDir = config.SignalSell
+				s.cooldownUntil = closeTime.Add(cooldownDuration)
+			}
+		}
+	case strategy.CloseValidated:
+		if side == config.SignalBuy {
+			s.buyFailStreak = 0
+		} else {
+			s.sellFailStreak = 0
+		}
+		if s.cooldownDir == side {
+			s.cooldownDir = ""
+		}
+	case strategy.CloseNeutral:
+		// Doesn't say anything about the setup either way — leave the streak alone.
+	}
+}
 
 func (s *SRBounce) Evaluate(states map[string]indicator.MarketState, currentPrice float64, pipSize float64) strategy.EntryResult {
 	hold := func(reason string) strategy.EntryResult {
@@ -72,6 +109,13 @@ func (s *SRBounce) Evaluate(states map[string]indicator.MarketState, currentPric
 		direction = config.SignalSell
 	default:
 		return hold("no RSI extreme at M15 structure")
+	}
+
+	if direction == s.cooldownDir && !s.cooldownUntil.IsZero() {
+		now := time.Unix(m5.BarTime, 0)
+		if now.Before(s.cooldownUntil) {
+			return hold("cooling down after repeated same-direction invalidation")
+		}
 	}
 
 	if h1, ok := states[config.PeriodH1]; ok && h1.IsWarmedUp {
