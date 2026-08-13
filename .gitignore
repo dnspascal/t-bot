@@ -25,3 +25,5 @@ symbols
 backfill
 ml/*.csv
 ml/*.png
+/api
+/seed
