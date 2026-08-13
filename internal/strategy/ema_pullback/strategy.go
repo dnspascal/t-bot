@@ -2,6 +2,7 @@ package emapullback
 
 import (
 	"math"
+	"time"
 
 	"github.com/denismgaya/t-bot/internal/config"
 	"github.com/denismgaya/t-bot/internal/indicator"
@@ -9,19 +10,55 @@ import (
 )
 
 const (
-	slATRMult = 1.0
-	emaProximityATRs = 1.0
-	adxTrendFloor = 25.0
+	slATRMult                  = 1.0
+	emaProximityATRs           = 1.0
+	adxTrendFloor              = 25.0
+	consecutiveFailsToCooldown = 2
+	cooldownDuration           = 60 * time.Minute
 )
 
 type EMAPullback struct {
-	lastEntryH1BarTime int64
+	buyFailStreak  int
+	sellFailStreak int
+	cooldownDir    string
+	cooldownUntil  time.Time
 }
 
 func New() *EMAPullback { return &EMAPullback{} }
 
 func (s *EMAPullback) Name() string           { return "ema_pullback" }
 func (s *EMAPullback) UsesTrendWatcher() bool { return true }
+
+// OnClosed implements strategy.OutcomeAware.
+func (s *EMAPullback) OnClosed(side, closeReason string, closeTime time.Time) {
+	switch strategy.ClassifyCloseReason(closeReason) {
+	case strategy.CloseInvalidated:
+		if side == config.SignalBuy {
+			s.buyFailStreak++
+			if s.buyFailStreak >= consecutiveFailsToCooldown {
+				s.cooldownDir = config.SignalBuy
+				s.cooldownUntil = closeTime.Add(cooldownDuration)
+			}
+		} else {
+			s.sellFailStreak++
+			if s.sellFailStreak >= consecutiveFailsToCooldown {
+				s.cooldownDir = config.SignalSell
+				s.cooldownUntil = closeTime.Add(cooldownDuration)
+			}
+		}
+	case strategy.CloseValidated:
+		if side == config.SignalBuy {
+			s.buyFailStreak = 0
+		} else {
+			s.sellFailStreak = 0
+		}
+		if s.cooldownDir == side {
+			s.cooldownDir = ""
+		}
+	case strategy.CloseNeutral:
+		// Doesn't say anything about the setup either way — leave the streak alone.
+	}
+}
 
 func (s *EMAPullback) Evaluate(states map[string]indicator.MarketState, currentPrice, pipSize float64) strategy.EntryResult {
 	hold := func(rsn string) strategy.EntryResult {
@@ -31,10 +68,6 @@ func (s *EMAPullback) Evaluate(states map[string]indicator.MarketState, currentP
 	h1, ok := states[config.PeriodH1]
 	if !ok || !h1.IsWarmedUp {
 		return hold("H1 not warmed up")
-	}
-
-	if h1.BarTime == s.lastEntryH1BarTime {
-		return hold("ema_pullback already signaled this H1 bar")
 	}
 
 	if h1.ADX < adxTrendFloor {
@@ -56,12 +89,18 @@ func (s *EMAPullback) Evaluate(states map[string]indicator.MarketState, currentP
 		return hold("M5 not warmed up")
 	}
 
+	if dir == s.cooldownDir && !s.cooldownUntil.IsZero() {
+		now := time.Unix(m5.BarTime, 0)
+		if now.Before(s.cooldownUntil) {
+			return hold("cooling down after repeated same-direction invalidation")
+		}
+	}
+
 	emaProximity := emaProximityATRs * m5.ATR
 	distanceFromEMA := math.Abs(currentPrice - h1.EMASlow)
 	if distanceFromEMA > emaProximity {
 		return hold("price not close enough to H1 EMA21 for pullback entry")
 	}
-
 
 	if dir == config.SignalBuy && currentPrice > h1.EMASlow+emaProximity {
 		return hold("price still too far above EMA — not a pullback")
@@ -111,8 +150,6 @@ func (s *EMAPullback) Evaluate(states map[string]indicator.MarketState, currentP
 	if tpPips < slPips {
 		return hold("R:R below 1:1 — pullback entry not favourable")
 	}
-
-	s.lastEntryH1BarTime = h1.BarTime
 
 	return strategy.EntryResult{
 		Signal:  dir,

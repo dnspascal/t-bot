@@ -122,16 +122,16 @@ footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; f
 <div class="header">
   <div>
     <span class="header-eyebrow">Daily Analysis</span>
-    <h1>2026-08-13 — Gold, dd_ranging_breakout, breakout & ema_pullback Fixes</h1>
+    <h1>2026-08-13 — Gold, Breakout, Cooldown & Telegram Fixes</h1>
     <div class="header-meta">
       <span>Bot: T-Bot (cTrader, XAUUSD + EURUSD)</span>
       <span>Prepared for production incident follow-up</span>
     </div>
   </div>
   <div class="chips">
-    <span class="chip win">5 production fixes shipped</span>
-    <span class="chip loss">ema_pullback: 12 trades, -$6.21 in 90min</span>
-    <span class="chip win">ema_pullback: cooldown + ADX floor shipped</span>
+    <span class="chip win">6 production fixes shipped</span>
+    <span class="chip loss">trend_follow: -$30.74 drag from chained re-entries</span>
+    <span class="chip win">Outcome-aware cooldown on 4 strategies</span>
   </div>
 </div>
 
@@ -361,6 +361,77 @@ if h1.ADX < adxTrendFloor {
     return hold("H1 ADX too weak — regime label isn't backed by a real trend")
 }</pre>
     <p><span class="mono">internal/strategy/ema_pullback/strategy.go</span> (<code>adxTrendFloor = 25.0</code>). Scoped to this strategy only — a general cross-strategy cooldown mechanism (for the sequential-churn failure mode specifically) is a separate follow-up, not yet designed.</p>
+    <p style="font-size:13px; color:#6b7280;"><strong>Superseded by Part 6 below:</strong> the flat one-per-H1-bar cooldown shown above was replaced the same day with an outcome-aware version — see Part 6 for why and what changed. <code>adxTrendFloor</code> is unchanged.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 6 — Outcome-aware cooldown (general mechanism)</div>
+    <div class="section-title">The flat H1-bar cooldown was too blunt — and the same problem turned up in strategies we hadn't looked at yet</div>
+
+    <p>Discussing the ema_pullback fix raised a fair objection: blocking any second entry within the same H1 bar can't tell a genuine repeat mistake from a legitimately different signal later in the same hour. A single loss is just a loss — it shouldn't cool anything down. Two consecutive same-direction losses, though, is a real pattern worth respecting.</p>
+
+    <div class="section-eyebrow" style="margin-top:24px;">The redesign</div>
+    <p>Replaced the bar-boundary cooldown with an outcome-aware one: a strategy now needs <strong>2 consecutive same-direction invalidated closes</strong> before a 60-minute cooldown kicks in for that direction only — the opposite direction is never blocked. Classification is by close <em>reason</em>, not raw P&amp;L, since a reversal-bail can close a few cents positive by luck while the setup was still wrong:</p>
+
+    <table>
+      <tr><th>Close reason</th><th>What it means</th><th>Counts as invalidation?</th></tr>
+      <tr class="highlight"><td><code>sl_hit</code></td><td>Stopped out — thesis was wrong</td><td>Yes</td></tr>
+      <tr class="highlight"><td><code>regime_against</code> / <code>rsi_against</code> / etc.</td><td>Watcher's own indicators flipped against it fast</td><td>Yes</td></tr>
+      <tr class="highlight"><td><code>time_stop=...</code></td><td>Never showed any favorable movement at all</td><td>Yes</td></tr>
+      <tr><td><code>tp_hit</code></td><td>Full target reached — thesis validated</td><td>No — resets streak</td></tr>
+      <tr><td><code>peak_drawback=NN%</code></td><td>Ran into real profit first, gave some back — direction was right</td><td>No — resets streak</td></tr>
+      <tr><td><code>breakeven_sl</code></td><td>Moved into profit enough to arm break-even — direction had merit</td><td>No — resets streak</td></tr>
+      <tr><td><code>eod_close</code></td><td>Session housekeeping, unrelated to setup quality</td><td>Ignored</td></tr>
+    </table>
+
+    <p>Built as <span class="mono">internal/strategy/close_reason.go</span> (a <code>ClassifyCloseReason</code> function shared by the whole <code>strategy</code> package, not duplicated per-strategy) plus an optional <code>OutcomeAware</code> interface (<span class="mono">internal/strategy/strategy.go</span>) that any strategy can implement via <code>OnClosed(side, closeReason string, closeTime time.Time)</code>. The bot type-asserts for it in <code>notifyStrategyClosed</code> (<span class="mono">internal/bot/bot.go</span>), called from both close paths right after a position leaves the registry — strategies that don't implement it are completely unaffected.</p>
+    <p>Also centralized 8+ scattered raw-string close-reason literals (<code>"sl_hit"</code>, <code>"regime_against"</code>, the dynamically-formatted <code>peak_drawback=%.0f%%</code>, etc.) across <span class="mono">bot.go</span>/<span class="mono">watcher.go</span> into named constants in the same file — the classifier and the code that builds these strings now share one source of truth, so they can't silently drift apart.</p>
+
+    <div class="section-eyebrow" style="margin-top:24px;">Checking who else has this problem</div>
+    <p>Before applying this anywhere else, queried every strategy's trade history for the same pattern: a new signal firing within 30 minutes of a same-direction invalidated close from the same strategy, then compared that group's P&amp;L against everything else:</p>
+
+    <table>
+      <tr><th>Strategy</th><th class="num">Chained trades</th><th class="num">Chained avg P&amp;L</th><th class="num">Unchained avg P&amp;L</th><th>Verdict</th></tr>
+      <tr class="highlight"><td>trend_follow</td><td class="num">75</td><td class="num">-$0.41</td><td class="num">+$3.44</td><td>Real drag on the best-performing strategy — fixed</td></tr>
+      <tr class="highlight"><td>rsi_reversal</td><td class="num">17</td><td class="num">-$1.01</td><td class="num">+$0.01</td><td>~75% of its total loss — fixed</td></tr>
+      <tr class="highlight"><td>breakout</td><td class="num">6</td><td class="num">-$0.82</td><td class="num">-$0.06</td><td>Confirms the earlier fix was justified — fixed</td></tr>
+      <tr class="highlight"><td>ema_pullback</td><td class="num">9</td><td class="num">-$1.15</td><td class="num">+$1.37</td><td>Already fixed (Part 5)</td></tr>
+      <tr><td>dd_ranging_breakout</td><td class="num">10</td><td class="num">+$2.98</td><td class="num">-$1.72</td><td><strong>Opposite pattern</strong> — chaining did better. Not touched.</td></tr>
+      <tr><td>sr_bounce</td><td class="num">3</td><td class="num">-$5.34</td><td class="num">-$1.23</td><td>Directionally worse but n=3, too thin to act on</td></tr>
+      <tr><td>session_momentum / session_open</td><td class="num">0</td><td class="num">—</td><td class="num">—</td><td>No evidence, nothing to fix</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">Biggest surprise: <code>trend_follow</code> — the one strategy with a clear proven edge (+$151.50 net) — is being dragged down by exactly this pattern. Its 48 clean trades average +$3.44 each; its 75 chained re-entries average -$0.41 each. The strategy's overall profit is happening despite this drag, not because of it. <code>dd_ranging_breakout</code> shows the literal opposite, which is why it was deliberately left alone rather than applying the fix everywhere uniformly.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;">Outcome-aware cooldown added to <code>ema_pullback</code>, <code>breakout</code>, <code>trend_follow</code>, and <code>rsi_reversal</code> — the four strategies with real evidence of the drag. <code>dd_ranging_breakout</code>, <code>sr_bounce</code>, <code>session_momentum</code>, and <code>session_open</code> deliberately left untouched — no evidence, or evidence pointing the other way.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 7 — Telegram trade messages</div>
+    <div class="section-title">Added position size and close reason to every trade notification</div>
+
+    <p>Open and close messages previously showed price/SL/TP/P&amp;L but not how large the position was, and close messages didn't say <em>why</em> it closed. Both added:</p>
+    <pre>🟢 BUY XAUUSD opened
+📍 Price: 2415.32
+📦 Size: 0.10 lots
+🛡 SL: 2410.12 (52.0 pips)
+🎯 TP: 2425.72 (104.0 pips)
+🤖 Strategy: dd_early_breakout
+
+✅ WIN SELL XAUUSD closed
+💰 P&amp;L: +$4.09
+📦 Size: 0.10 lots
+⏱ Duration: 5 min
+📍 Entry: 2392.66 → Close: 2388.07
+📋 Reason: regime_against,rsi_against,ema_cross_against</pre>
+    <p>Lot size is derived from raw volume (<code>1000 units = 1 micro lot</code>, per <span class="mono">risk.Manager</span>'s existing convention) via a new <code>formatLots</code> helper in <span class="mono">internal/notify/telegram.go</span>. Close reason reuses the same string already stored on the fill record — no new data, just surfaced in the message. Wired from the two existing dispatch points in <span class="mono">bot.go</span> (<code>recordCloseFill</code> for open, both <code>recordCloseFill</code>/close for close) using variables already in scope.</p>
+    <p style="font-size:13px; color:#6b7280;"><strong>Known gap, not addressed here:</strong> <code>recordBrokerClose</code> (the path for broker-initiated closes not matched to our own order flow) doesn't dispatch a Telegram close notification at all — a pre-existing gap independent of this change, so those closes still won't produce a message.</p>
   </div>
 
 </div>

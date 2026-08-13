@@ -1,6 +1,8 @@
 package strategy
 
 import (
+	"time"
+
 	"github.com/denismgaya/t-bot/internal/config"
 	"github.com/denismgaya/t-bot/internal/indicator"
 )
@@ -25,6 +27,10 @@ type Strategy interface {
 	Evaluate(states map[string]indicator.MarketState, currentPrice, pipSize float64) EntryResult
 
 	UsesTrendWatcher() bool
+}
+
+type OutcomeAware interface {
+	OnClosed(side, closeReason string, closeTime time.Time)
 }
 
 func ConfluenceToTier(c int) int {

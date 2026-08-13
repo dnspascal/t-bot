@@ -2,6 +2,7 @@ package rsireversal
 
 import (
 	"math"
+	"time"
 
 	"github.com/denismgaya/t-bot/internal/config"
 	"github.com/denismgaya/t-bot/internal/indicator"
@@ -9,18 +10,57 @@ import (
 )
 
 const (
-	rsiBuyThreshold  = 28.0 
-	rsiSellThreshold = 72.0 
+	rsiBuyThreshold  = 28.0
+	rsiSellThreshold = 72.0
 	slATRMult        = 1.0
 	tpATRMult        = 1.5
+
+	consecutiveFailsToCooldown = 2
+	cooldownDuration           = 60 * time.Minute
 )
 
-type RSIReversal struct{}
+type RSIReversal struct {
+	buyFailStreak  int
+	sellFailStreak int
+	cooldownDir    string
+	cooldownUntil  time.Time
+}
 
 func New() *RSIReversal { return &RSIReversal{} }
 
 func (s *RSIReversal) Name() string           { return "rsi_reversal" }
 func (s *RSIReversal) UsesTrendWatcher() bool { return true }
+
+// OnClosed implements strategy.OutcomeAware.
+func (s *RSIReversal) OnClosed(side, closeReason string, closeTime time.Time) {
+	switch strategy.ClassifyCloseReason(closeReason) {
+	case strategy.CloseInvalidated:
+		if side == config.SignalBuy {
+			s.buyFailStreak++
+			if s.buyFailStreak >= consecutiveFailsToCooldown {
+				s.cooldownDir = config.SignalBuy
+				s.cooldownUntil = closeTime.Add(cooldownDuration)
+			}
+		} else {
+			s.sellFailStreak++
+			if s.sellFailStreak >= consecutiveFailsToCooldown {
+				s.cooldownDir = config.SignalSell
+				s.cooldownUntil = closeTime.Add(cooldownDuration)
+			}
+		}
+	case strategy.CloseValidated:
+		if side == config.SignalBuy {
+			s.buyFailStreak = 0
+		} else {
+			s.sellFailStreak = 0
+		}
+		if s.cooldownDir == side {
+			s.cooldownDir = ""
+		}
+	case strategy.CloseNeutral:
+		// Doesn't say anything about the setup either way — leave the streak alone.
+	}
+}
 
 func (s *RSIReversal) Evaluate(states map[string]indicator.MarketState, currentPrice, pipSize float64) strategy.EntryResult {
 	hold := func(rsn string) strategy.EntryResult {
@@ -42,7 +82,6 @@ func (s *RSIReversal) Evaluate(states map[string]indicator.MarketState, currentP
 		return hold("H1 RSI not at extreme")
 	}
 
-	
 	if dir == config.SignalBuy && (h1.Regime == config.TrendingDown || h1.EMAFast < h1.EMASlow) {
 		return hold("H1 trending down or EMA bearish — RSI oversold may persist")
 	}
@@ -73,6 +112,13 @@ func (s *RSIReversal) Evaluate(states map[string]indicator.MarketState, currentP
 	m15, ok := states[config.PeriodM15]
 	if !ok || !m15.IsWarmedUp || m15.ATR <= 0 {
 		return hold("M15 ATR not ready")
+	}
+
+	if dir == s.cooldownDir && !s.cooldownUntil.IsZero() {
+		now := time.Unix(m15.BarTime, 0)
+		if now.Before(s.cooldownUntil) {
+			return hold("cooling down after repeated same-direction invalidation")
+		}
 	}
 
 	atr := m15.ATR
