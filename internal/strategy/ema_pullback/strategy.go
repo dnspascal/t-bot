@@ -10,12 +10,13 @@ import (
 
 const (
 	slATRMult = 1.0
-	// TP targets the H1 trend extreme (TrendHigh/TrendLow), giving asymmetric R:R
-	// EMA proximity: price must be within this many ATRs of H1 EMA21 to be "at pullback"
 	emaProximityATRs = 1.0
+	adxTrendFloor = 25.0
 )
 
-type EMAPullback struct{}
+type EMAPullback struct {
+	lastEntryH1BarTime int64
+}
 
 func New() *EMAPullback { return &EMAPullback{} }
 
@@ -32,7 +33,14 @@ func (s *EMAPullback) Evaluate(states map[string]indicator.MarketState, currentP
 		return hold("H1 not warmed up")
 	}
 
-	// Only trade in a clear trend, not ranging or breakout
+	if h1.BarTime == s.lastEntryH1BarTime {
+		return hold("ema_pullback already signaled this H1 bar")
+	}
+
+	if h1.ADX < adxTrendFloor {
+		return hold("H1 ADX too weak — regime label isn't backed by a real trend")
+	}
+
 	var dir string
 	switch h1.Regime {
 	case config.TrendingUp:
@@ -48,16 +56,13 @@ func (s *EMAPullback) Evaluate(states map[string]indicator.MarketState, currentP
 		return hold("M5 not warmed up")
 	}
 
-	// Price must be close to H1 EMA21 (the pullback zone)
 	emaProximity := emaProximityATRs * m5.ATR
 	distanceFromEMA := math.Abs(currentPrice - h1.EMASlow)
 	if distanceFromEMA > emaProximity {
 		return hold("price not close enough to H1 EMA21 for pullback entry")
 	}
 
-	// Price must be on the correct side of EMA (trend side)
-	// BUY: price should be at or just below EMA (pulling back into it from above)
-	// SELL: price should be at or just above EMA (bouncing up into it from below)
+
 	if dir == config.SignalBuy && currentPrice > h1.EMASlow+emaProximity {
 		return hold("price still too far above EMA — not a pullback")
 	}
@@ -65,7 +70,6 @@ func (s *EMAPullback) Evaluate(states map[string]indicator.MarketState, currentP
 		return hold("price still too far below EMA — not a pullback")
 	}
 
-	// M5 must show the bounce starting: candle body in trend direction
 	if dir == config.SignalBuy && m5.Close <= m5.Open {
 		return hold("M5 not yet showing bullish bounce off EMA")
 	}
@@ -80,8 +84,6 @@ func (s *EMAPullback) Evaluate(states map[string]indicator.MarketState, currentP
 
 	atr := m15.ATR
 
-	// SL: beyond EMA by 1× ATR
-	// TP: H1 trend extreme (TrendHigh for BUY, TrendLow for SELL)
 	var slPrice, tpPrice float64
 	if dir == config.SignalBuy {
 		slPrice = h1.EMASlow - slATRMult*atr
@@ -91,7 +93,6 @@ func (s *EMAPullback) Evaluate(states map[string]indicator.MarketState, currentP
 		tpPrice = h1.TrendLow
 	}
 
-	// Sanity check: TP must be beyond current price
 	if dir == config.SignalBuy && tpPrice <= currentPrice {
 		return hold("H1 TrendHigh is at or below current price")
 	}
@@ -110,6 +111,8 @@ func (s *EMAPullback) Evaluate(states map[string]indicator.MarketState, currentP
 	if tpPips < slPips {
 		return hold("R:R below 1:1 — pullback entry not favourable")
 	}
+
+	s.lastEntryH1BarTime = h1.BarTime
 
 	return strategy.EntryResult{
 		Signal:  dir,
