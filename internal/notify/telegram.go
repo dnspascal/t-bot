@@ -55,10 +55,10 @@ func (t *TelegramChannel) format(eventType EventType, payload any) string {
 			dir = "🔴 SELL"
 		}
 		return fmt.Sprintf(
-			"%s <b>%s</b> opened\n📍 Price: %s\n📦 Size: %s lots\n🛡 SL: %s (%.1f pips)\n🎯 TP: %s (%.1f pips)\n🤖 Strategy: %s",
+			"%s <b>%s</b> opened\n📍 Price: %s\n📦 Size: %s units\n🛡 SL: %s (%.1f pips)\n🎯 TP: %s (%.1f pips)\n🤖 Strategy: %s",
 			dir, p.Symbol,
 			formatPrice(p.Price),
-			formatLots(p.Volume),
+			formatUnits(p.Volume),
 			formatPrice(p.SLPrice), p.SLPips,
 			formatPrice(p.TPPrice), p.TPPips,
 			p.Strategy,
@@ -77,10 +77,10 @@ func (t *TelegramChannel) format(eventType EventType, payload any) string {
 		}
 		mins := int(p.Duration.Minutes())
 		return fmt.Sprintf(
-			"%s <b>%s %s</b> closed\n💰 P&amp;L: %s$%.2f\n📦 Size: %s lots\n⏱ Duration: %d min\n📍 Entry: %s → Close: %s\n📋 Reason: %s",
+			"%s <b>%s %s</b> closed\n💰 P&amp;L: %s$%.2f\n📦 Size: %s units\n⏱ Duration: %d min\n📍 Entry: %s → Close: %s\n📋 Reason: %s",
 			result, p.Side, p.Symbol,
 			pnlSign, p.Realized,
-			formatLots(p.Volume),
+			formatUnits(p.Volume),
 			mins,
 			formatPrice(p.EntryPrice), formatPrice(p.ClosePrice),
 			p.CloseReason,
@@ -213,6 +213,6 @@ func formatPrice(p float64) string {
 	return fmt.Sprintf("%.5f", p)
 }
 
-func formatLots(volume int64) string {
-	return fmt.Sprintf("%.2f", float64(volume)/100_000.0)
+func formatUnits(volume int64) string {
+	return fmt.Sprintf("%.2f", float64(volume)/100.0)
 }

@@ -16,7 +16,7 @@ const (
 	tpATRMult        = 1.5
 
 	consecutiveFailsToCooldown = 2
-	cooldownDuration           = 60 * time.Minute
+	cooldownDuration           = 30 * time.Minute
 )
 
 type RSIReversal struct {
@@ -31,7 +31,6 @@ func New() *RSIReversal { return &RSIReversal{} }
 func (s *RSIReversal) Name() string           { return "rsi_reversal" }
 func (s *RSIReversal) UsesTrendWatcher() bool { return true }
 
-// OnClosed implements strategy.OutcomeAware.
 func (s *RSIReversal) OnClosed(side, closeReason string, closeTime time.Time) {
 	switch strategy.ClassifyCloseReason(closeReason) {
 	case strategy.CloseInvalidated:

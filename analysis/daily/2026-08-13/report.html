@@ -432,6 +432,43 @@ if h1.ADX < adxTrendFloor {
 📋 Reason: regime_against,rsi_against,ema_cross_against</pre>
     <p>Lot size is derived from raw volume (<code>1000 units = 1 micro lot</code>, per <span class="mono">risk.Manager</span>'s existing convention) via a new <code>formatLots</code> helper in <span class="mono">internal/notify/telegram.go</span>. Close reason reuses the same string already stored on the fill record — no new data, just surfaced in the message. Wired from the two existing dispatch points in <span class="mono">bot.go</span> (<code>recordCloseFill</code> for open, both <code>recordCloseFill</code>/close for close) using variables already in scope.</p>
     <p style="font-size:13px; color:#6b7280;"><strong>Known gap, not addressed here:</strong> <code>recordBrokerClose</code> (the path for broker-initiated closes not matched to our own order flow) doesn't dispatch a Telegram close notification at all — a pre-existing gap independent of this change, so those closes still won't produce a message.</p>
+    <p style="font-size:13px; color:#6b7280;"><strong>Corrected in Part 8:</strong> the <code>formatLots</code>/"0.10 lots" shown above was wrong — see Part 8 for the actual bug and the fix.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 8 — Fixing the Telegram size, and cooldown duration</div>
+    <div class="section-title">"1.00 lots" on a -$0.27 loss doesn't add up — traced the real unit convention from live P&L</div>
+
+    <p>Reported almost immediately after Part 7 shipped: a EURUSD loss showed <code>📦 Size: 1.00 lots</code> for a trade that only lost -$0.27 on a 2.1-pip adverse move. A full standard lot moving 2.1 pips on EURUSD is roughly $21 — two orders of magnitude off.</p>
+
+    <div class="section-eyebrow" style="margin-top:24px;">Tracing the real conversion from live math</div>
+    <p>Rather than guess again, reverse-engineered the actual unit size from real trade P&amp;L on both symbols:</p>
+    <table>
+      <tr><th>Symbol</th><th class="num">Stored volume</th><th class="num">Price move</th><th class="num">Gross P&amp;L</th><th>Real size</th></tr>
+      <tr class="highlight"><td>EURUSD</td><td class="num">100,000</td><td class="num">2.1 pips</td><td class="num">-$0.21</td><td>0.01 standard lots (1 micro lot)</td></tr>
+      <tr class="highlight"><td>XAUUSD</td><td class="num">100</td><td class="num">$5.52</td><td class="num">-$5.52</td><td>1.00 troy ounce</td></tr>
+    </table>
+    <p>Both confirm the same underlying rule: cTrader reports volume in <code>0.01 of a unit</code> universally (per its own protocol spec) — divide by 100 to get real base units, EUR currency units for EURUSD, troy ounces for XAUUSD. <code>formatLots</code> divided by 100,000 once instead of 100 first — a 100x error that also happened to hardcode a forex-only lot definition. Gold's "1 lot" isn't 100,000 of anything; the two instruments don't share a lot size at all.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;">Dropped "lots" entirely in favor of showing actual traded <strong>units</strong> (<code>volume / 100</code>) — universally correct for any instrument per cTrader's own convention, with no per-symbol contract-size lookup needed. <span class="mono">formatUnits</span> replaces <span class="mono">formatLots</span> in <span class="mono">internal/notify/telegram.go</span>.</p>
+    </div>
+
+    <pre><span class="cmt">// before — wrong, forex-only assumption applied to every symbol</span>
+func formatLots(volume int64) string {
+    return fmt.Sprintf("%.2f", float64(volume)/100_000.0)
+}
+
+<span class="cmt">// after — correct for any instrument, per cTrader's own protocol convention</span>
+func formatUnits(volume int64) string {
+    return fmt.Sprintf("%.2f", float64(volume)/100.0)
+}</pre>
+
+    <div class="section-eyebrow" style="margin-top:24px;">Also: cooldown duration split by strategy cadence</div>
+    <p>Separately, the flat 60-minute cooldown (Part 6) was raised as disproportionate for the faster strategies. <code>ema_pullback</code> and <code>trend_follow</code> are H1-driven — 60 minutes is exactly one H1 bar, matching their natural rhythm. <code>breakout</code> and <code>rsi_reversal</code> fire off M15 bars — a full hour there is 4 bars' worth of missed opportunity for a much faster-cycling strategy. Reduced <code>cooldownDuration</code> to 30 minutes (2 M15 bars) for those two; left the H1 strategies at 60 minutes.</p>
   </div>
 
 </div>
