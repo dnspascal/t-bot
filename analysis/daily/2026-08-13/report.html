@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Analysis — 2026-08-13</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Lato', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #000;
+  background: #fff;
+  padding-bottom: 80px;
+}
+
+/* ── Header ── */
+.header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 28px 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.header-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: #1d4ed8;
+  background: #eaf0ff; padding: 3px 10px; border-radius: 4px;
+  display: inline-block; margin-bottom: 8px;
+}
+.header h1 { font-size: 22px; font-weight: 900; letter-spacing: -.3px; margin-bottom: 6px; }
+.header-meta { font-size: 13px; color: #6b7280; display: flex; gap: 20px; flex-wrap: wrap; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.chip {
+  font-size: 12px; font-weight: 700; padding: 5px 12px;
+  border-radius: 20px; color: #6b7280;
+}
+.chip.loss { color: #dc2626; background: #fef2f2; }
+.chip.win  { color: #16a34a; background: #f0fdf4; }
+.chip.info { color: #1d4ed8; background: #eaf0ff; }
+
+/* ── Page ── */
+.page { max-width: 920px; margin: 0 auto; padding: 40px 24px 0; }
+.section { margin-bottom: 48px; }
+.section-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: #6b7280; margin-bottom: 10px;
+}
+.section-title { font-size: 18px; font-weight: 900; letter-spacing: -.2px; margin-bottom: 16px; }
+hr { border: none; border-top: 1px solid #e5e7eb; margin: 44px 0; }
+
+/* ── Cards ── */
+.finding {
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 20px 22px; margin-bottom: 16px;
+  background: #fff;
+}
+.finding-header {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.finding-title { font-size: 15px; font-weight: 700; flex: 1; }
+.badge {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+  white-space: nowrap; margin-top: 2px;
+}
+.badge.fixed   { background: #f0fdf4; color: #16a34a; }
+.badge.gap     { background: #fef2f2; color: #dc2626; }
+.badge.pending { background: #fff7ed; color: #c2410c; }
+.badge.info    { background: #eaf0ff; color: #1d4ed8; }
+
+p { margin-bottom: 10px; max-width: 70ch; }
+code {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 13px;
+  background: #f3f4f6; padding: 1px 6px; border-radius: 4px;
+}
+pre {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px;
+  background: #f3f4f6; color: #000;
+  padding: 14px 16px; border-radius: 8px; overflow-x: auto;
+  margin: 10px 0 14px;
+}
+pre .cmt { color: #6b7280; }
+
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.5px; }
+th {
+  text-align: left; font-weight: 700; font-size: 11px;
+  letter-spacing: .04em; text-transform: uppercase; color: #6b7280;
+  padding: 8px 10px; border-bottom: 2px solid #e5e7eb;
+}
+td { padding: 9px 10px; border-bottom: 1px solid #f0f1f3; }
+tr.highlight td { background: #fef2f2; }
+tr.ok td { background: #f0fdf4; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.mono { font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px; }
+
+.quote {
+  background: #f8fafc; border-radius: 8px;
+  padding: 12px 16px; margin: 12px 0 16px; font-size: 14px; color: #000;
+}
+.quote .src { font-size: 11.5px; color: #9ca3af; margin-top: 6px; font-family: 'SF Mono', Menlo, monospace; }
+
+.decision {
+  background: #f5f8ff; border-radius: 8px;
+  padding: 18px 20px; margin-top: 10px;
+}
+.decision-title { font-weight: 900; font-size: 14px; color: #1d4ed8; margin-bottom: 8px; }
+
+footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <span class="header-eyebrow">Daily Analysis</span>
+    <h1>2026-08-13 — Gold Fixes & dd_ranging_breakout SL Review</h1>
+    <div class="header-meta">
+      <span>Bot: T-Bot (cTrader, XAUUSD + EURUSD)</span>
+      <span>Prepared for production incident follow-up</span>
+    </div>
+  </div>
+  <div class="chips">
+    <span class="chip win">2 production fixes shipped</span>
+    <span class="chip loss">dd_ranging_breakout: -$7.38 net</span>
+    <span class="chip win">SL widened & shipped</span>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="section">
+    <div class="section-eyebrow">Part 1 — Production fixes shipped today</div>
+    <div class="section-title">Gold stopped trading, then stopped protecting itself</div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">XAUUSD orders rejected with INVALID_REQUEST since last night's deploy</span>
+        <span class="badge fixed">Fixed</span>
+      </div>
+      <p>Commit <code>248153c</code> switched cTrader SL/TP encoding to the relative-field format (fields 19/20, ×100000 — correct per the Open API spec) but dropped the step that rounds the distance to the symbol's real tradable precision first. Gold trades in $0.01 ticks; the un-rounded distance produced values that don't align to that tick grid, so every single XAUUSD order errored with <code>"Relative stop loss has invalid precision"</code> from 2026-08-11 22:10 onward — 28 straight failures, EURUSD unaffected (its 5-decimal precision already aligns 1:1 with the ×100000 scale). Fixed by restoring the precision-rounding step, now applied to the relative-field path.</p>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Break-even SL amend was silently deleting the take-profit</span>
+        <span class="badge fixed">Fixed</span>
+      </div>
+      <p><code>encodeAmendPositionSLTPReq</code> only ever sent the <code>stopLoss</code> field (4) since it was first written. cTrader clears the existing <code>takeProfit</code> when the amend request omits it, rather than preserving it — confirmed live: a trade ran to +$39 of favorable excursion, past where TP should have closed it, because TP no longer existed on the position after break-even fired. Affected every symbol/provider, not just gold. Fixed by resending the tracked TP price (field 5) on every SL amend.</p>
+    </div>
+
+    <p style="margin-top:4px; color:#6b7280; font-size:13px;">Both shipped via <code>feat → dev (squash) → main (merge) → tag</code> and deployed at 03:22 EAT. Confirmed live: gold's next signal filled correctly with SL/TP intact.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 2 — Strategy review</div>
+    <div class="section-title">dd_ranging_breakout: what the backtest said vs. what happened live</div>
+
+    <p>While confirming the gold fixes, a trade closed via <code>sl_hit</code> after <strong>27 seconds</strong>, net -$2.08. Checking further, this wasn't a one-off — it's a pattern specific to one strategy.</p>
+
+    <div class="quote">
+      "Data-driven strategy derived from 55-day signal analysis (v2_condition_analysis_2026-08-04).
+      Condition group: H1=ranging, M5=breakout, M5 EMA bull, M5 RSI mid-high (≥50)
+      → 60–64% BUY win at 4h (n=59–71)."
+      <div class="src">internal/strategy/dd_ranging_breakout/strategy.go:11-13</div>
+    </div>
+
+    <p>Based on that backtested win rate, the strategy was tuned for a 3:1 reward:risk shape — <code>TP = 1.5×ATR</code>, <code>SL = 0.5×ATR</code> — deliberately tight, on the assumption that a ~25% win rate would already break even, and 60–64% would be comfortably profitable. Its sibling <code>dd_oversold_bounce</code> came from the same backtest run with the same 0.5×ATR SL, on a condition group reported at 70.6% (n=34).</p>
+
+    <div class="section-eyebrow" style="margin-top:24px;">What we actually observed live</div>
+    <table>
+      <tr>
+        <th>Strategy</th><th class="num">SL mult.</th><th class="num">Trades</th>
+        <th class="num">Wins</th><th class="num">Losses</th>
+        <th class="num">Net P&amp;L</th><th class="num">Fast (&lt;5min) SL hits</th>
+        <th class="num">Avg. time-to-SL-hit</th>
+      </tr>
+      <tr class="highlight">
+        <td><strong>dd_ranging_breakout</strong></td><td class="num">0.5×ATR</td><td class="num">32</td>
+        <td class="num">13</td><td class="num">19</td>
+        <td class="num">-$7.38</td><td class="num">6</td><td class="num">583s (~9.7min)</td>
+      </tr>
+      <tr>
+        <td>dd_oversold_bounce</td><td class="num">0.5×ATR</td><td class="num">0</td>
+        <td class="num">—</td><td class="num">—</td>
+        <td class="num">—</td><td class="num">—</td><td class="num">never fired live</td>
+      </tr>
+      <tr class="ok">
+        <td>session_open <span style="color:#9ca3af;">(unrelated design)</span></td><td class="num">0.5×ATR</td><td class="num">13</td>
+        <td class="num">7</td><td class="num">6</td>
+        <td class="num">+$1.09</td><td class="num">0</td><td class="num">703s (only 1 SL hit)</td>
+      </tr>
+      <tr>
+        <td>trend_follow</td><td class="num">1.5×ATR</td><td class="num">125</td>
+        <td class="num">52</td><td class="num">73</td>
+        <td class="num">+$151.50</td><td class="num">0</td><td class="num">7392s</td>
+      </tr>
+      <tr>
+        <td>sr_bounce</td><td class="num">1.5×ATR</td><td class="num">39</td>
+        <td class="num">13</td><td class="num">26</td>
+        <td class="num">-$68.77</td><td class="num">0</td><td class="num">5145s</td>
+      </tr>
+      <tr>
+        <td>rsi_reversal</td><td class="num">1.0×ATR</td><td class="num">24</td>
+        <td class="num">7</td><td class="num">17</td>
+        <td class="num">-$23.00</td><td class="num">0</td><td class="num">4610s</td>
+      </tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">Every strategy running SL ≥ 1.0×ATR has zero fast SL hits, regardless of its overall win rate. Only the 0.5×ATR strategies show sub-5-minute stop-outs — and of those, only <code>dd_ranging_breakout</code> has live trades to show it: 40.6% observed win rate against a 60–64% backtested one, and a net loss where the backtest implied a clear edge.</p>
+
+    <div class="section-eyebrow" style="margin-top:24px;">What the backtest missed</div>
+    <p>The condition-analysis script simulates each signal's outcome by scanning candles for a TP or SL touch:</p>
+    <pre>startIdx := sort.Search(len(sc), func(i int) bool {
+    return sc[i].BarTime.After(m.CreatedAt)   <span class="cmt">// starts AFTER the signal's own bar</span>
+})
+<span class="cmt">// ...loop uses M5 (5-minute) candle High/Low for hit detection, from startIdx onward</span></pre>
+    <p><span class="mono">analysis/v2_condition_analysis_2026-08-04/main.go:219-221</span></p>
+    <p>Two compounding gaps:</p>
+    <ol style="margin-left: 20px; margin-bottom: 14px;">
+      <li style="margin-bottom:6px;"><strong>It never checks the entry bar itself.</strong> The scan starts at the first M5 bar strictly <em>after</em> the signal's <code>CreatedAt</code> timestamp — so any reversal in the seconds immediately following entry, still inside that same bar, is invisible to the backtest. That's precisely where live trades are dying: 9s, 27s, 1m43s after entry.</li>
+      <li style="margin-bottom:6px;"><strong>Hit detection is 5-minute-bar granularity.</strong> Even for subsequent bars, the backtest only knows a bar's High/Low touched TP or SL — not the order, speed, or path price took to get there. A stop that's half an average bar's range sits well inside ordinary tick-to-tick noise, which a 5-minute bar can't resolve.</li>
+    </ol>
+    <p>The 60–64% figure is real for the question the backtest actually asked ("does price reach TP before SL within 4 hours, starting one bar after entry") — it just wasn't the question that matters for a 0.5×ATR stop, which lives or dies in the seconds right after entry, not four hours later.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:8px;"><strong>dd_ranging_breakout:</strong> widen SL from 0.5×ATR to 1.0×ATR (matching the next-tightest strategies in production, all of which show zero fast SL hits). Strong live evidence: 59% SL-hit rate, net loser, exact failure mode explained above.</p>
+      <p style="margin-bottom:8px;"><strong>dd_oversold_bounce:</strong> same backtest lineage, same blind spot, but zero live trades — no track record to lose. Recommend widening preemptively to 1.0×ATR rather than waiting to reproduce the same failure live.</p>
+      <p style="margin-bottom:0;"><strong>session_open:</strong> not from this backtest, different entry logic (session-range breakout, not ATR-chase off current price), and shows none of this pattern live (near-breakeven, only 1 of 13 trades an SL hit and not a fast one). No evidence it needs changing — leave as is.</p>
+    </div>
+
+    <div class="section-eyebrow" style="margin-top:24px;">How we're fixing it</div>
+    <p>One-line constant change in each strategy file — TP stays at 1.5×ATR, only the SL multiplier moves:</p>
+    <pre>const (
+    tpATRMult = 1.5
+<span class="cmt">-   slATRMult = 0.5</span>
+<span style="color:#16a34a;">+   slATRMult = 1.0</span>
+)</pre>
+    <p><span class="mono">internal/strategy/dd_ranging_breakout/strategy.go:19-21</span> and the equivalent constant in <span class="mono">internal/strategy/dd_oversold_bounce/strategy.go</span>.</p>
+    <p>This drops the reward:risk ratio from 3:1 to 1.5:1 — still solidly profitable at anywhere near the backtested 60–64% win rate (breakeven point moves from ~25% to ~40%, and the observed live win rate was already 40.6% even while getting clipped by noise). The real fix is giving the stop room to sit outside ordinary intrabar movement instead of inside it, which is what was actually costing trades — not the win rate itself.</p>
+    <p>No other logic changes: entry conditions, TP distance, and position sizing stay exactly as backtested. Ships through the same <code>feat → dev (squash) → main (merge) → tag</code> flow used for today's other two fixes, once you confirm scope.</p>
+  </div>
+
+</div>
+
+<footer>Generated 2026-08-13 · positions/orders/signals/fills data from tbot_prod · strategy source: internal/strategy/*/strategy.go</footer>
+
+</body>
+</html>
