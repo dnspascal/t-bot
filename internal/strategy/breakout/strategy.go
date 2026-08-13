@@ -14,7 +14,7 @@ const (
 	tpATRMult = 2.0
 
 	consecutiveFailsToCooldown = 2
-	cooldownDuration           = 60 * time.Minute
+	cooldownDuration           = 30 * time.Minute
 )
 
 type Breakout struct {
