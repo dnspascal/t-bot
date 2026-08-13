@@ -85,12 +85,17 @@ func encodeSubscribeSpotsReq(accountID, symbolID int64) []byte {
 	return b
 }
 
-func encodeAmendPositionSLTPReq(accountID, positionID int64, newSL float64) []byte {
+func encodeAmendPositionSLTPReq(accountID, positionID int64, newSL, tp float64) []byte {
 	var b []byte
 	b = appendUint32(b, 1, ProtoOAAmendPositionSLTPReq)
 	b = appendInt64(b, 2, accountID)
 	b = appendInt64(b, 3, positionID)
 	b = appendDouble(b, 4, newSL)
+	// takeProfit (field 5) must be resent on every amend — cTrader clears the
+	// existing TP if this field is omitted, it does not preserve it.
+	if tp > 0 {
+		b = appendDouble(b, 5, tp)
+	}
 	return b
 }
 
@@ -555,8 +560,6 @@ type DealInfo struct {
 }
 
 
-// extractLenDelim returns the first occurrence of a length-delimited field
-// with the given field number from a raw proto message, or nil if not found.
 func extractLenDelim(data []byte, targetField uint64) []byte {
 	i := 0
 	for i < len(data) {

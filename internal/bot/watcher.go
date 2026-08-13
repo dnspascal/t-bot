@@ -227,7 +227,7 @@ func (b *Bot) checkBreakEven(ctx context.Context, pos trackedPosition) {
 		newSL = pos.OpenPrice - 2*b.pipSize
 	}
 
-	if err := b.provider.AmendPositionSL(ctx, pos.ProviderPositionID, newSL); err != nil {
+	if err := b.provider.AmendPositionSL(ctx, pos.ProviderPositionID, newSL, pos.TPPrice); err != nil {
 		slog.Error("checkBreakEven: AmendPositionSL failed",
 			"posID", pos.ProviderPositionID, "newSL", newSL, "err", err,
 		)
