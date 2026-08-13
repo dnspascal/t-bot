@@ -17,7 +17,7 @@ import (
 
 const (
 	tpATRMult = 1.5
-	slATRMult = 0.5
+	slATRMult = 1.0
 )
 
 type DDRangingBreakout struct{}

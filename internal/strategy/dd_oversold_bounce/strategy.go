@@ -19,7 +19,7 @@ import (
 const (
 	adxTrending = 25.0
 	tpATRMult   = 1.5
-	slATRMult   = 0.5
+	slATRMult   = 1.0
 )
 
 type DDOversoldBounce struct{}
