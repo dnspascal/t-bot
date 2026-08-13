@@ -9,6 +9,7 @@ import (
 
 	"github.com/denismgaya/t-bot/internal/config"
 	"github.com/denismgaya/t-bot/internal/indicator"
+	strat "github.com/denismgaya/t-bot/internal/strategy"
 )
 
 const peakDrawbackThreshold = 60.0
@@ -37,7 +38,7 @@ func (b *Bot) watchPositions(ctx context.Context, ms indicator.MarketState) {
 				"posID", pos.ProviderPositionID,
 				"side", pos.Side,
 			)
-			b.closeTrackedPosition(ctx, pos, "eod_close")
+			b.closeTrackedPosition(ctx, pos, strat.CloseReasonEODClose)
 		}
 		return
 	}
@@ -99,32 +100,31 @@ func countReversalSignals(ms indicator.MarketState, pos trackedPosition, pipSize
 	var signals []string
 
 	if pct := peakDrawbackPct(pos, ms.Close, pipSize); pct >= peakDrawbackThreshold {
-		signals = append(signals, fmt.Sprintf("peak_drawback=%.0f%%", pct))
+		signals = append(signals, fmt.Sprintf(strat.PeakDrawbackPrefix+"%.0f%%", pct))
 	}
 
 	if (pos.Side == "BUY" && (ms.Regime == "trending_down" || ms.Regime == "ranging")) ||
 		(pos.Side == "SELL" && (ms.Regime == "trending_up" || ms.Regime == "ranging")) {
-		signals = append(signals, "regime_against")
+		signals = append(signals, strat.ReversalRegimeAgainst)
 	}
 
 	if (pos.Side == "BUY" && ms.RSI < rsiMidline) ||
 		(pos.Side == "SELL" && ms.RSI > rsiMidline) {
-		signals = append(signals, "rsi_against")
+		signals = append(signals, strat.ReversalRSIAgainst)
 	}
 
 	if (pos.Side == "BUY" && ms.EMAFast < ms.EMASlow) ||
 		(pos.Side == "SELL" && ms.EMAFast > ms.EMASlow) {
-		signals = append(signals, "ema_cross_against")
+		signals = append(signals, strat.ReversalEMACrossAgainst)
 	}
 
 	if (pos.Side == "BUY" && ms.MomentumDirection == "falling") ||
 		(pos.Side == "SELL" && ms.MomentumDirection == "rising") {
-		signals = append(signals, "momentum_against")
+		signals = append(signals, strat.ReversalMomentumAgainst)
 	}
 
 	return len(signals), signals
 }
-
 
 func peakDrawbackPct(pos trackedPosition, currentPrice, pipSize float64) float64 {
 	if pos.OpenPrice == 0 {
@@ -139,7 +139,7 @@ func peakDrawbackPct(pos trackedPosition, currentPrice, pipSize float64) float64
 	}
 	minPeakGain := tpDist * 0.7
 	if minPeakGain <= 0 {
-		minPeakGain = 3 * pipSize 
+		minPeakGain = 3 * pipSize
 	}
 
 	var peakGain, currentGain float64
@@ -152,12 +152,12 @@ func peakDrawbackPct(pos trackedPosition, currentPrice, pipSize float64) float64
 	}
 
 	if peakGain < minPeakGain {
-		return 0 
+		return 0
 	}
 
 	gaveBack := peakGain - currentGain
 	if gaveBack <= 0 {
-		return 0 
+		return 0
 	}
 
 	return (gaveBack / peakGain) * 100
@@ -185,7 +185,7 @@ func (b *Bot) checkPeakDrawback(ctx context.Context, currentPrice float64) {
 		b.checkBreakEven(ctx, pos)
 
 		if pct := peakDrawbackPct(pos, currentPrice, b.pipSize); pct >= peakDrawbackThreshold {
-			reason := fmt.Sprintf("peak_drawback=%.0f%%", pct)
+			reason := fmt.Sprintf(strat.PeakDrawbackPrefix+"%.0f%%", pct)
 			slog.Info("peak drawback — closing position",
 				"posID", pos.ProviderPositionID,
 				"side", pos.Side,
@@ -285,7 +285,7 @@ func (b *Bot) checkTimeStop(ctx context.Context, _ float64) {
 				"openPrice", pos.OpenPrice,
 				"maxFavorable", pos.MaxFavorable,
 			)
-			b.closeTrackedPosition(ctx, pos, "time_stop=never_profitable_30m")
+			b.closeTrackedPosition(ctx, pos, strat.CloseReasonTimeStopNeverProfitable30m)
 		}
 	}
 }

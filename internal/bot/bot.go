@@ -369,9 +369,9 @@ func (b *Bot) reconcileOfflineClose(ctx context.Context, p position.Position) {
 		closeSide = config.SignalBuy
 	}
 	provPosID := posID
-	reason := "sl_hit"
+	reason := strat.CloseReasonSLHit
 	if cl.GrossProfit >= 0 {
-		reason = "tp_hit"
+		reason = strat.CloseReasonTPHit
 	}
 	dealID := fmt.Sprintf("%d", deal.DealID)
 	orderID := fmt.Sprintf("%d", deal.OrderID)
@@ -992,6 +992,7 @@ func (b *Bot) recordOpenFill(ctx context.Context, exec provider.ExecutionEvent, 
 			SLPips:     slPips,
 			TPPips:     tpPips,
 			Strategy:   ps.strategyName,
+			Volume:     filledVolume,
 		})
 	}
 
@@ -1039,6 +1040,7 @@ func (b *Bot) recordCloseFill(ctx context.Context, exec provider.ExecutionEvent)
 		closeReason = &r
 	}
 	b.registry.Remove(provPosID)
+	b.notifyStrategyClosed(tracked.StrategyName, tracked.Side, *closeReason, deal.ExecTime)
 
 	if err := b.positions.Close(ctx, b.provider.Name(), provPosID, deal.ExecTime, maxFav, maxAdv); err != nil {
 		slog.Error("positions.Close failed", "err", err)
@@ -1119,14 +1121,16 @@ func (b *Bot) recordCloseFill(ctx context.Context, exec provider.ExecutionEvent)
 			dur = time.Duration(*durationMs) * time.Millisecond
 		}
 		go b.dispatcher.Dispatch(ctx, notify.EventTradeClosed, notify.TradeClosedPayload{
-			PositionID: provPosID,
-			Symbol:     b.symbol,
-			Side:       tracked.Side,
-			EntryPrice: cl.EntryPrice,
-			ClosePrice: deal.ExecutionPrice,
-			Realized:   realized,
-			IsWin:      isWin,
-			Duration:   dur,
+			PositionID:  provPosID,
+			Symbol:      b.symbol,
+			Side:        tracked.Side,
+			EntryPrice:  cl.EntryPrice,
+			ClosePrice:  deal.ExecutionPrice,
+			Realized:    realized,
+			IsWin:       isWin,
+			Duration:    dur,
+			Volume:      closedVolume,
+			CloseReason: *closeReason,
 		})
 	}
 
@@ -1181,6 +1185,7 @@ func (b *Bot) recordBrokerClose(ctx context.Context, exec provider.ExecutionEven
 			d := exec.Timestamp.Sub(tracked.OpenTime).Milliseconds()
 			durationMs = &d
 		}
+		b.notifyStrategyClosed(tracked.StrategyName, tracked.Side, closeReason, exec.Timestamp)
 	}
 
 	fillID := fmt.Sprintf("broker_%s_%d", posID, exec.Timestamp.UnixMilli())
@@ -1464,26 +1469,38 @@ func (b *Bot) classifyBrokerClose(tracked trackedPosition, execPrice float64) st
 			beSL = tracked.OpenPrice - 2*b.pipSize
 		}
 		if math.Abs(execPrice-beSL) <= tol {
-			return "breakeven_sl"
+			return strat.CloseReasonBreakevenSL
 		}
 	}
 
 	if tracked.SLPrice > 0 && math.Abs(execPrice-tracked.SLPrice) <= tol {
-		return "sl_hit"
+		return strat.CloseReasonSLHit
 	}
 
 	if tracked.TPPrice > 0 && math.Abs(execPrice-tracked.TPPrice) <= tol {
-		return "tp_hit"
+		return strat.CloseReasonTPHit
 	}
 
 	// Fallback: direction from open price
 	if tracked.Side == config.SignalBuy && execPrice > tracked.OpenPrice {
-		return "tp_hit"
+		return strat.CloseReasonTPHit
 	}
 	if tracked.Side == config.SignalSell && execPrice < tracked.OpenPrice {
-		return "tp_hit"
+		return strat.CloseReasonTPHit
 	}
-	return "sl_hit"
+	return strat.CloseReasonSLHit
+}
+
+func (b *Bot) notifyStrategyClosed(strategyName, side, closeReason string, closeTime time.Time) {
+	for _, s := range b.strategies {
+		if s.Name() != strategyName {
+			continue
+		}
+		if oa, ok := s.(strat.OutcomeAware); ok {
+			oa.OnClosed(side, closeReason, closeTime)
+		}
+		return
+	}
 }
 
 func (b *Bot) Pause() {
