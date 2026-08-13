@@ -14,7 +14,11 @@ const (
 )
 
 type Breakout struct {
-	lastBreakoutBarTime int64 
+	lastBreakoutBarTime int64
+
+	pendingLevel   float64
+	pendingDir     string
+	pendingBarTime int64
 }
 
 func New() *Breakout { return &Breakout{} }
@@ -34,6 +38,19 @@ func (s *Breakout) Evaluate(states map[string]indicator.MarketState, currentPric
 
 	if m15.ATR <= 0 {
 		return hold("M15 ATR not ready")
+	}
+
+	if s.pendingDir != "" && m15.BarTime != s.pendingBarTime {
+		dir := s.pendingDir
+		level := s.pendingLevel
+		s.pendingDir = ""
+
+		held := (dir == config.SignalBuy && m15.Close > level) ||
+			(dir == config.SignalSell && m15.Close < level)
+		if !held {
+			return hold("breakout not confirmed — price closed back inside the range")
+		}
+		return s.tryEnter(states, m15, currentPrice, pipSize, dir, level)
 	}
 
 	if m15.BreakoutLevel == 0 {
@@ -58,8 +75,23 @@ func (s *Breakout) Evaluate(states map[string]indicator.MarketState, currentPric
 		return hold("M15 closed exactly at breakout level")
 	}
 
+	s.pendingDir = dir
+	s.pendingLevel = m15.BreakoutLevel
+	s.pendingBarTime = m15.BarTime
+	return hold("breakout detected — awaiting next-bar confirmation")
+}
+
+
+func (s *Breakout) tryEnter(states map[string]indicator.MarketState, m15 indicator.MarketState, currentPrice, pipSize float64, dir string, level float64) strategy.EntryResult {
+	hold := func(rsn string) strategy.EntryResult {
+		return strategy.EntryResult{Signal: config.SignalHold, Reason: rsn}
+	}
+
+	if m15.ADX > 35 {
+		return hold("ADX too high — market already trending, not a range breakout")
+	}
+
 	if h1, ok := states[config.PeriodH1]; ok && h1.IsWarmedUp {
-		// Breakout must align with the H1 trend — counter-trend breakouts are fakeouts.
 		if dir == config.SignalBuy && h1.Regime != config.TrendingUp {
 			return hold("BUY breakout blocked — H1 not trending up")
 		}
@@ -72,10 +104,10 @@ func (s *Breakout) Evaluate(states map[string]indicator.MarketState, currentPric
 	var slPrice, tpPrice float64
 
 	if dir == config.SignalBuy {
-		slPrice = m15.BreakoutLevel - slATRMult*atr
+		slPrice = level - slATRMult*atr
 		tpPrice = currentPrice + tpATRMult*atr
 	} else {
-		slPrice = m15.BreakoutLevel + slATRMult*atr
+		slPrice = level + slATRMult*atr
 		tpPrice = currentPrice - tpATRMult*atr
 	}
 
