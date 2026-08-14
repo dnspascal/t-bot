@@ -5,11 +5,10 @@ import (
 	"time"
 )
 
-
 type Manager struct {
-	riskPercent      float64
-	maxDailyLossPct  float64
-	enabled          bool
+	riskPercent     float64
+	maxDailyLossPct float64
+	enabled         bool
 
 	dailyPnL float64
 	dayStart time.Time
@@ -17,7 +16,7 @@ type Manager struct {
 	unitsPerMicroLot    int64
 	minVolume           int64
 	maxVolume           int64
-	pipValuePerMicroLot float64 
+	pipValuePerMicroLot float64
 }
 
 func New(riskPercent, maxDailyLossPct float64, enabled bool) *Manager {
@@ -33,7 +32,6 @@ func New(riskPercent, maxDailyLossPct float64, enabled bool) *Manager {
 	}
 }
 
-
 func (m *Manager) SetVolumeConfig(unitsPerMicroLot, minVolume, maxVolume int64, pipValue float64) {
 	m.unitsPerMicroLot = unitsPerMicroLot
 	m.minVolume = minVolume
@@ -42,7 +40,6 @@ func (m *Manager) SetVolumeConfig(unitsPerMicroLot, minVolume, maxVolume int64, 
 }
 
 var dsmLocation, _ = time.LoadLocation("Africa/Dar_es_Salaam")
-
 
 func (m *Manager) PositionSize(balance, stopLossPips float64) (int64, error) {
 	if stopLossPips < 3 {
@@ -70,11 +67,9 @@ func (m *Manager) PositionSizeForTier(balance, stopLossPips float64, tier int) (
 	return min(base*int64(tier+1), m.maxVolume), nil
 }
 
-
 func (m *Manager) dailyLimit(balance float64) float64 {
 	return balance * (m.maxDailyLossPct / 100)
 }
-
 
 func (m *Manager) RecordTrade(realized float64) {
 	m.resetDayIfNeeded()

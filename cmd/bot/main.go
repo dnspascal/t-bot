@@ -109,7 +109,6 @@ func main() {
 		log.Fatal("provider setup failed: ", err)
 	}
 
-
 	// Collect live bot controllers for command handling
 	var botsMu sync.Mutex
 	var tradingInstances []botController

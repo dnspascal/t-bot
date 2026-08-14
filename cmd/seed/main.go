@@ -9,11 +9,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-
-
 func main() {
 
-	cfg , err:= config.Load();
+	cfg, err := config.Load()
 
 	if err != nil {
 		log.Fatal(err)
@@ -34,6 +32,5 @@ func main() {
 	}
 
 	log.Println("seeding complete")
-
 
 }

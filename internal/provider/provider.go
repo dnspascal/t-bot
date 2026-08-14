@@ -96,19 +96,19 @@ type OrderEvent struct {
 }
 
 type DealInfo struct {
-	DealID             int64
-	OrderID            int64
-	PositionID         int64
-	SymbolID           int64
-	FilledVolume       int64
-	Volume             int64
-	ExecutionPrice     float64
-	Commission         float64
-	TradeSide          uint32
-	CreateTime         time.Time
-	ExecTime           time.Time
-	IsClose            bool
-	Close              *CloseInfo
+	DealID         int64
+	OrderID        int64
+	PositionID     int64
+	SymbolID       int64
+	FilledVolume   int64
+	Volume         int64
+	ExecutionPrice float64
+	Commission     float64
+	TradeSide      uint32
+	CreateTime     time.Time
+	ExecTime       time.Time
+	IsClose        bool
+	Close          *CloseInfo
 }
 
 type CloseInfo struct {

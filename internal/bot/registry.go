@@ -17,7 +17,7 @@ var maxPerTier = [4]int{4, 3, 2, 1}
 
 type trackedPosition struct {
 	ProviderPositionID string
-	Side               string 
+	Side               string
 	Tier               int
 	Volume             int64
 	OpenPrice          float64
@@ -25,8 +25,8 @@ type trackedPosition struct {
 	TPPrice            float64
 	ATR                float64
 	OpenTime           time.Time
-	MaxFavorable       float64 
-	MaxAdverse         float64 
+	MaxFavorable       float64
+	MaxAdverse         float64
 	StrategyName       string
 	BreakEvenActive    bool // true once position reached 40% of SL distance favorable
 }

@@ -50,7 +50,6 @@ func appendUint32(b []byte, field int, v uint32) []byte {
 	return appendVarint(b, uint64(v))
 }
 
-
 func encodeEnvelope(payloadType uint32, inner []byte) []byte {
 	var b []byte
 	b = appendUint32(b, 1, payloadType)
@@ -59,7 +58,6 @@ func encodeEnvelope(payloadType uint32, inner []byte) []byte {
 	}
 	return b
 }
-
 
 func encodeAppAuthReq(clientID, clientSecret string) []byte {
 	var b []byte
@@ -146,25 +144,23 @@ func encodeNewOrderReq(accountID, symbolID int64, side uint32, volume int64, slD
 	return b
 }
 
-
 type TraderInfo struct {
 	AccountID     int64
-	Balance       float64 
-	Leverage      float64 
-	MaxLeverage   float64 
-	AccountMode   string  
+	Balance       float64
+	Leverage      float64
+	MaxLeverage   float64
+	AccountMode   string
 	BrokerName    string
-	IsLimitedRisk bool 
-	FairStopOut   bool 
+	IsLimitedRisk bool
+	FairStopOut   bool
 }
 
 type OpenPosition struct {
 	PositionID int64
 	SymbolID   int64
-	Side       uint32 
+	Side       uint32
 	Volume     int64
 }
-
 
 func encodeTraderReq(accountID int64) []byte {
 	var b []byte
@@ -179,7 +175,6 @@ func encodeReconcileReq(accountID int64) []byte {
 	b = appendInt64(b, 2, accountID)
 	return b
 }
-
 
 func encodeSubscribeLiveTrendbarReq(accountID, symbolID int64, period uint32) []byte {
 	var b []byte
@@ -201,17 +196,15 @@ func encodeGetTrendbarsReq(accountID, symbolID int64, period uint32, toMs int64,
 	return b
 }
 
-
 type Trendbar struct {
-	OpenTime int64  
-	Period   uint32 
+	OpenTime int64
+	Period   uint32
 	Open     float64
 	High     float64
 	Low      float64
 	Close    float64
 	Volume   int64
 }
-
 
 func decodeTrendbar(data []byte) (Trendbar, bool) {
 	const divisor = 100000.0
@@ -234,31 +227,31 @@ func decodeTrendbar(data []byte) (Trendbar, bool) {
 		field := tag >> 3
 		wire := tag & 0x7
 		switch {
-		case field == 3 && wire == 0: 
+		case field == 3 && wire == 0:
 			v, n2 := decodeVarint(data[i:])
 			i += n2
 			volume = v
-		case field == 4 && wire == 0: 
+		case field == 4 && wire == 0:
 			v, n2 := decodeVarint(data[i:])
 			i += n2
 			period = v
-		case field == 5 && wire == 0: 
+		case field == 5 && wire == 0:
 			v, n2 := decodeVarint(data[i:])
 			i += n2
 			low = v
-		case field == 6 && wire == 0: 
+		case field == 6 && wire == 0:
 			v, n2 := decodeVarint(data[i:])
 			i += n2
 			deltaOpen = v
-		case field == 7 && wire == 0: 
+		case field == 7 && wire == 0:
 			v, n2 := decodeVarint(data[i:])
 			i += n2
 			deltaClose = v
-		case field == 8 && wire == 0: 
+		case field == 8 && wire == 0:
 			v, n2 := decodeVarint(data[i:])
 			i += n2
 			deltaHigh = v
-		case field == 9 && wire == 0: 
+		case field == 9 && wire == 0:
 			v, n2 := decodeVarint(data[i:])
 			i += n2
 			tsMinutes = v
@@ -272,7 +265,7 @@ func decodeTrendbar(data []byte) (Trendbar, bool) {
 	lowF := float64(low) / divisor
 	return Trendbar{
 		OpenTime: int64(tsMinutes) * 60,
-		Period:   uint32(period), 
+		Period:   uint32(period),
 		Open:     lowF + float64(deltaOpen)/divisor,
 		High:     lowF + float64(deltaHigh)/divisor,
 		Low:      lowF,
@@ -280,7 +273,6 @@ func decodeTrendbar(data []byte) (Trendbar, bool) {
 		Volume:   int64(volume),
 	}, true
 }
-
 
 func decodeGetTrendbarsRes(data []byte) []Trendbar {
 	var bars []Trendbar
@@ -307,7 +299,6 @@ func decodeGetTrendbarsRes(data []byte) []Trendbar {
 	return bars
 }
 
-
 func decodeLiveTrendbarEvents(data []byte) []Trendbar {
 	var bars []Trendbar
 	i := 0
@@ -319,7 +310,7 @@ func decodeLiveTrendbarEvents(data []byte) []Trendbar {
 		i += n
 		field := tag >> 3
 		wire := tag & 0x7
-		if field == 6 && wire == 2 { 
+		if field == 6 && wire == 2 {
 			l, n2 := decodeVarint(data[i:])
 			i += n2
 			if bar, ok := decodeTrendbar(data[i : i+int(l)]); ok {
@@ -333,7 +324,6 @@ func decodeLiveTrendbarEvents(data []byte) []Trendbar {
 	return bars
 }
 
-
 func decodeTraderRes(data []byte) (TraderInfo, bool) {
 	traderBytes := extractLenField(data, 2)
 	if traderBytes == nil {
@@ -342,7 +332,7 @@ func decodeTraderRes(data []byte) (TraderInfo, bool) {
 
 	var info TraderInfo
 	var rawBalance int64
-	var moneyDigits uint64 = 2 
+	var moneyDigits uint64 = 2
 
 	i := 0
 	for i < len(traderBytes) {
@@ -354,23 +344,23 @@ func decodeTraderRes(data []byte) (TraderInfo, bool) {
 		field := tag >> 3
 		wire := tag & 0x7
 		switch {
-		case field == 1 && wire == 0: 
+		case field == 1 && wire == 0:
 			v, n2 := decodeVarint(traderBytes[i:])
 			i += n2
 			info.AccountID = int64(v)
-		case field == 2 && wire == 0: 
+		case field == 2 && wire == 0:
 			v, n2 := decodeVarint(traderBytes[i:])
 			i += n2
 			rawBalance = int64(v)
-		case field == 10 && wire == 0: 
+		case field == 10 && wire == 0:
 			v, n2 := decodeVarint(traderBytes[i:])
 			i += n2
 			info.Leverage = float64(v) / 100.0
-		case field == 12 && wire == 0: 
+		case field == 12 && wire == 0:
 			v, n2 := decodeVarint(traderBytes[i:])
 			i += n2
 			info.MaxLeverage = float64(v)
-		case field == 15 && wire == 0: 
+		case field == 15 && wire == 0:
 			v, n2 := decodeVarint(traderBytes[i:])
 			i += n2
 			switch v {
@@ -422,7 +412,7 @@ func decodeReconcileRes(data []byte) []OpenPosition {
 		i += n
 		field := tag >> 3
 		wire := tag & 0x7
-		if field == 3 && wire == 2 { 
+		if field == 3 && wire == 2 {
 			l, n2 := decodeVarint(data[i:])
 			i += n2
 			pos := decodeOAPosition(data[i : i+int(l)])
@@ -447,11 +437,11 @@ func decodeOAPosition(data []byte) OpenPosition {
 		field := tag >> 3
 		wire := tag & 0x7
 		switch {
-		case field == 1 && wire == 0: 
+		case field == 1 && wire == 0:
 			v, n2 := decodeVarint(data[i:])
 			i += n2
 			pos.PositionID = int64(v)
-		case field == 2 && wire == 2: 
+		case field == 2 && wire == 2:
 			l, n2 := decodeVarint(data[i:])
 			i += n2
 			pos = decodeTradeData(data[i:i+int(l)], pos)
@@ -474,15 +464,15 @@ func decodeTradeData(data []byte, pos OpenPosition) OpenPosition {
 		field := tag >> 3
 		wire := tag & 0x7
 		switch {
-		case field == 1 && wire == 0: 
+		case field == 1 && wire == 0:
 			v, n2 := decodeVarint(data[i:])
 			i += n2
 			pos.SymbolID = int64(v)
-		case field == 2 && wire == 0: 
+		case field == 2 && wire == 0:
 			v, n2 := decodeVarint(data[i:])
 			i += n2
 			pos.Volume = int64(v)
-		case field == 3 && wire == 0: 
+		case field == 3 && wire == 0:
 			v, n2 := decodeVarint(data[i:])
 			i += n2
 			pos.Side = uint32(v)
@@ -492,7 +482,6 @@ func decodeTradeData(data []byte, pos OpenPosition) OpenPosition {
 	}
 	return pos
 }
-
 
 func extractLenField(data []byte, targetField uint64) []byte {
 	i := 0
@@ -531,13 +520,12 @@ func skipField(data []byte, i int, wire uint64) int {
 	}
 }
 
-
 type CloseDetail struct {
 	EntryPrice       float64
 	Swap             float64
 	Commission       float64
 	GrossProfit      float64
-	Balance          float64 
+	Balance          float64
 	ClosedVolume     int64
 	PnLConversionFee float64
 }
@@ -558,7 +546,6 @@ type DealInfo struct {
 	IsClose        bool
 	Close          CloseDetail
 }
-
 
 func extractLenDelim(data []byte, targetField uint64) []byte {
 	i := 0
@@ -658,7 +645,6 @@ func decodeFullExecutionEvent(data []byte) (execType string, deal DealInfo, hasD
 	return
 }
 
-
 func decodePositionIDAndStatus(data []byte) (positionID int64, isClosed bool) {
 	i := 0
 	for i < len(data) {
@@ -670,11 +656,11 @@ func decodePositionIDAndStatus(data []byte) (positionID int64, isClosed bool) {
 		field := tag >> 3
 		wire := tag & 0x7
 		switch {
-		case field == 1 && wire == 0: 
+		case field == 1 && wire == 0:
 			v, n2 := decodeVarint(data[i:])
 			i += n2
 			positionID = int64(v)
-		case field == 3 && wire == 0: 
+		case field == 3 && wire == 0:
 			v, n2 := decodeVarint(data[i:])
 			i += n2
 			isClosed = v == 2
@@ -803,7 +789,6 @@ func decodeDeal(data []byte) DealInfo {
 	return d
 }
 
-
 func decodeCloseDetail(data []byte, scale float64) CloseDetail {
 	var c CloseDetail
 	var rawSwap, rawCommission, rawBalance, rawGrossProfit, rawClosedVolume, rawPnLFee int64
@@ -862,8 +847,6 @@ func decodeCloseDetail(data []byte, scale float64) CloseDetail {
 	return c
 }
 
-
-
 func decodeOrderError(data []byte) (errorCode string, orderID int64, description string) {
 	i := 0
 	for i < len(data) {
@@ -895,7 +878,6 @@ func decodeOrderError(data []byte) (errorCode string, orderID int64, description
 	}
 	return
 }
-
 
 func decodeGenericError(data []byte) (code uint32, description string) {
 	i := 0
@@ -952,7 +934,6 @@ func decodeOAError(data []byte) (code, description string) {
 	return
 }
 
-
 func decodeSpotEvent(data []byte) (symbolID int64, bid, ask uint64, ok bool) {
 	i := 0
 	for i < len(data) {
@@ -1004,7 +985,6 @@ func decodeVarint(b []byte) (uint64, int) {
 	}
 	return 0, 0
 }
-
 
 func encodeDealListReq(accountID, fromMs, toMs int64, maxRows int32) []byte {
 	var b []byte
@@ -1184,7 +1164,6 @@ type LightSymbol struct {
 	SymbolName string
 	Enabled    bool
 }
-
 
 func payloadTypeOf(data []byte) uint32 {
 	i := 0

@@ -29,10 +29,10 @@ type SnapshotsRepo interface {
 }
 
 type OANDAClient struct {
-	accountID  string
+	accountID   string
 	accessToken string
 	environment string
-	baseURL    string
+	baseURL     string
 }
 
 func New(cfg *config.Config, db *pgxpool.Pool, events EventsRepo, snaps SnapshotsRepo) *OANDA {

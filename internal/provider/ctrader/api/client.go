@@ -234,7 +234,6 @@ func (c *Client) GetSymbolsByIds(ids []int64) ([]LightSymbol, error) {
 	}
 }
 
-
 func (c *Client) ClosePositionVariant(positionID, volume int64, posIDField, volField int) error {
 	c.mu.Lock()
 	authed := c.authed

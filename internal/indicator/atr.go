@@ -40,6 +40,5 @@ func (a *ATR) Add(high, low, close float64) float64 {
 	return a.value
 }
 
-func (a *ATR) Value() float64  { return a.value }
-func (a *ATR) IsReady() bool   { return a.initialized }
-
+func (a *ATR) Value() float64 { return a.value }
+func (a *ATR) IsReady() bool  { return a.initialized }

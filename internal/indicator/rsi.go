@@ -61,6 +61,5 @@ func (r *RSI) rsi() float64 {
 	return 100 - 100/(1+r.avgGain/r.avgLoss)
 }
 
-func (r *RSI) Value() float64  { return r.value }
-func (r *RSI) IsReady() bool   { return r.initialized }
-
+func (r *RSI) Value() float64 { return r.value }
+func (r *RSI) IsReady() bool  { return r.initialized }

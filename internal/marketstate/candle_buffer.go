@@ -38,7 +38,7 @@ type MemoryCandleBuffer struct {
 
 func NewMemoryCandleBuffer(maxSize int) *MemoryCandleBuffer {
 	if maxSize < 21 {
-		maxSize = 21  // Minimum for EMA(21)
+		maxSize = 21 // Minimum for EMA(21)
 	}
 	return &MemoryCandleBuffer{
 		maxSize: maxSize,
@@ -85,7 +85,7 @@ func (b *MemoryCandleBuffer) Count() int {
 }
 
 func (b *MemoryCandleBuffer) IsWarmedUp() bool {
-	return len(b.closes) >= 21  // Minimum for EMA(21)
+	return len(b.closes) >= 21 // Minimum for EMA(21)
 }
 
 // DatabaseCandleBuffer loads candles from database (survives restarts, larger history)

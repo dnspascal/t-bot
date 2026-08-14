@@ -1,22 +1,22 @@
 package api
 
 const (
-	ProtoOAApplicationAuthReq = uint32(2100)
-	ProtoOAApplicationAuthRes = uint32(2101)
-	ProtoOAAccountAuthReq     = uint32(2102)
-	ProtoOAAccountAuthRes     = uint32(2103)
-	ProtoOATraderReq          = uint32(2104)
-	ProtoOATraderRes          = uint32(2105)
-	ProtoOANewOrderReq        = uint32(2106)
+	ProtoOAApplicationAuthReq   = uint32(2100)
+	ProtoOAApplicationAuthRes   = uint32(2101)
+	ProtoOAAccountAuthReq       = uint32(2102)
+	ProtoOAAccountAuthRes       = uint32(2103)
+	ProtoOATraderReq            = uint32(2104)
+	ProtoOATraderRes            = uint32(2105)
+	ProtoOANewOrderReq          = uint32(2106)
 	ProtoOAAmendPositionSLTPReq = uint32(2110)
 	ProtoOAClosePositionReq     = uint32(2111)
-	ProtoOAReconcileReq       = uint32(2124)
-	ProtoOAReconcileRes       = uint32(2125)
-	ProtoOAExecutionEvent     = uint32(2126)
-	ProtoOASubscribeSpotsReq  = uint32(2127)
-	ProtoOASubscribeSpotsRes  = uint32(2128)
-	ProtoOASpotEvent          = uint32(2131)
-	ProtoOAErrorRes           = uint32(2142)
+	ProtoOAReconcileReq         = uint32(2124)
+	ProtoOAReconcileRes         = uint32(2125)
+	ProtoOAExecutionEvent       = uint32(2126)
+	ProtoOASubscribeSpotsReq    = uint32(2127)
+	ProtoOASubscribeSpotsRes    = uint32(2128)
+	ProtoOASpotEvent            = uint32(2131)
+	ProtoOAErrorRes             = uint32(2142)
 
 	ProtoOAGetAccountListByAccessTokenReq = uint32(2149)
 	ProtoOAGetAccountListByAccessTokenRes = uint32(2150)
@@ -29,7 +29,6 @@ const (
 
 	ProtoOASymbolByIdReq = uint32(2118)
 	ProtoOASymbolByIdRes = uint32(2119)
-
 
 	ProtoOASubscribeLiveTrendbarReq = uint32(2135)
 	ProtoOASubscribeLiveTrendbarRes = uint32(2165)
@@ -71,9 +70,9 @@ func PeriodToString(period uint32) string {
 	case PeriodM10:
 		return "M10"
 	case PeriodM15:
-		return "M15"  
+		return "M15"
 	case PeriodM30:
-		return "M30"  
+		return "M30"
 	case PeriodH1:
 		return "H1"
 	case PeriodH4:

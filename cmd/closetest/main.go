@@ -18,7 +18,7 @@ func main() {
 
 	clientID := mustEnv("CTRADER_CLIENT_ID")
 	clientSecret := mustEnv("CTRADER_CLIENT_SECRET")
-	accessToken := mustEnv("CTRADER_ACCESS_TOKEN") 
+	accessToken := mustEnv("CTRADER_ACCESS_TOKEN")
 	symbolID := mustEnvInt64("CTRADER_SYMBOL_ID")
 	demo := os.Getenv("CTRADER_DEMO") != "false"
 
@@ -59,7 +59,7 @@ func main() {
 	}
 	var chosenAccountID int64
 	for _, a := range accounts {
-		if a.IsLive != demo { 
+		if a.IsLive != demo {
 			chosenAccountID = a.CtidTraderAccountID
 			break
 		}
@@ -74,7 +74,6 @@ func main() {
 	if err := client.AuthAccount(accessToken); err != nil {
 		log.Fatal("AuthAccount:", err)
 	}
-
 
 	slog.Info("step 3: subscribing to spots")
 	if err := client.SubscribeSpots(); err != nil {
@@ -136,7 +135,7 @@ waitFill:
 	slog.Info("step 8: waiting for close result (up to 10s)")
 	deadline2 := time.After(10 * time.Second)
 	standardWorked := false
-	waitClose:
+waitClose:
 	for {
 		select {
 		case ev := <-client.ExecutionCh:
