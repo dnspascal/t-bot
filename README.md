@@ -12,7 +12,7 @@ Algorithmic trading bot for forex and commodities via cTrader.
 ## Strategies
 
 | Name | Description |
-|------|-------------|
+| ------ | ------------- |
 | `sr_bounce` | RSI extreme at M15 S/R level, ML-filtered via XGBoost ONNX model |
 | `trend_follow` | EMA + ADX trend continuation |
 | `combined` | Runs both; first signal wins |
@@ -40,7 +40,7 @@ actually signals.
 
 Copy `.env.example` and fill in credentials. Key vars:
 
-```
+```env
 STRATEGY=combined
 CTRADER_SYMBOL=EURUSD
 ML_MODEL_DIR=/path/to/models   # directory containing eurusd_model.onnx / xauusd_model.onnx

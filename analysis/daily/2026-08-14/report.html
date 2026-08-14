@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Analysis — 2026-08-14</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Lato', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #000;
+  background: #fff;
+  padding-bottom: 80px;
+}
+
+/* ── Header ── */
+.header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 28px 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.header-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: #1d4ed8;
+  background: #eaf0ff; padding: 3px 10px; border-radius: 4px;
+  display: inline-block; margin-bottom: 8px;
+}
+.header h1 { font-size: 22px; font-weight: 900; letter-spacing: -.3px; margin-bottom: 6px; }
+.header-meta { font-size: 13px; color: #6b7280; display: flex; gap: 20px; flex-wrap: wrap; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.chip {
+  font-size: 12px; font-weight: 700; padding: 5px 12px;
+  border-radius: 20px; color: #6b7280;
+}
+.chip.loss { color: #dc2626; background: #fef2f2; }
+.chip.win  { color: #16a34a; background: #f0fdf4; }
+.chip.info { color: #1d4ed8; background: #eaf0ff; }
+
+/* ── Page ── */
+.page { max-width: 920px; margin: 0 auto; padding: 40px 24px 0; }
+.section { margin-bottom: 48px; }
+.section-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: #6b7280; margin-bottom: 10px;
+}
+.section-title { font-size: 18px; font-weight: 900; letter-spacing: -.2px; margin-bottom: 16px; }
+hr { border: none; border-top: 1px solid #e5e7eb; margin: 44px 0; }
+
+/* ── Cards ── */
+.finding {
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 20px 22px; margin-bottom: 16px;
+  background: #fff;
+}
+.finding-header {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.finding-title { font-size: 15px; font-weight: 700; flex: 1; }
+.badge {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+  white-space: nowrap; margin-top: 2px;
+}
+.badge.fixed   { background: #f0fdf4; color: #16a34a; }
+.badge.gap     { background: #fef2f2; color: #dc2626; }
+.badge.pending { background: #fff7ed; color: #c2410c; }
+.badge.info    { background: #eaf0ff; color: #1d4ed8; }
+
+p { margin-bottom: 10px; max-width: 70ch; }
+code {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 13px;
+  background: #f3f4f6; padding: 1px 6px; border-radius: 4px;
+}
+pre {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px;
+  background: #f3f4f6; color: #000;
+  padding: 14px 16px; border-radius: 8px; overflow-x: auto;
+  margin: 10px 0 14px;
+}
+pre .cmt { color: #6b7280; }
+
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.5px; }
+th {
+  text-align: left; font-weight: 700; font-size: 11px;
+  letter-spacing: .04em; text-transform: uppercase; color: #6b7280;
+  padding: 8px 10px; border-bottom: 2px solid #e5e7eb;
+}
+td { padding: 9px 10px; border-bottom: 1px solid #f0f1f3; }
+tr.highlight td { background: #fef2f2; }
+tr.ok td { background: #f0fdf4; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.mono { font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px; }
+
+.quote {
+  background: #f8fafc; border-radius: 8px;
+  padding: 12px 16px; margin: 12px 0 16px; font-size: 14px; color: #000;
+}
+.quote .src { font-size: 11.5px; color: #9ca3af; margin-top: 6px; font-family: 'SF Mono', Menlo, monospace; }
+
+.decision {
+  background: #f5f8ff; border-radius: 8px;
+  padding: 18px 20px; margin-top: 10px;
+}
+.decision-title { font-weight: 900; font-size: 14px; color: #1d4ed8; margin-bottom: 8px; }
+
+footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <span class="header-eyebrow">Daily Analysis</span>
+    <h1>2026-08-14 — Regime Flip, "Why Do Trades Close Early?", and Decision Parameter Tracking</h1>
+    <div class="header-meta">
+      <span>Bot: T-Bot (cTrader, XAUUSD + EURUSD)</span>
+      <span>Prepared from "the day started good then went bad" review</span>
+    </div>
+  </div>
+  <div class="chips">
+    <span class="chip loss">Gold regime flip: -$27.79 in ~3hrs, wiping the morning's +$26.80</span>
+    <span class="chip info">66% of trades close within 5min — mostly correct, one exception found</span>
+    <span class="chip win">decision_params tracking shipped</span>
+    <span class="chip win">Restart peak-tracking bug fixed</span>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="section">
+    <div class="section-eyebrow">Part 1 — "check all today trades"</div>
+    <div class="section-title">Not a bug — gold reversed mid-morning and caught two SELL positions on the wrong side</div>
+
+    <p>11 trades today, net <strong>-$0.99</strong> (6 wins / 5 losses, 54.5% win rate). Pulling the real M5 candles behind the two biggest losers shows a clean three-act day, all times Nairobi:</p>
+
+    <table>
+      <tr><th>Window</th><th>What happened</th><th class="num">Net</th></tr>
+      <tr class="ok"><td>03:20–03:50</td><td>Gold declining. <code>breakout</code> ×2 + <code>dd_oversold_bounce</code> all correctly SELL/BUY-the-dip.</td><td class="num">+$26.80</td></tr>
+      <tr class="highlight"><td>10:05–13:05</td><td>Gold reverses, climbs steadily 4335 → 4358 over ~3hrs. Every position still leaning SELL from the old regime gets run over.</td><td class="num">-$27.79</td></tr>
+      <tr><td>14:35–14:40</td><td>Two small EURUSD trades, roughly flat.</td><td class="num">-$0.01</td></tr>
+    </table>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">The two big losers, checked against real candle data</span>
+      </div>
+      <p><code>session_momentum</code> SELL XAUUSD, stopped out -92.4 pips / <strong>-$9.32</strong> (53 min). <code>sr_bounce</code> SELL XAUUSD, stopped out -140.9 pips / <strong>-$14.17</strong> (114 min) — sold at what it read as resistance, but price just kept grinding up through the whole window:</p>
+      <pre>11:05  entry 4342.66
+11:35  4344.35 → 4349.30 (high)
+12:15  4350.79 → 4352.05
+12:55  4354.83 → 4357.56
+13:00  4357.24 → 4358.81  <span class="cmt">// SL hit here, 4356.75</span></pre>
+      <p style="font-size:13px; color:#6b7280;">Not a spike — a slow, grinding climb over nearly 2 hours. The stop did its job correctly; the entry thesis (mean-reversion at resistance) was just wrong for a real trend.</p>
+    </div>
+
+    <p style="font-size:13px; color:#6b7280;">Neither strategy lost twice in a row today, so the outcome-aware cooldown shipped the previous evening (7 more strategies, tag <code>v202608132228</code>) wouldn't have applied here regardless — this was a single bad call each, not a repeat-failure pattern. Worth flagging for later: several <em>different</em> strategies were all SELL on XAUUSD during this window with no cross-strategy coordination — a same-direction, same-symbol exposure cap is a real follow-up candidate, not addressed today.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 2 — "why are most trades closing early"</div>
+    <div class="section-title">66% of trades close within 5 minutes — turned out to be mostly correct, with one exception</div>
+
+    <p>Broadened the check across the last 2 days (50 trades) to see if today's pattern was typical:</p>
+
+    <table>
+      <tr><th>Close reason</th><th class="num">Count</th><th class="num">%</th></tr>
+      <tr class="highlight"><td>Reversal signals (3 or 4 of 4 against)</td><td class="num">31</td><td class="num">62%</td></tr>
+      <tr><td>SL hit</td><td class="num">10</td><td class="num">20%</td></tr>
+      <tr><td>Peak drawback</td><td class="num">5</td><td class="num">10%</td></tr>
+      <tr class="highlight"><td><strong>TP hit</strong></td><td class="num">3</td><td class="num">6%</td></tr>
+      <tr><td>Break-even</td><td class="num">1</td><td class="num">2%</td></tr>
+    </table>
+
+    <p><strong>33 of 50 (66%) closed within 5 minutes</strong> — the very next M5 candle after entry. The mechanism, <code>countReversalSignals</code> (<span class="mono">internal/bot/watcher.go</span>): needs 3 of 4 signals — regime against, RSI vs midline, EMA9/21 cross, momentum direction — and closes immediately, no persistence check across bars. Since all 4 derive from the same M5 candle, they're correlated: one bar of ordinary noise on a marginal entry can flip 3 of 4 at once.</p>
+
+    <p>Initial read: this looked like the watcher being too twitchy, cutting winners before they could develop. The counterfactual check in Part 3 says otherwise for the reversal buckets.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 3 — Counterfactual check: would early closes have hit TP or SL?</div>
+    <div class="section-title">For every early-closed trade, walked forward on real M5 candles to see what actually happened next</div>
+
+    <p>Method: for every trade closed via reversal signals or peak-drawback (not TP/SL/EOD), replay the real M5 candles from its close time out to <code>open_timestamp + 4h</code> — the same horizon the strategy backtest tools use — and check whether price would have touched the original TP or SL first.</p>
+
+    <table>
+      <tr><th>Bucket</th><th class="num">n (all-time)</th><th class="num">Would hit TP</th><th class="num">Would hit SL</th><th class="num">Undetermined</th></tr>
+      <tr class="ok"><td><code>reversal_3sig</code></td><td class="num">118</td><td class="num">8%</td><td class="num">52%</td><td class="num">40%</td></tr>
+      <tr class="ok"><td><code>reversal_4sig</code></td><td class="num">37</td><td class="num">11%</td><td class="num">62%</td><td class="num">27%</td></tr>
+      <tr class="highlight"><td><code>peak_drawback</code> (all eras pooled)</td><td class="num">67</td><td class="num">31%</td><td class="num">40%</td><td class="num">28%</td></tr>
+    </table>
+
+    <div class="decision">
+      <div class="decision-title">Conclusion — reversal signals validated, peak-drawback flagged for Part 4</div>
+      <p style="margin-bottom:0;">Reversal closes are correct calls 5–8× more often than not — when 3+ signals flip against a position, it was heading to SL, not TP. The earlier "watcher is too twitchy" read was wrong. <code>peak_drawback</code> is the one bucket with a real question mark: nearly a third of those trades would have gone on to hit TP. Flagged for closer scoping below.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 4 — The regime-mixing catch</div>
+    <div class="section-title">Pooling peak-drawback's history hid the real number — and once split apart, the direction was the opposite of what intuition suggested</div>
+
+    <p>Flagged mid-review: the peak-drawback <em>gate</em> — the % of TP distance that must be reached before the 60% giveback rule can even fire — has been retuned three times, and the 67-trade "all-time" pool above silently mixes all three eras together:</p>
+
+    <table>
+      <tr><th>Gate value</th><th>Commit</th><th>Live from</th></tr>
+      <tr><td>33%</td><td><span class="mono">(original)</span></td><td>—</td></tr>
+      <tr><td>50%</td><td><code>ae7ccc6</code> "raise peak drawback gain from 33% to 50%"</td><td>2026-08-03 13:21</td></tr>
+      <tr class="highlight"><td>70% (current)</td><td><code>248153c</code> "recalibrate peak_drawback and break-even thresholds"</td><td>2026-08-11 16:52 (tag <code>v202608111652</code>)</td></tr>
+    </table>
+
+    <p>Splitting the 67 pooled trades back into their three eras:</p>
+
+    <table>
+      <tr><th>Gate</th><th class="num">n</th><th class="num">Would've hit TP</th></tr>
+      <tr><td>33%</td><td class="num">44</td><td class="num">20%</td></tr>
+      <tr><td>50%</td><td class="num">17</td><td class="num">47%</td></tr>
+      <tr class="highlight"><td><strong>70% (current)</strong></td><td class="num">6</td><td class="num"><strong>67%</strong></td></tr>
+    </table>
+
+    <p>Under the rule that's actually live right now, peak-drawback cuts a genuine winner short <strong>two-thirds of the time</strong> — not the 31% the pooled number suggested. n=6 is thin, but it's directionally consistent with the 44- and 17-trade cohorts before it: a clean monotonic trend, not noise in one direction only.</p>
+
+    <div class="section-eyebrow" style="margin-top:24px;">Why a higher gate makes it worse, not better</div>
+    <p>The intuitive read — "70% is a stricter bar, so it should be a more validated signal" — turns out backwards for this specific mechanism. <code>minPeakGain</code> doesn't validate a trade; it selects <em>which</em> trades the 60%-giveback rule gets evaluated on. A trade that reaches 70% of the way to TP before pulling back is already a stronger, more advanced trade than one that only reached 50%. And a pullback close to the target is statistically more likely to be normal consolidation before the trend continues than a genuine reversal — a standard pattern in trending price action. A trade that stalls at just 50% progress and pulls back is showing weaker conviction to begin with, so cutting it is a cheaper, more justified call. Raising the gate shifts the population toward exactly the trades where a pullback is least likely to mean "it's over."</p>
+
+    <p style="font-size:13px; color:#6b7280;"><strong>No change shipped to <code>peakDrawbackThreshold</code> or the gate itself today</strong> — n=6 is too thin to act on. This section documents the finding and the reasoning; Part 5 is the actual fix, which is about making this kind of check possible without git archaeology next time.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 5 — Decision parameter tracking (implemented and shipped)</div>
+    <div class="section-title">Every position now snapshots the watcher-level constants that governed it, so this never has to be reconstructed by hand again</div>
+
+    <p>Getting the numbers in Part 4 required manually walking <code>git log -p</code> for <code>internal/bot/watcher.go</code>, matching diffs to commits, then commits to deploy tags, to figure out which gate value applied to which historical trade. Slow, and one wrong commit match away from silently repeating the exact mixing-regimes mistake this whole investigation started from.</p>
+
+    <p>Fix: a <code>decision_params</code> <code>JSONB</code> column on <code>positions</code>, populated once at open time from a new <code>decisionParams()</code> helper in <code>watcher.go</code>, and deliberately left out of the <code>ON CONFLICT</code> update set in <code>position.Repository.Upsert</code> so it can never be overwritten by a later sync:</p>
+
+    <pre>func decisionParams() map[string]any {
+    return map[string]any{
+        "peak_drawback_gate_pct":       peakDrawbackGatePct,
+        "peak_drawback_threshold_pct":  peakDrawbackThreshold,
+        "breakeven_trigger_pct":        breakEvenTriggerPct,
+        "breakeven_buffer_pips":        breakEvenBufferPips,
+        "signals_to_close":             signalsToClose,
+        "signals_to_reduce":            signalsToReduce,
+        "never_profitable_timeout_min": int(neverProfitableTimeout / time.Minute),
+    }
+}</pre>
+    <p><span class="mono">internal/bot/watcher.go</span>, wired in from <span class="mono">internal/bot/bot.go</span>'s <code>recordOpenFill</code>. Migration <code>000024_add_decision_params_to_positions</code>. Also promoted the two inline literals this investigation turned up (<code>0.7</code> in <code>peakDrawbackPct</code>, <code>0.33</code> in <code>checkBreakEven</code>) to named constants — they were previously untraceable by name in a <code>git grep</code>.</p>
+
+    <table>
+      <tr><th>Key</th><th>Meaning</th></tr>
+      <tr><td><code>peak_drawback_gate_pct</code></td><td>% of TP distance reached before peak-drawback logic arms</td></tr>
+      <tr><td><code>peak_drawback_threshold_pct</code></td><td>% giveback of peak that triggers the close</td></tr>
+      <tr><td><code>breakeven_trigger_pct</code></td><td>% of TP distance reached before SL moves to break-even</td></tr>
+      <tr><td><code>breakeven_buffer_pips</code></td><td>pip buffer past entry on the break-even SL</td></tr>
+      <tr><td><code>signals_to_close</code></td><td>reversal signals (of 4) needed to force-close</td></tr>
+      <tr><td><code>signals_to_reduce</code></td><td>reversal signals needed to reduce a high-tier position</td></tr>
+      <tr><td><code>never_profitable_timeout_min</code></td><td>minutes before a never-profitable trade gets time-stopped</td></tr>
+    </table>
+
+    <div class="decision">
+      <div class="decision-title">Scope — and why this doesn't turn into a column per feature</div>
+      <p style="margin-bottom:8px;">Deliberately limited to the <em>shared, watcher-level</em> knobs — the ones that silently reclassify how every open trade, across every strategy, gets judged the moment they change. Per-strategy SL/TP/entry constants are a much larger surface (13 strategy files, many knobs each) and are already reasonably scoped by strategy name + code history since they change less often; left untracked for now.</p>
+      <p style="margin-bottom:0;">One <code>JSONB</code> column rather than a dedicated column per parameter — adding, renaming, or retiring a tunable is a code change, not a migration, and no dead schema is left behind if a mechanism like peak-drawback ever gets dropped entirely. Any future "did closing early cost us a winner" analysis should filter on this field (e.g. <code>WHERE decision_params->>'peak_drawback_gate_pct' = '70'</code>) instead of treating all-time history as one uniform population — that's the actual lesson from Part 4.</p>
+    </div>
+
+    <p style="font-size:13px; color:#6b7280;">Can't backfill history that predates this column — every trade before today stays <code>NULL</code>, which is the honest state (unknown provenance), not a gap to paper over. Every trade from today onward is self-describing.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 6 — Should the reversal-signal close require multi-candle confirmation?</div>
+    <div class="section-title">Simulated it against real historical price data — both N=2 and N=3 make outcomes worse, not better</div>
+
+    <p>Raised concern: a single M5 candle where 3+ of the 4 reversal signals flip against a position might just be noise, since the signals are correlated (all derived from the same bar). Proposed fix to test: require the "3+ against" condition to hold on <strong>N consecutive M5 bars in a row</strong> before actually closing — any bar where it drops back below 3 resets the counter to zero.</p>
+
+    <p>Simulated directly against real data rather than guessing: <code>market_states</code> stores the exact per-bar <code>regime</code>/<code>rsi</code>/<code>ema_fast</code>/<code>ema_slow</code>/<code>momentum_direction</code> values the live bot used — the same fields <code>countReversalSignals</code> reads — so every historical reversal-closed trade's signal sequence can be replayed bar-by-bar, not approximated. Real SL/TP touches (from candle high/low) are checked at each bar too, since a broker-side stop would trigger before the watcher's next bar-close check either way.</p>
+
+    <div class="quote">
+      Validation: N=1 replay reproduces the actual historical close time (within 10min) for 144 of 156 trades (92%) — the 12 misses are the separate <code>signalsToReduce</code> tier-based partial-close path, which this simulation doesn't model. Core mechanism replay confirmed trustworthy.
+      <div class="src">analysis/daily/2026-08-14/queries/confirmation_window_sim/main.go</div>
+    </div>
+
+    <table>
+      <tr><th>Confirmation</th><th class="num">Now rides to TP (saved)</th><th class="num">Now rides to SL (worsened)</th><th class="num">Still reversal-closed, later</th><th class="num">Net pips vs today</th></tr>
+      <tr class="ok"><td>N=1 (today's behavior)</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">baseline</td></tr>
+      <tr class="highlight"><td>N=2</td><td class="num">3 (avg +9.3p)</td><td class="num">6 (avg -4.1p)</td><td class="num">142 (avg -0.1p)</td><td class="num"><strong>-15.1</strong></td></tr>
+      <tr class="highlight"><td>N=3</td><td class="num">4 (avg +8.3p)</td><td class="num">11 (avg -5.2p)</td><td class="num">135 (avg -0.5p)</td><td class="num"><strong>-89.3</strong></td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">Pips summed across mixed symbols (XAUUSD-dominated) as a directional indicator, not a dollar figure. Net worsens as N increases — this isn't noise, it's a consistent trend across both tested values.</p>
+
+    <div class="decision">
+      <div class="decision-title">Verdict — don't add confirmation delay, and why</div>
+      <p style="margin-bottom:8px;">Of the 152 trades that close via reversal signal today, only 3–4 actually benefit from waiting. More than twice as many (6–11) get <em>worse</em> — they ride into a real SL that the fast exit would have avoided. The remaining ~140 barely change outcome at all; they just pay a small delay cost for nothing.</p>
+      <p style="margin-bottom:0;">This matches Part 3's independent finding: the reversal mechanism is correctly identifying doomed trades most of the time (52–62% would've hit SL if left alone). The "confirming" second and third bar is usually bad news continuing to develop, not noise reverting — so waiting for it gives real reversals more room to hurt before exiting, rather than filtering out false alarms. Single-bar close is the better-performing version of this mechanism. No change made.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 7 — Checking the "profitable then stagnant for hours" pattern in real data</div>
+    <div class="section-title">The specific trade that raised this doesn't actually fit the pattern once traced bar-by-bar — and the real pattern is rare, 3 trades in all of history</div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Correction to Part 1's read on the <code>session_open</code> XAUUSD trade (16:45→20:00, -$7.89)</span>
+        <span class="badge gap">Correction</span>
+      </div>
+      <p>Earlier framing: "ticked +$2.79 favorable early, then bled for 3 hours." Tracing the actual M5 candle closes for that trade's full lifetime tells a different story — <strong>every single bar closed below the open price</strong>, from -29.3 pips (best close) to -149.7 pips (worst), for the entire 3h15m hold:</p>
+      <pre>16:50  close=4382.88  -109.8p
+17:05  close=4388.81   -50.5p  <span class="cmt">// best stretch, still well underwater</span>
+17:45  close=4378.89  -149.7p  <span class="cmt">// worst point</span>
+19:00  close=4390.93   -29.3p  <span class="cmt">// best close of the entire trade</span>
+20:00  close=4383.06  -108.0p  <span class="cmt">// close</span></pre>
+      <p>The <code>max_favorable=+$2.79</code> stored on the position is real, but it's an intra-bar tick captured right at/near entry (before the very first M5 bar even closed) — not a sustained profitable level the trade later gave back. It ticked positive for a moment, dodged the 30-min never-profitable time-stop by that margin, then was underwater on every bar-close for the rest of its life. Not "profitable then stagnant" — just a trade that took unusually long for the reversal signals to line up on, because they kept sitting at 1–2 of 4 rather than reaching 3.</p>
+    </div>
+
+    <p>Checked whether this is a real recurring pattern regardless of that one trade's specifics. Method: for every closed trade (excluding <code>tp_hit</code>/<code>breakeven_sl</code>/<code>eod_close</code> — those are clean, expected outcomes), walk the real M5 candle <em>closes</em> — matching how the live bot's own <code>UpdatePeaks</code> samples price via <code>ms.Close</code>, not wick highs/lows — to find a genuine sustained peak (≥15 pips) followed by ≥60 minutes continuously underwater before close:</p>
+
+    <table>
+      <tr><th>Trade</th><th class="num">Peak</th><th>Underwater from</th><th class="num">Underwater duration</th><th>Close reason</th><th class="num">Net</th></tr>
+      <tr class="highlight"><td><span class="mono">1d34e086</span></td><td class="num">66.2p</td><td>07-09 21:10</td><td class="num">77 min</td><td><code>sl_hit</code></td><td class="num">-$15.06</td></tr>
+      <tr class="highlight"><td><span class="mono">47f06a76</span></td><td class="num">41.8p</td><td>07-24 11:40</td><td class="num">84 min</td><td><code>sl_hit</code></td><td class="num">-$12.10</td></tr>
+      <tr class="highlight"><td><span class="mono">f82071f7</span></td><td class="num">188.1p</td><td>07-27 19:40</td><td class="num">521 min</td><td><code>time_stop=never_profitable_30m</code></td><td class="num">-$39.02</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">Out of 155 trades with candle coverage, spanning the bot's full history: <strong>3 matches</strong>, -$66.18 aggregate. Real, and each one is a meaningful loss on its own — but rare enough that it isn't a systemic pattern worth a dedicated new mechanism.</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">The third match (<code>f82071f7</code>) led to a real code bug, found while explaining the anomaly</span>
+        <span class="badge fixed">Fixed</span>
+      </div>
+      <p>That trade reached a genuine 188.1-pip peak, yet closed via <code>time_stop=never_profitable_30m</code> — a name that implies a 30-minute ceiling — after being open <strong>27 hours</strong> (2026-07-27 01:20 → 2026-07-28 04:21). The underwater transition my script detected (19:40 on 07-27) sits 4 minutes after deploy tag <code>v202607271640</code> (19:36:53) — a redeploy landed mid-trade.</p>
+      <p><code>checkTimeStop</code> (<span class="mono">internal/bot/watcher.go:283</span>) reads <code>pos.MaxFavorable</code> straight from the in-memory registry. <code>reconcileOpenPositions</code> (<span class="mono">internal/bot/bot.go:280</span>), which re-registers every still-open position after the process restarts, never copied <code>p.MaxFavorable</code>/<code>p.MaxAdverse</code> from the DB row it already has in hand. <code>PositionRegistry.Register</code> seeds an unset peak to the position's <em>open price</em> rather than leaving it at zero — one notch less severe than "reset to zero," but the effect is the same defect: any real peak reached before a restart is discarded and replaced with "as if it opened right now," for every position that survives a deploy.</p>
+      <p style="margin-bottom:0;">What isn't fully confirmed: the reset alone should make <code>neverProfitable</code> true almost immediately after restart (open price ≈ open price, trivially "never moved"), so the mechanism doesn't yet fully explain why <em>this specific trade's</em> actual close waited until 04:21 the next morning rather than firing within minutes of the 19:36 deploy — there may have been additional deploys in that window, or another gate in the call path not traced here. The reset-on-reconcile bug itself was confirmed by reading the code and is fixed below regardless of that remaining gap; <code>f82071f7</code>'s exact 9-hour timeline stays a partially open question.</p>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">The fix</span>
+        <span class="badge fixed">Fixed</span>
+      </div>
+      <p>Added <code>candle.Repository.Since(ctx, symbolID, period, since)</code> (<span class="mono">internal/candle/repository.go</span>) — fetches real candle history from a given time forward, ascending. <code>reconcileOpenPositions</code> now calls a new <code>Bot.recoverPeaks</code> helper before registering each rediscovered position: walks the real M5 candle closes from the position's true <code>open_timestamp</code> up to now and recomputes its actual peak-favorable/peak-adverse, mirroring <code>PositionRegistry.UpdatePeaks</code>'s own convention of using candle close, not intrabar wicks.</p>
+      <pre>maxFavorable, maxAdverse := b.recoverPeaks(ctx, p.SymbolID, p.Side, openPrice, openTime)
+b.registry.Register(trackedPosition{
+    <span class="cmt">// ...existing fields...</span>
+    MaxFavorable: maxFavorable,
+    MaxAdverse:   maxAdverse,
+})</pre>
+      <p style="margin-bottom:0;">Falls back to <code>(0, 0)</code> — and from there to <code>Register</code>'s existing open-price seed — if no candle history exists yet (a position reconciled within its first M5 bar) or the candle query fails, so a restart can never leave a position worse off than the pre-fix behavior, only better informed when history is available. No schema change, no new write load — read-only against candle data already being collected for every other purpose in this codebase.</p>
+    </div>
+
+    <div class="decision">
+      <div class="decision-title">Verdict</div>
+      <p style="margin-bottom:0;">No dedicated stagnation-timeout mechanism needed — the anecdote that prompted this check doesn't generalize, and the genuine pattern is rare (3 trades, ever). The existing 30-min never-profitable time-stop plus the reversal-signal mechanism already cover the realistic cases now that the reconcile-time peak loss is fixed.</p>
+    </div>
+  </div>
+
+</div>
+
+<footer>Generated 2026-08-14 · positions/orders/signals/fills/candles data from tbot_prod · strategy source: internal/strategy/*/strategy.go, internal/bot/watcher.go</footer>
+
+</body>
+</html>

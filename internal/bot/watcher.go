@@ -13,11 +13,27 @@ import (
 )
 
 const peakDrawbackThreshold = 60.0
+const peakDrawbackGatePct = 70.0
 const neverProfitableTimeout = 30 * time.Minute
 
 const signalsToClose = 3
 
 const signalsToReduce = 2
+
+const breakEvenTriggerPct = 33.0
+const breakEvenBufferPips = 2.0
+
+func decisionParams() map[string]any {
+	return map[string]any{
+		"peak_drawback_gate_pct":       peakDrawbackGatePct,
+		"peak_drawback_threshold_pct":  peakDrawbackThreshold,
+		"breakeven_trigger_pct":        breakEvenTriggerPct,
+		"breakeven_buffer_pips":        breakEvenBufferPips,
+		"signals_to_close":             signalsToClose,
+		"signals_to_reduce":            signalsToReduce,
+		"never_profitable_timeout_min": int(neverProfitableTimeout / time.Minute),
+	}
+}
 
 func isEODWindow() bool {
 	now := time.Now().UTC()
@@ -137,7 +153,7 @@ func peakDrawbackPct(pos trackedPosition, currentPrice, pipSize float64) float64
 	} else {
 		tpDist = pos.OpenPrice - pos.TPPrice
 	}
-	minPeakGain := tpDist * 0.7
+	minPeakGain := tpDist * (peakDrawbackGatePct / 100)
 	if minPeakGain <= 0 {
 		minPeakGain = 3 * pipSize
 	}
@@ -216,15 +232,15 @@ func (b *Bot) checkBreakEven(ctx context.Context, pos trackedPosition) {
 		peakGain = pos.OpenPrice - pos.MaxFavorable
 	}
 
-	if peakGain < 0.33*tpDist {
+	if peakGain < (breakEvenTriggerPct/100)*tpDist {
 		return
 	}
 
 	var newSL float64
 	if pos.Side == config.SignalBuy {
-		newSL = pos.OpenPrice + 2*b.pipSize
+		newSL = pos.OpenPrice + breakEvenBufferPips*b.pipSize
 	} else {
-		newSL = pos.OpenPrice - 2*b.pipSize
+		newSL = pos.OpenPrice - breakEvenBufferPips*b.pipSize
 	}
 
 	if err := b.provider.AmendPositionSL(ctx, pos.ProviderPositionID, newSL, pos.TPPrice); err != nil {
