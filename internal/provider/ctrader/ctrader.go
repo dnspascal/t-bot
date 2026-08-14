@@ -6,24 +6,24 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/denismgaya/t-bot/internal/provider/ctrader/api"
 	"github.com/denismgaya/t-bot/internal/bot"
 	"github.com/denismgaya/t-bot/internal/config"
 	"github.com/denismgaya/t-bot/internal/provider"
+	"github.com/denismgaya/t-bot/internal/provider/ctrader/api"
 	"github.com/denismgaya/t-bot/internal/snapshot"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type CTrader struct {
-	cfg       *config.Config
-	ctCfg     *config.CTraderConfig
-	client    *api.Client
-	db        *pgxpool.Pool
-	events    EventsRepo
-	snaps     SnapshotsRepo
-	execCh    chan provider.ExecutionEvent
-	priceCh   chan provider.PriceEvent
-	candleCh  chan provider.Candle
+	cfg      *config.Config
+	ctCfg    *config.CTraderConfig
+	client   *api.Client
+	db       *pgxpool.Pool
+	events   EventsRepo
+	snaps    SnapshotsRepo
+	execCh   chan provider.ExecutionEvent
+	priceCh  chan provider.PriceEvent
+	candleCh chan provider.Candle
 }
 
 type EventsRepo interface {
@@ -265,7 +265,6 @@ func elapsed(t time.Time) int64 {
 	return time.Since(t).Milliseconds()
 }
 
-
 func (c *CTrader) PlaceMarketOrder(
 	ctx context.Context,
 	side string,
@@ -309,7 +308,6 @@ func (c *CTrader) PlaceMarketOrderWithTimeout(
 func (c *CTrader) CancelOrder(ctx context.Context, orderID string) error {
 	return fmt.Errorf("CancelOrder not yet implemented for cTrader")
 }
-
 
 func (c *CTrader) FetchAccountInfo(ctx context.Context) (*provider.AccountInfo, error) {
 	info, err := c.client.FetchAccountInfo()
@@ -395,7 +393,6 @@ func (c *CTrader) ReconcilePositions(ctx context.Context) ([]provider.Position, 
 	return c.QueryOpenPositions(ctx, "")
 }
 
-
 func (c *CTrader) FetchClosedDeal(positionID string, openTime time.Time) (*provider.DealInfo, error) {
 	var posID int64
 	if _, err := fmt.Sscanf(positionID, "%d", &posID); err != nil {
@@ -435,7 +432,6 @@ func (c *CTrader) FetchClosedDeal(positionID string, openTime time.Time) (*provi
 	}
 	return info, nil
 }
-
 
 func (c *CTrader) SubscribeCandles(ctx context.Context, symbol, timeframe string) error {
 	period := stringToPeriod(timeframe)
@@ -477,7 +473,6 @@ func (c *CTrader) FetchHistoricalCandles(
 func (c *CTrader) FetchLatestTick(ctx context.Context, symbol string) (*provider.PriceEvent, error) {
 	return nil, fmt.Errorf("FetchLatestTick not yet implemented for cTrader")
 }
-
 
 func (c *CTrader) RefreshCredentials(ctx context.Context) error {
 	newAccessToken, newRefreshToken, err := api.RefreshToken(c.ctCfg.ClientID, c.ctCfg.ClientSecret, c.ctCfg.RefreshToken)
@@ -531,7 +526,6 @@ func (c *CTrader) ValidateCredentials(ctx context.Context) error {
 	}
 	return nil
 }
-
 
 func (c *CTrader) pipePriceEvents() {
 	for event := range c.client.PriceCh {
@@ -626,7 +620,6 @@ func (c *CTrader) SaveBalanceSnapshot(ctx context.Context, balance float64) {
 		slog.Error("SaveBalanceSnapshot failed", "err", err)
 	}
 }
-
 
 func stringToSide(side string) uint32 {
 	if side == "BUY" {

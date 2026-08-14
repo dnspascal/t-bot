@@ -39,8 +39,8 @@ type Repositories struct {
 }
 
 type Services struct {
-	DB    *Database
-	Repos *Repositories
+	DB     *Database
+	Repos  *Repositories
 	Lookup *symbol.SymbolLookup
 }
 

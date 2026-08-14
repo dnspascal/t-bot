@@ -28,15 +28,15 @@ type RestClient struct {
 
 // AccountResponse from Binance USD-M Futures API (/fapi/v2/account)
 type AccountResponse struct {
-	CanTrade  bool `json:"canTrade"`
-	CanDeposit bool `json:"canDeposit"`
+	CanTrade    bool `json:"canTrade"`
+	CanDeposit  bool `json:"canDeposit"`
 	CanWithdraw bool `json:"canWithdraw"`
-	Assets []struct {
-		Asset                  string `json:"asset"`
-		WalletBalance          string `json:"walletBalance"`
-		UnrealizedProfit       string `json:"unrealizedProfit"`
-		MarginBalance          string `json:"marginBalance"`
-		AvailableBalance       string `json:"availableBalance"`
+	Assets      []struct {
+		Asset            string `json:"asset"`
+		WalletBalance    string `json:"walletBalance"`
+		UnrealizedProfit string `json:"unrealizedProfit"`
+		MarginBalance    string `json:"marginBalance"`
+		AvailableBalance string `json:"availableBalance"`
 	} `json:"assets"`
 	Positions []struct {
 		Symbol           string `json:"symbol"`
@@ -205,11 +205,11 @@ func (c *RestClient) PlaceReduceOnlyOrder(symbol, side string, quantity float64)
 // PositionRiskResponse represents one entry from /fapi/v2/positionRisk
 type PositionRiskResponse struct {
 	Symbol           string `json:"symbol"`
-	PositionAmt      string `json:"positionAmt"`      // negative = short, positive = long, "0" = no position
+	PositionAmt      string `json:"positionAmt"` // negative = short, positive = long, "0" = no position
 	EntryPrice       string `json:"entryPrice"`
 	UnrealizedProfit string `json:"unrealizedProfit"`
-	PositionSide     string `json:"positionSide"`     // "BOTH" in one-way mode
-	Leverage         string `json:"leverage"`         // e.g. "20"
+	PositionSide     string `json:"positionSide"` // "BOTH" in one-way mode
+	Leverage         string `json:"leverage"`     // e.g. "20"
 }
 
 // GetOpenPositions returns futures positions with non-zero positionAmt.

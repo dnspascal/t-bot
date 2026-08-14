@@ -25,4 +25,3 @@ func (c *CTrader) Setup() error {
 	slog.Info("subscribed to ctrader streams", "periods", config.TradingPeriods)
 	return nil
 }
-

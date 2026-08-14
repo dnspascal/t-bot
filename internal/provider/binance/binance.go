@@ -15,8 +15,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-
-
 const (
 	binanceBrokerName    = "Binance"
 	binanceAccountMode   = "netted"
@@ -82,7 +80,7 @@ func (b *Binance) StartStreaming() error {
 		return fmt.Errorf("websocket connect: %w", err)
 	}
 	go b.forwardPriceEvents()
-	go b.forwardKlineEvents()    // no-op when kline streams are geo-filtered (e.g. Tanzania ISPs)
+	go b.forwardKlineEvents()       // no-op when kline streams are geo-filtered (e.g. Tanzania ISPs)
 	go b.pollKlines(b.wsClient.ctx) // REST fallback: always works, closed candles are immutable
 	return nil
 }
@@ -177,7 +175,6 @@ func (b *Binance) Setup() error {
 	return nil
 }
 
-
 func (b *Binance) PlaceMarketOrder(
 	ctx context.Context,
 	side string,
@@ -232,7 +229,6 @@ func (b *Binance) PlaceMarketOrderWithTimeout(
 func (b *Binance) CancelOrder(ctx context.Context, orderID string) error {
 	return fmt.Errorf("CancelOrder not yet implemented for Binance")
 }
-
 
 func (b *Binance) FetchAccountInfo(ctx context.Context) (*provider.AccountInfo, error) {
 	if b.restClient == nil {
@@ -305,7 +301,6 @@ func (b *Binance) QueryOpenPositions(ctx context.Context, symbol string) ([]prov
 	return positions, nil
 }
 
-
 func (b *Binance) ClosePosition(ctx context.Context, positionID string, volume int64) (string, error) {
 	closeSide := "SELL"
 	if len(positionID) >= 5 && positionID[:5] == "SELL:" {
@@ -323,7 +318,6 @@ func (b *Binance) ClosePosition(ctx context.Context, positionID string, volume i
 func (b *Binance) ReconcilePositions(ctx context.Context) ([]provider.Position, error) {
 	return b.QueryOpenPositions(ctx, b.cfg.BinanceSymbol)
 }
-
 
 func (b *Binance) SubscribeCandles(ctx context.Context, symbol, timeframe string) error {
 	if b.wsClient == nil {
@@ -384,7 +378,6 @@ func (b *Binance) FetchLatestTick(ctx context.Context, symbol string) (*provider
 	return nil, fmt.Errorf("FetchLatestTick not yet implemented")
 }
 
-
 func (b *Binance) RefreshCredentials(ctx context.Context) error {
 	if b.restClient == nil {
 		return fmt.Errorf("not connected")
@@ -419,7 +412,6 @@ func (b *Binance) ValidateCredentials(ctx context.Context) error {
 	return nil
 }
 
-
 func (b *Binance) PriceChan() <-chan provider.PriceEvent {
 	return b.priceCh
 }
@@ -446,10 +438,9 @@ func (b *Binance) AmendPositionSL(ctx context.Context, positionID string, newSLP
 	return fmt.Errorf("AmendPositionSL not yet implemented for Binance")
 }
 
-
 func (b *Binance) forwardPriceEvents() {
 	for price := range b.wsClient.PriceChan() {
-		
+
 		select {
 		case b.priceCh <- provider.PriceEvent{
 			Bid:          price.Bid,

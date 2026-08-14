@@ -4,7 +4,7 @@ import "time"
 
 type Order struct {
 	ID                  string
-	SignalID             *string
+	SignalID            *string
 	Provider            string
 	ProviderOrderID     *string
 	ProviderPositionID  *string

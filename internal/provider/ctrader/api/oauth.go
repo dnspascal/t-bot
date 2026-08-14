@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-
 func InitiateOAuthFlow(clientID, clientSecret, redirectURI string, callbackPort int) (accessToken, refreshToken string, err error) {
 	codeCh := make(chan string, 1)
 	errCh := make(chan error, 1)

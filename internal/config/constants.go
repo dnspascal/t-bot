@@ -74,7 +74,7 @@ const (
 	ExecDepositWithdraw      = "DEPOSIT_WITHDRAW"
 	ExecOrderPartialFill     = "ORDER_PARTIAL_FILL"
 	ExecBonusDepositWithdraw = "BONUS_DEPOSIT_WITHDRAW"
-	
+
 	//Custom event
-	ExecCloseRejected        = "CLOSE_REJECTED"
+	ExecCloseRejected = "CLOSE_REJECTED"
 )

@@ -33,6 +33,5 @@ func (e *EMA) Add(price float64) float64 {
 	return e.value
 }
 
-func (e *EMA) Value() float64    { return e.value }
-func (e *EMA) IsReady() bool     { return e.initialized }
-
+func (e *EMA) Value() float64 { return e.value }
+func (e *EMA) IsReady() bool  { return e.initialized }

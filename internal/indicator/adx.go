@@ -9,8 +9,6 @@ type OHLC struct {
 	Close float64
 }
 
-
-
 type ADX struct {
 	period      int
 	atr         float64
@@ -74,7 +72,7 @@ func (a *ADX) Add(high, low, close float64) float64 {
 			if pdi+mdi == 0 {
 				return 0
 			}
-			a.value = math.Abs(pdi-mdi) / (pdi+mdi) * 100
+			a.value = math.Abs(pdi-mdi) / (pdi + mdi) * 100
 			a.initialized = true
 		}
 		return a.value
@@ -89,12 +87,11 @@ func (a *ADX) Add(high, low, close float64) float64 {
 	if pdi+mdi == 0 {
 		return a.value
 	}
-	dx := math.Abs(pdi-mdi) / (pdi+mdi) * 100
+	dx := math.Abs(pdi-mdi) / (pdi + mdi) * 100
 	a.value = (a.value*float64(a.period-1) + dx) / float64(a.period)
 
 	return a.value
 }
 
-func (a *ADX) Value() float64  { return a.value }
-func (a *ADX) IsReady() bool   { return a.initialized }
-
+func (a *ADX) Value() float64 { return a.value }
+func (a *ADX) IsReady() bool  { return a.initialized }

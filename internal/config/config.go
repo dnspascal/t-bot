@@ -9,15 +9,15 @@ import (
 )
 
 type CTraderConfig struct {
-	ClientID        string
-	ClientSecret    string
-	AccessToken     string
-	RefreshToken    string
-	AccountID       int64
-	SymbolID        int64
-	Demo            bool
-	InitialBalance  float64
-	OAuthRedirectURI string
+	ClientID          string
+	ClientSecret      string
+	AccessToken       string
+	RefreshToken      string
+	AccountID         int64
+	SymbolID          int64
+	Demo              bool
+	InitialBalance    float64
+	OAuthRedirectURI  string
 	OAuthCallbackPort int
 }
 
@@ -33,10 +33,10 @@ type Config struct {
 	CTrader *CTraderConfig
 	Binance *BinanceConfig
 
-	EnableCTrader  bool
-	CTraderSymbol  string
-	EnableBinance  bool
-	BinanceSymbol  string
+	EnableCTrader bool
+	CTraderSymbol string
+	EnableBinance bool
+	BinanceSymbol string
 
 	RiskPercent     float64
 	MaxDailyLossPct float64
@@ -48,13 +48,13 @@ type Config struct {
 
 	SendTestPosition bool
 
-	TelegramToken   string
-	WebhookSecret   string
-	WebhookPort     int
+	TelegramToken string
+	WebhookSecret string
+	WebhookPort   int
 
-	Strategy    string
-	MLModelDir  string
-	MLOnnxLib   string // path to libonnxruntime.so; empty = use default search
+	Strategy   string
+	MLModelDir string
+	MLOnnxLib  string // path to libonnxruntime.so; empty = use default search
 }
 
 func Load() (*Config, error) {
@@ -167,4 +167,3 @@ func getEnv(key, fallback string) string {
 	}
 	return fallback
 }
-

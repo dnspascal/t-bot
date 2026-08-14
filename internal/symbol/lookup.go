@@ -9,8 +9,8 @@ import (
 )
 
 type SymbolLookup struct {
-	uuids        map[string]string
-	pipSizes     map[string]float64
+	uuids         map[string]string
+	pipSizes      map[string]float64
 	priceDivisors map[string]float64
 }
 

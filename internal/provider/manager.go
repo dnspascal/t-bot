@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sync"
 	"maps"
+	"sync"
 )
 
 type Manager struct {

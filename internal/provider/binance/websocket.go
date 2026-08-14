@@ -178,8 +178,8 @@ func (w *WebSocketClient) Close() error {
 }
 
 func (w *WebSocketClient) PriceChan() <-chan PriceData { return w.priceCh }
-func (w *WebSocketClient) KlineChan() <-chan KlineData  { return w.klineCh }
-func (w *WebSocketClient) ClosedChan() <-chan struct{}  { return w.closedCh }
+func (w *WebSocketClient) KlineChan() <-chan KlineData { return w.klineCh }
+func (w *WebSocketClient) ClosedChan() <-chan struct{} { return w.closedCh }
 
 func (w *WebSocketClient) keepAlive() {
 	ticker := time.NewTicker(wsPingInterval)
@@ -323,4 +323,3 @@ func (w *WebSocketClient) processKline(data json.RawMessage) {
 		slog.Warn("kline channel full, dropping closed candle", "interval", evt.Kline.Interval)
 	}
 }
-

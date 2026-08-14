@@ -21,7 +21,6 @@ const minN = 30
 
 var windows = []int{10, 30, 60, 120, 240}
 
-
 type Candle struct {
 	BarTime time.Time
 	Open    float64
@@ -66,7 +65,6 @@ type WinCount struct {
 	SelLoss int // price hit SELL SL before SELL TP within window
 }
 
-
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Fprintln(os.Stderr, "usage: stratanalysis <postgres-url>")
@@ -102,7 +100,6 @@ func main() {
 	for sid, cs := range candleMap {
 		logf("    symbol_id=%s  candles=%d", sid, len(cs))
 	}
-
 
 	logf("loading market states (M5, M15, H1)...")
 	msMap := map[string]MS{} // id (uuid as string) -> MS
@@ -179,7 +176,6 @@ func main() {
 		rows.Close()
 	}
 	logf("  → %d unique M5 bar moments to analyse", len(moments))
-
 
 	type GroupData = map[int]*WinCount
 	results := map[Cond]GroupData{}
@@ -336,7 +332,6 @@ func main() {
 		fmt.Println()
 	}
 }
-
 
 func classRegime(r string) string {
 	if r == "" {

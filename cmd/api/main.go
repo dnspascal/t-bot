@@ -437,7 +437,7 @@ func (h *handler) trade(w http.ResponseWriter, r *http.Request) {
 		defer rows.Close()
 		for rows.Next() {
 			var c Candle
-			
+
 			var bt time.Time
 			if err := rows.Scan(&bt, &c.Open, &c.High, &c.Low, &c.Close); err != nil {
 				continue

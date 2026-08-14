@@ -42,7 +42,7 @@ type msRow struct {
 }
 
 type candle struct {
-	barTime         time.Time
+	barTime          time.Time
 	high, low, close float64
 }
 

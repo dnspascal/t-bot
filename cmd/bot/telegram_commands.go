@@ -20,8 +20,8 @@ type botController interface {
 }
 
 type telegramCommandHandler struct {
-	tg      *notify.TelegramChannel
-	db      *Services
+	tg                  *notify.TelegramChannel
+	db                  *Services
 	getTradingInstances func() []botController
 }
 
