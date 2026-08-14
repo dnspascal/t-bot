@@ -25,6 +25,7 @@ type Position struct {
 	GuaranteedStopLoss bool
 	Label              *string
 	Comment            *string
+	DecisionParams     []byte // JSON snapshot of the watcher-level exit/risk constants live at open time
 	OpenTimestamp      *time.Time
 	CloseTimestamp     *time.Time
 	RawPayload         []byte

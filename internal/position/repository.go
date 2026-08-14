@@ -21,9 +21,9 @@ func (r *Repository) Upsert(ctx context.Context, p Position) (string, error) {
 		INSERT INTO positions
 			(our_order_id, provider, provider_position_id, provider_acct_id, symbol_id, side, volume,
 			 tier, open_price, current_sl, current_tp, swap, commission, used_margin,
-			 status, trailing_stop_loss, guaranteed_stop_loss, label, comment,
+			 status, trailing_stop_loss, guaranteed_stop_loss, label, comment, decision_params,
 			 open_timestamp, close_timestamp, raw_payload)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
 		ON CONFLICT (provider, provider_position_id) DO UPDATE SET
 			open_price           = EXCLUDED.open_price,
 			current_sl           = EXCLUDED.current_sl,
@@ -38,11 +38,13 @@ func (r *Repository) Upsert(ctx context.Context, p Position) (string, error) {
 			raw_payload          = EXCLUDED.raw_payload,
 			updated_at           = NOW()
 		RETURNING id`
+	// decision_params is intentionally absent from the ON CONFLICT SET list above — it's
+	// a snapshot of what was live at open time and must stay immutable across later syncs.
 	var id string
 	err := r.db.QueryRow(ctx, q,
 		p.OurOrderID, p.Provider, p.ProviderPositionID, p.ProviderAcctID, p.SymbolID, p.Side, p.Volume,
 		p.Tier, p.OpenPrice, p.CurrentSL, p.CurrentTP, p.Swap, p.Commission, p.UsedMargin,
-		p.Status, p.TrailingStopLoss, p.GuaranteedStopLoss, p.Label, p.Comment,
+		p.Status, p.TrailingStopLoss, p.GuaranteedStopLoss, p.Label, p.Comment, p.DecisionParams,
 		p.OpenTimestamp, p.CloseTimestamp, p.RawPayload,
 	).Scan(&id)
 	if err != nil {

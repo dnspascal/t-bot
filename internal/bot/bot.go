@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -277,6 +278,7 @@ func (b *Bot) reconcileOpenPositions(ctx context.Context) {
 		if p.OpenTimestamp != nil {
 			openTime = *p.OpenTimestamp
 		}
+		maxFavorable, maxAdverse := b.recoverPeaks(ctx, p.SymbolID, p.Side, openPrice, openTime)
 		b.registry.Register(trackedPosition{
 			ProviderPositionID: p.ProviderPositionID,
 			Side:               p.Side,
@@ -286,9 +288,13 @@ func (b *Bot) reconcileOpenPositions(ctx context.Context) {
 			TPPrice:            tp,
 			OpenTime:           openTime,
 			Tier:               p.Tier,
+			MaxFavorable:       maxFavorable,
+			MaxAdverse:         maxAdverse,
 		})
 		slog.Info("startup reconcile: loaded open position",
 			"provider", b.provider.Name(),
+			"maxFavorable", maxFavorable,
+			"maxAdverse", maxAdverse,
 			"posID", p.ProviderPositionID,
 			"side", p.Side,
 			"openPrice", openPrice,
@@ -301,6 +307,39 @@ func (b *Bot) reconcileOpenPositions(ctx context.Context) {
 		"loaded", loaded,
 		"purged", purged,
 	)
+}
+
+func (b *Bot) recoverPeaks(ctx context.Context, symbolID, side string, openPrice float64, openTime time.Time) (maxFavorable, maxAdverse float64) {
+	if openTime.IsZero() {
+		return 0, 0
+	}
+	candles, err := b.candles.Since(ctx, symbolID, config.PeriodM5, openTime)
+	if err != nil {
+		slog.Warn("recoverPeaks: candle lookup failed — falling back to open price", "symbolID", symbolID, "err", err)
+		return 0, 0
+	}
+	if len(candles) == 0 {
+		return 0, 0
+	}
+	maxFavorable, maxAdverse = openPrice, openPrice
+	for _, c := range candles {
+		if side == config.SignalBuy {
+			if c.Close > maxFavorable {
+				maxFavorable = c.Close
+			}
+			if c.Close < maxAdverse {
+				maxAdverse = c.Close
+			}
+		} else {
+			if c.Close < maxFavorable {
+				maxFavorable = c.Close
+			}
+			if c.Close > maxAdverse {
+				maxAdverse = c.Close
+			}
+		}
+	}
+	return maxFavorable, maxAdverse
 }
 
 type dealFetcher interface {
@@ -914,6 +953,10 @@ func (b *Bot) recordOpenFill(ctx context.Context, exec provider.ExecutionEvent, 
 	}
 
 	openTime := deal.ExecTime
+	decisionParamsJSON, err := json.Marshal(decisionParams())
+	if err != nil {
+		slog.Error("marshal decisionParams failed", "err", err)
+	}
 	posUUID, err := b.positions.Upsert(ctx, position.Position{
 		OurOrderID:         &ps.ourOrderID,
 		Provider:           b.provider.Name(),
@@ -927,6 +970,7 @@ func (b *Bot) recordOpenFill(ctx context.Context, exec provider.ExecutionEvent, 
 		CurrentSL:          &ps.slPrice,
 		CurrentTP:          &ps.tpPrice,
 		Status:             "open",
+		DecisionParams:     decisionParamsJSON,
 		OpenTimestamp:      &openTime,
 	})
 	if err != nil {
