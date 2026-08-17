@@ -98,12 +98,12 @@ func (s *TrendFollow) Evaluate(states map[string]indicator.MarketState, currentP
 		return hold("M5 EMA bullish — not aligned with H1 downtrend")
 	}
 
-	if dir == config.SignalBuy && m5.Regime != config.TrendingUp {
-		return hold("M5 regime not confirming H1 uptrend")
+	if dir == config.SignalBuy && m5.Regime == config.TrendingDown {
+		return hold("M5 actively trending down — against the H1 uptrend")
 	}
 
-	if dir == config.SignalSell && m5.Regime != config.TrendingDown {
-		return hold("M5 regime not confirming H1 downtrend")
+	if dir == config.SignalSell && m5.Regime == config.TrendingUp {
+		return hold("M5 actively trending up — against the H1 downtrend")
 	}
 
 	if h1.ADX < 20 {
