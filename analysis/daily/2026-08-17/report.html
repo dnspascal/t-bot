@@ -280,8 +280,71 @@ footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; f
       <tr><td><span class="mono">queries/multivar_scan/</span></td><td>Same base sample, sweeps ADX/H1-freshness/ATR/M15/M30/hour/weekday in one pass</td></tr>
       <tr><td><span class="mono">queries/oversold_scan/</span></td><td>Same method retargeted at dd_oversold_bounce's condition shape</td></tr>
       <tr><td><span class="mono">queries/multi_strategy_m15/</span></td><td>trend_follow (with real cooldown simulation) and ema_pullback (with M1-based entry price)</td></tr>
+      <tr><td><span class="mono">queries/hold_reason_sim/</span></td><td>Runs the real strategy code (imports internal/strategy/*, not a re-implementation) bar-by-bar for a full day, both symbols — see Part 7</td></tr>
     </table>
-    <p style="font-size:13px; color:#6b7280;">All four build under the main module (<code>go build ./analysis/daily/2026-08-17/...</code>), no separate <code>go.mod</code> needed — reusable directly for the next strategy this method gets pointed at.</p>
+    <p style="font-size:13px; color:#6b7280;">All five build under the main module (<code>go build ./analysis/daily/2026-08-17/...</code>), no separate <code>go.mod</code> needed — reusable directly for the next strategy this method gets pointed at.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 6 — Separate bug found the same day (implemented and shipped)</div>
+    <div class="section-title">Dashboard showed 5 trades today, not the real 6 — cmd/api parsed every date filter in UTC, not local time</div>
+
+    <p>Reported directly: the web dashboard was missing a EURUSD trade. Traced it to <span class="mono">cmd/api/main.go</span>'s <code>/metrics</code> and <code>/trades</code> handlers — both parsed the <code>date</code>/<code>from</code>/<code>to</code> query params with the bare Go stdlib default (UTC) and computed "today" via <code>time.Now().Truncate(24 * time.Hour)</code>, which also aligns to UTC midnight regardless of server location. Every trade timestamp and every dashboard user is Dar-es-Salaam-local (UTC+3, no DST) — the missing trade opened at <strong>00:05 local</strong>, which is <strong>21:05 UTC the previous day</strong>. Any trade opened between 00:00-03:00 local silently fell into the wrong day's bucket.</p>
+
+    <pre><span class="cmt">// before</span>
+start, err = time.Parse("2006-01-02", date)
+<span class="cmt">// ...</span>
+start = time.Now().Truncate(24 * time.Hour)
+
+<span class="cmt">// after — every date param and "today" fallback goes through a shared TZ</span>
+var tz, _ = time.LoadLocation("Africa/Dar_es_Salaam")
+start, err = time.ParseInLocation("2006-01-02", date, tz)
+<span class="cmt">// ...</span>
+start = startOfTodayTZ()</pre>
+    <p>Verified against real production data before and after: 5 trades → 6, the missing EURUSD trade now included, metrics net P&amp;L recomputed correctly. Shipped as <span class="mono">v202608172006</span>.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 7 — Why only 6 trades fired all day</div>
+    <div class="section-title">Ran the real strategy code against every real M5 bar today — market context, the actual blocking condition per strategy, and one genuine unexplained gap</div>
+
+    <p>Concern raised: 6 trades all day is low, concentrated in two gold strategies, only one EURUSD trade. Rather than guess, built a harness that imports the real <span class="mono">internal/strategy/*</span> packages directly (not a re-implementation) and calls each strategy's actual <code>Evaluate()</code> against every real M5 bar from today, for both symbols, using the live 10-strategy roster confirmed from actual trade history across both instances.</p>
+
+    <div class="section-eyebrow" style="margin-top:20px;">Market context</div>
+    <table>
+      <tr><th>Symbol</th><th>H1 regime today</th><th class="num">ADX range</th><th>Note</th></tr>
+      <tr class="ok"><td>XAUUSD</td><td>trending_up for ~12 of 19 hours (01:00, 05:00-14:00), brief ranging/breakout elsewhere</td><td class="num">21.6 → 30.0</td><td>A real, sustained trend day</td></tr>
+      <tr class="highlight"><td>EURUSD</td><td>ranging almost all day (only 07:00-11:00 read breakout)</td><td class="num">33.9 → 45.0</td><td>Price moved ~36 pips all day (1.1560→1.1596) despite high ADX — a known regime-classifier gap (EMA-distance based, doesn't weight ADX) already documented for ema_pullback on 2026-08-13</td></tr>
+    </table>
+
+    <div class="section-eyebrow" style="margin-top:20px;">What actually blocked each strategy (231 XAUUSD bars, 243 EURUSD bars)</div>
+    <table>
+      <tr><th>Strategy</th><th class="num">XAUUSD signals</th><th class="num">EURUSD signals</th><th>Dominant block</th></tr>
+      <tr><td>dd_oversold_bounce</td><td class="num">0</td><td class="num">0</td><td>H1 not trending down — 100% of bars both symbols (expected; gold trended up, EUR ranged)</td></tr>
+      <tr><td>rsi_reversal</td><td class="num">0</td><td class="num">0</td><td>H1 RSI never reached its reversal extreme, ~85-90% of bars</td></tr>
+      <tr><td>session_open / session_momentum</td><td class="num">0 / 2 SELL</td><td class="num">0 / 2 SELL</td><td>Outside the two 30min session windows ~95% of bars — expected, that's most of a day</td></tr>
+      <tr><td>dd_ranging_breakout / dd_early_breakout</td><td class="num">1 BUY / 0</td><td class="num">0 / 0</td><td>H1 not ranging ~90% of bars — gold was trending, not ranging, most of the day</td></tr>
+      <tr><td>ema_pullback</td><td class="num">0</td><td class="num">0</td><td>Price never close enough to H1 EMA21, or H1 ADX/trend too weak</td></tr>
+      <tr class="highlight"><td>sr_bounce (no ML filter — see caveat)</td><td class="num">3 BUY / 37 SELL</td><td class="num">1 BUY / 52 SELL</td><td>Fires very often at the raw-condition level; live has an ONNX model gate this harness can't replicate</td></tr>
+      <tr class="highlight"><td>trend_follow</td><td class="num">0</td><td class="num">0</td><td>M5 never aligned with H1's direction on the same bar, despite H1 trending up ~58% of the day</td></tr>
+    </table>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Two things worth a closer look, neither acted on yet</span>
+      </div>
+      <p style="margin-bottom:8px;"><strong>trend_follow fired zero times on a trending gold day.</strong> Full breakdown of its 231 XAUUSD bars: 75× "M5 regime not confirming H1 uptrend", 69× "M5 EMA bearish — not aligned", 63× "H1 regime unclear", 24× "H1 regime is ranging". None of these are bugs — but it means trend_follow requires M5's own regime/EMA to align with H1's <em>at the exact same 5-minute snapshot</em>, and that alignment apparently never happened all day despite H1 trending up ~58% of the day. Whether that's correctly strict or overly strict is a real open question, not answered here.</p>
+      <p style="margin-bottom:0;"><strong>session_momentum's real entry gate cleared a SELL signal today for both symbols</strong> — genuinely passed every check in the real code, real data — but neither became an actual trade. Checked and ruled out stale cooldown: the last real session_momentum trade on either symbol was 3+ days ago (cooldown is 30min). Not yet explained — would need to trace the live bot's actual portfolio/registry state at that exact moment (another position blocking it, a symbol-level constraint, something this harness doesn't model). Flagged, not resolved.</p>
+    </div>
+
+    <div class="decision">
+      <div class="decision-title">So — is 6 trades actually low?</div>
+      <p style="margin-bottom:0;">Mostly explained by real conditions, not the bot being overly conservative: most HOLD reasons reflect the market genuinely not offering that strategy's setup today (gold trending when range-strategies need ranging, EUR too quiet for breakout strategies, RSI never reaching reversal extremes). <code>sr_bounce</code> shows its raw gate is anything but starved — the ML filter is doing real, active work. The two flagged items above are the only concrete "did we miss something" leads from this pass, and both need one more level of digging before concluding anything — not done here given scope.</p>
+    </div>
   </div>
 
 </div>
