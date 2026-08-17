@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Analysis — 2026-08-17</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Lato', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #000;
+  background: #fff;
+  padding-bottom: 80px;
+}
+
+/* ── Header ── */
+.header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 28px 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.header-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: #1d4ed8;
+  background: #eaf0ff; padding: 3px 10px; border-radius: 4px;
+  display: inline-block; margin-bottom: 8px;
+}
+.header h1 { font-size: 22px; font-weight: 900; letter-spacing: -.3px; margin-bottom: 6px; }
+.header-meta { font-size: 13px; color: #6b7280; display: flex; gap: 20px; flex-wrap: wrap; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.chip {
+  font-size: 12px; font-weight: 700; padding: 5px 12px;
+  border-radius: 20px; color: #6b7280;
+}
+.chip.loss { color: #dc2626; background: #fef2f2; }
+.chip.win  { color: #16a34a; background: #f0fdf4; }
+.chip.info { color: #1d4ed8; background: #eaf0ff; }
+
+/* ── Page ── */
+.page { max-width: 920px; margin: 0 auto; padding: 40px 24px 0; }
+.section { margin-bottom: 48px; }
+.section-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: #6b7280; margin-bottom: 10px;
+}
+.section-title { font-size: 18px; font-weight: 900; letter-spacing: -.2px; margin-bottom: 16px; }
+hr { border: none; border-top: 1px solid #e5e7eb; margin: 44px 0; }
+
+/* ── Cards ── */
+.finding {
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 20px 22px; margin-bottom: 16px;
+  background: #fff;
+}
+.finding-header {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.finding-title { font-size: 15px; font-weight: 700; flex: 1; }
+.badge {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+  white-space: nowrap; margin-top: 2px;
+}
+.badge.fixed   { background: #f0fdf4; color: #16a34a; }
+.badge.gap     { background: #fef2f2; color: #dc2626; }
+.badge.pending { background: #fff7ed; color: #c2410c; }
+.badge.info    { background: #eaf0ff; color: #1d4ed8; }
+
+p { margin-bottom: 10px; max-width: 70ch; }
+code {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 13px;
+  background: #f3f4f6; padding: 1px 6px; border-radius: 4px;
+}
+pre {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px;
+  background: #f3f4f6; color: #000;
+  padding: 14px 16px; border-radius: 8px; overflow-x: auto;
+  margin: 10px 0 14px;
+}
+pre .cmt { color: #6b7280; }
+
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.5px; }
+th {
+  text-align: left; font-weight: 700; font-size: 11px;
+  letter-spacing: .04em; text-transform: uppercase; color: #6b7280;
+  padding: 8px 10px; border-bottom: 2px solid #e5e7eb;
+}
+td { padding: 9px 10px; border-bottom: 1px solid #f0f1f3; }
+tr.highlight td { background: #fef2f2; }
+tr.ok td { background: #f0fdf4; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.mono { font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px; }
+
+.quote {
+  background: #f8fafc; border-radius: 8px;
+  padding: 12px 16px; margin: 12px 0 16px; font-size: 14px; color: #000;
+}
+.quote .src { font-size: 11.5px; color: #9ca3af; margin-top: 6px; font-family: 'SF Mono', Menlo, monospace; }
+
+.decision {
+  background: #f5f8ff; border-radius: 8px;
+  padding: 18px 20px; margin-top: 10px;
+}
+.decision-title { font-weight: 900; font-size: 14px; color: #1d4ed8; margin-bottom: 8px; }
+
+footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <span class="header-eyebrow">Daily Analysis</span>
+    <h1>2026-08-17 — Full-History Condition Mining for a Single $9.44 Loss</h1>
+    <div class="header-meta">
+      <span>Bot: T-Bot (cTrader, XAUUSD + EURUSD)</span>
+      <span>Started from "why did we lose $9 on that trade" — ended up scanning 83,977 historical moments</span>
+    </div>
+  </div>
+  <div class="chips">
+    <span class="chip info">RSI-chasing hypothesis: disproven twice, live sample then full history</span>
+    <span class="chip win">M15-disagreement filter: real, well-powered, shipped to dd_ranging_breakout</span>
+    <span class="chip loss">Same filter would hurt dd_oversold_bounce — opposite pattern</span>
+    <span class="chip info">Found and fixed a real bug in the analysis tool itself mid-investigation</span>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="section">
+    <div class="section-eyebrow">Part 1 — The trigger</div>
+    <div class="section-title">A single -$9.44 dd_ranging_breakout loss, and an initial hypothesis that didn't survive contact with data</div>
+
+    <p><code>dd_ranging_breakout</code> BUY XAUUSD, 17:25→17:46, entry 4424.04, stopped out -93.6 pips / -$9.44. Checked the real candles: price had run from 4381.84 (H1 close) to 4424.04 over 85 minutes, RSI pinned at 75-79 for the prior 20 minutes, ADX accelerating past 35. First hypothesis: the strategy was chasing an already-overextended, overbought breakout — add an RSI ceiling.</p>
+
+    <p>Tested against all 38 <code>dd_ranging_breakout</code> trades ever live-fired:</p>
+    <table>
+      <tr><th>RSI at entry</th><th class="num">N</th><th class="num">Win rate</th><th class="num">SL-hit rate</th><th class="num">Net</th></tr>
+      <tr><td>&gt; 70 (the "chasing" theory)</td><td class="num">15</td><td class="num">53%</td><td class="num">47%</td><td class="num">+$12.51</td></tr>
+      <tr><td>≤ 70</td><td class="num">23</td><td class="num">39%</td><td class="num">61%</td><td class="num">-$11.26</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">Opposite of the hypothesis — high-RSI entries did <em>better</em>. But 38 trades is thin. Rather than trust or discard a hypothesis on a small sample, went to the full historical archive instead of guessing further.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 2 — Full-history replay methodology</div>
+    <div class="section-title">83,977 historical moments, not 38 — and a real bug found and fixed mid-scan</div>
+
+    <p>The bot already has the right infrastructure for this (built for <code>analysis/v3_condition_analysis_2026-08-13</code>): <code>signals.checked_market_states</code> records the exact indicator snapshot (regime/RSI/ADX/EMA/momentum at M5/M15/M30/H1) every time <em>any</em> strategy evaluated the market — 83,977 such moments across the bot's whole history, not just the handful of times one strategy happened to fire. Filtering those down to moments matching <code>dd_ranging_breakout</code>'s exact live condition shape (H1=ranging, M5=breakout, EMA bull, RSI≥50) gives <strong>982</strong> instances — 26× the live sample — each forward-simulated against real M1 candle highs/lows to a 4-hour horizon.</p>
+
+    <table>
+      <tr><th>RSI at entry</th><th class="num">N</th><th class="num">Win rate</th></tr>
+      <tr><td>50-60</td><td class="num">155</td><td class="num">67.7%</td></tr>
+      <tr><td>60-70</td><td class="num">513</td><td class="num">62.4%</td></tr>
+      <tr class="ok"><td>70-80 (today's entry: 75.7)</td><td class="num">256</td><td class="num">63.3%</td></tr>
+      <tr><td>80-90</td><td class="num">58</td><td class="num">55.2%</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">Confirms Part 1 a second, much more reliable way: today's RSI sits in the strategy's normal-performing zone. RSI is not the lever.</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Bug caught and fixed: "H1 freshness" initially looked 100% degenerate</span>
+        <span class="badge fixed">Caught before it became a false finding</span>
+      </div>
+      <p>Extended the scan to bucket by how many minutes had elapsed since the referenced H1 candle's <code>bar_time</code> — testing whether staler H1 labels predict worse outcomes. First run: <strong>all 982 moments</strong> landed in one bucket. The bucket boundaries only went up to "45-60min," with an unbounded catch-all default — real gaps ran from 65 minutes up to 3,075 minutes (an outlier), average 101.5 minutes. Fixed the boundaries, added a raw min/max/avg sanity print, reran: <code>60-120min: 62.5% win rate (n=885)</code> vs <code>120min+: 68.0% (n=97)</code> — a real distribution, but no meaningful split. H1 staleness is a genuine structural fact (the strategy can never see the live, still-forming hour — see the code comment below), but it doesn't predict win vs. loss.</p>
+      <pre>H1 freshness raw stats: min=65.0min max=3075.3min avg=101.5min</pre>
+    </div>
+
+    <p>Full variable sweep, all using the same 982-moment base and real M1 simulation:</p>
+    <table>
+      <tr><th>Variable</th><th>Result</th><th>Verdict</th></tr>
+      <tr><td>ADX</td><td>30-35 best (71.0%, n=100); 35+ dips to 55-59% (n=80, n=88)</td><td>Real, moderate, secondary</td></tr>
+      <tr><td>ATR quartile</td><td>Non-monotonic (61/70/57/65%)</td><td>No clean story — noise</td></tr>
+      <tr class="highlight"><td><strong>M15 regime</strong></td><td>trending_down drops to 50.8% (n=63) vs. 62-70% elsewhere</td><td><strong>Real, clean, well-powered — strongest lever found</strong></td></tr>
+      <tr><td>M30 regime</td><td>trending_down barely dips (60.3% vs ~63% baseline); breakout is oddly worst (58.5%)</td><td>Same idea as M15, much weaker — M15 chosen over M30</td></tr>
+      <tr><td>Hour of day</td><td>Wild swings (25%-90%)</td><td>Most buckets n&lt;40 — underpowered, not actionable as-is</td></tr>
+      <tr><td>Weekday</td><td>59-68% across all 5 days</td><td>No signal</td></tr>
+    </table>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 3 — Does the M15 pattern generalize?</div>
+    <div class="section-title">Tested on dd_oversold_bounce — the pattern inverts completely</div>
+
+    <p>Before applying "skip if M15 disagrees" anywhere else, tested it against <code>dd_oversold_bounce</code> — the only other strategy that, like <code>dd_ranging_breakout</code>, never checks M15 in its own entry gate. Same method, its exact condition shape (H1=trending_down, M5=trending_down|breakout, EMA bear, RSI&lt;50, ADX≥25), 245 matched historical moments:</p>
+
+    <table>
+      <tr><th>M15 regime</th><th class="num">dd_ranging_breakout</th><th class="num">dd_oversold_bounce</th></tr>
+      <tr class="highlight"><td>trending_down</td><td class="num">50.8% (worst)</td><td class="num"><strong>73.1% (best)</strong></td></tr>
+      <tr><td>ranging</td><td class="num">61.7%</td><td class="num">53.1% (worst here)</td></tr>
+      <tr><td>breakout</td><td class="num">67.0%</td><td class="num">65.2%</td></tr>
+    </table>
+
+    <div class="decision">
+      <div class="decision-title">Why it flips</div>
+      <p style="margin-bottom:0;"><code>dd_ranging_breakout</code> is a trend-continuation BUY — M15 also trending down means the medium-term chart disagrees with the trade, which is bad. <code>dd_oversold_bounce</code> is a BUY betting on a bounce <em>within</em> an existing downtrend — M15 trending down there means the downtrend context is clean and confirmed, exactly what that setup wants. Same indicator, opposite meaning, because the two strategies have opposite relationships between their trade direction and the trend they're reading. A blanket rule would have helped one and actively hurt the other.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 4 — Checking trend_follow and ema_pullback</div>
+    <div class="section-title">First attempt produced impossible numbers — root-caused one, flagged the other as unresolved</div>
+
+    <p>Extended the same method to <code>trend_follow</code> and <code>ema_pullback</code> (approximating their real SL/TP construction, not the dd_* family's simple ATR multiples). <code>regime.go</code> was skipped — too many entry branches to approximate honestly in the time available.</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">First run: implausible results, correctly not trusted</span>
+        <span class="badge gap">Caught, not shipped as-is</span>
+      </div>
+      <p>Initial pass: <code>ema_pullback</code> 2.8% aggregate win rate, <code>trend_follow</code> 22.8%. Both contradict what's already known — <code>trend_follow</code> is documented (2026-08-13 report) as the bot's best-performing live strategy, +$151.50 net at a real 41.6% win rate. A strategy can't be genuinely profitable live at 41.6% and simulate at 22.8% over the same history unless the simulation is wrong. Did not present these as findings; investigated instead.</p>
+    </div>
+
+    <table>
+      <tr><th>Strategy</th><th>Root cause found</th><th>Fix</th><th>Result</th></tr>
+      <tr class="ok">
+        <td><code>trend_follow</code></td>
+        <td>Scan counted <em>every</em> matching historical moment, including chained re-entries during losing streaks that live cooldown (added later) now blocks — 2026-08-13's report already proved this exact strategy's chained trades perform far worse (-$0.41 vs +$3.44 avg)</td>
+        <td>Simulated the real cooldown (2 consecutive losses → 60min block) chronologically alongside the scan</td>
+        <td>202 matched (158 correctly skipped by simulated cooldown), aggregate win rate <strong>35.6%</strong> — now credible, close to the known 41.6% live figure</td>
+      </tr>
+      <tr class="highlight">
+        <td><code>ema_pullback</code></td>
+        <td>Entry price approximated with the M5 candle close — too coarse for a strategy whose whole thesis is tick-level proximity to an EMA</td>
+        <td>Switched to the nearest real M1 candle open as the entry-price proxy</td>
+        <td>Aggregate still only <strong>5.1%</strong> — fix didn't resolve it, and unlike <code>trend_follow</code> there's no large trusted live track record to confirm which number (if either) is right</td>
+      </tr>
+    </table>
+
+    <p><code>trend_follow</code>'s M15 breakdown, now that the population is credible, doesn't show a usable pattern: <code>M15_agrees(trending_up)</code> — intuitively the best case — is only 12.0% (n=50), while <code>M15_breakout</code> unexpectedly leads at 51.3%. No coherent "agreement helps" story. Not recommending a filter for <code>trend_follow</code> off this data.</p>
+
+    <div class="decision">
+      <div class="decision-title">ema_pullback — flagged, not resolved</div>
+      <p style="margin-bottom:0;">Genuinely unclear whether this reflects a real, previously-hidden weakness (the strategy barely fired historically before its 2026-08-13 ADX-floor fix, so this large-sample view may be the first real look at it) or a remaining simulation gap. Not acted on. Worth a dedicated, slower pass later rather than a rushed conclusion either way.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 5 — Decision and fix (implemented and shipped)</div>
+    <div class="section-title">M15-trending-down filter added to dd_ranging_breakout only</div>
+
+    <p>Only <code>dd_ranging_breakout</code> shipped a change — it's the only strategy where the evidence was clean, well-powered, and pointed one direction. Honest before/after, computed from real win/loss counts at TP=1.5×ATR / SL=1.0×ATR:</p>
+
+    <table>
+      <tr><th></th><th class="num">N</th><th class="num">Win rate</th><th class="num">Total (ATR-units)</th><th class="num">Avg/trade</th></tr>
+      <tr><td>Baseline (no filter)</td><td class="num">982</td><td class="num">63.0%</td><td class="num">575.5</td><td class="num">0.586</td></tr>
+      <tr class="ok"><td>After filter</td><td class="num">919</td><td class="num">63.9%</td><td class="num">558.5</td><td class="num">0.608</td></tr>
+      <tr><td>Excluded (M15 trending_down)</td><td class="num">63</td><td class="num">50.8%</td><td class="num">17.0</td><td class="num">0.270</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">Not a free win: the excluded 63 trades were still net-positive on their own (+17.0 ATR-units), just weaker than the rest. The filter trades a small amount of total cumulative profit for meaningfully higher win rate and per-trade quality (fewer, cleaner trades) — a real tradeoff, not a pure upside, and worth knowing which one you're optimizing for.</p>
+
+    <pre>if m15.Regime == config.TrendingDown {
+    return hold("M15 trending down — medium-term chart disagrees with the BUY breakout")
+}</pre>
+    <p><span class="mono">internal/strategy/dd_ranging_breakout/strategy.go</span>. <code>dd_oversold_bounce</code>, <code>dd_early_breakout</code> (which already structurally requires M15=ranging by its own design), <code>trend_follow</code>, and <code>ema_pullback</code> deliberately left untouched — no clean evidence, or evidence pointing the other way.</p>
+
+    <div class="section-eyebrow" style="margin-top:24px;">Tools built today, archived for reuse</div>
+    <table>
+      <tr><th>Tool</th><th>Purpose</th></tr>
+      <tr><td><span class="mono">queries/rsi_scan/</span></td><td>Full-history RSI-bucket win rate for dd_ranging_breakout's condition shape</td></tr>
+      <tr><td><span class="mono">queries/multivar_scan/</span></td><td>Same base sample, sweeps ADX/H1-freshness/ATR/M15/M30/hour/weekday in one pass</td></tr>
+      <tr><td><span class="mono">queries/oversold_scan/</span></td><td>Same method retargeted at dd_oversold_bounce's condition shape</td></tr>
+      <tr><td><span class="mono">queries/multi_strategy_m15/</span></td><td>trend_follow (with real cooldown simulation) and ema_pullback (with M1-based entry price)</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">All four build under the main module (<code>go build ./analysis/daily/2026-08-17/...</code>), no separate <code>go.mod</code> needed — reusable directly for the next strategy this method gets pointed at.</p>
+  </div>
+
+</div>
+
+<footer>Generated 2026-08-17 · signals/market_states/candles data from tbot_prod (83,977 signal-check moments, full M1 candle archive) · strategy source: internal/strategy/*/strategy.go</footer>
+
+</body>
+</html>
