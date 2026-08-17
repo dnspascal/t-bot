@@ -234,7 +234,7 @@ footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; f
         <td><code>trend_follow</code></td>
         <td>Scan counted <em>every</em> matching historical moment, including chained re-entries during losing streaks that live cooldown (added later) now blocks — 2026-08-13's report already proved this exact strategy's chained trades perform far worse (-$0.41 vs +$3.44 avg)</td>
         <td>Simulated the real cooldown (2 consecutive losses → 60min block) chronologically alongside the scan</td>
-        <td>202 matched (158 correctly skipped by simulated cooldown), aggregate win rate <strong>35.6%</strong> — now credible, close to the known 41.6% live figure</td>
+        <td>202 matched (158 correctly skipped by simulated cooldown) — the cooldown fix itself was correct, but the <strong>35.6%</strong> figure reported here was wrong (divided wins by all matched trades instead of resolved ones) and the 4h window left 43% of trades unresolved for this strategy's wider stops. Both caught and corrected in Part 9 — real number is <strong>70.5%</strong> at a properly-sized window.</td>
       </tr>
       <tr class="highlight">
         <td><code>ema_pullback</code></td>
@@ -281,8 +281,9 @@ footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; f
       <tr><td><span class="mono">queries/oversold_scan/</span></td><td>Same method retargeted at dd_oversold_bounce's condition shape</td></tr>
       <tr><td><span class="mono">queries/multi_strategy_m15/</span></td><td>trend_follow (with real cooldown simulation) and ema_pullback (with M1-based entry price)</td></tr>
       <tr><td><span class="mono">queries/hold_reason_sim/</span></td><td>Runs the real strategy code (imports internal/strategy/*, not a re-implementation) bar-by-bar for a full day, both symbols — see Part 7</td></tr>
+      <tr><td><span class="mono">queries/trend_follow_relaxed_sim/</span></td><td>Strict-vs-relaxed M5-regime-check comparison for trend_follow, real cooldown simulated, 24h resolution window — see Part 8</td></tr>
     </table>
-    <p style="font-size:13px; color:#6b7280;">All five build under the main module (<code>go build ./analysis/daily/2026-08-17/...</code>), no separate <code>go.mod</code> needed — reusable directly for the next strategy this method gets pointed at.</p>
+    <p style="font-size:13px; color:#6b7280;">All six build under the main module (<code>go build ./analysis/daily/2026-08-17/...</code>), no separate <code>go.mod</code> needed — reusable directly for the next strategy this method gets pointed at.</p>
   </div>
 
   <hr>
@@ -344,6 +345,44 @@ start = startOfTodayTZ()</pre>
     <div class="decision">
       <div class="decision-title">So — is 6 trades actually low?</div>
       <p style="margin-bottom:0;">Mostly explained by real conditions, not the bot being overly conservative: most HOLD reasons reflect the market genuinely not offering that strategy's setup today (gold trending when range-strategies need ranging, EUR too quiet for breakout strategies, RSI never reaching reversal extremes). <code>sr_bounce</code> shows its raw gate is anything but starved — the ML filter is doing real, active work. The two flagged items above are the only concrete "did we miss something" leads from this pass, and both need one more level of digging before concluding anything — not done here given scope.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 8 — Chasing the trend_follow lead: why the M5 gate exists, and why it's being relaxed</div>
+    <div class="section-title">Traced the M5/H1 alignment requirement to a real bug it was built to fix in 2026-08-03 — the fix is real, one of its two checks turned out stricter than necessary</div>
+
+    <p><code>git log</code> on <span class="mono">internal/strategy/trend_follow/strategy.go</span> found it directly — commit <code>5b6880d</code>, 2026-08-03:</p>
+    <div class="quote">
+      "trend_follow was entering on M5 pullbacks (EMAFast against trend direction), which immediately fired ema_cross_against + regime_against + rsi_against in the watcher (3 signals = close). All 61 Friday trades closed in 5 minutes as a result. Now only enters when both H1 and M5 regime confirm the same direction, so the watcher has no grounds to close immediately."
+      <div class="src">commit 5b6880d7, 2026-08-03</div>
+    </div>
+    <p>Not arbitrary — a real, previously-lived failure mode. The fix added two separate checks: (1) M5's EMA fast/slow must point the same direction as H1, and (2) M5's own regime label must <em>exactly equal</em> the trend direction (<code>trending_up</code>/<code>trending_down</code>, not <code>ranging</code> or <code>breakout</code>). Check (1) is what actually prevents the original bug — an EMA cross against the trade is exactly what fires <code>ema_cross_against</code> in the watcher. Check (2) is stricter than that, and Part 7 showed it's responsible for roughly half of today's zero-fire outcome: 75 of 231 XAUUSD bars had EMA already agreeing with H1 (passed check 1) but M5's regime label wasn't the exact trend string anyway — plausible given this codebase's regime classifier is itself EMA-gap-derived with a threshold (documented 2026-08-13 for <code>ema_pullback</code>'s copy of the same classifier): EMA can point the right way without the gap being wide enough for M5's own classifier to call it a firm trend.</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Two mistakes caught in this investigation's own methodology, both corrected before deciding anything</span>
+        <span class="badge gap">Self-caught, not shipped uncorrected</span>
+      </div>
+      <p style="margin-bottom:8px;"><strong>Wrong denominator.</strong> Part 4's reported "35.6%, credible, close to the known 41.6% live figure" divided wins by <em>all matched trades</em> instead of only the ones that actually resolved (win+loss). Correct math: 72/(72+43) = <strong>62.6%</strong> — not close to 41.6% at all, the opposite of what was claimed.</p>
+      <p style="margin-bottom:0;"><strong>Window too short for this strategy.</strong> Chasing why 62.6% still didn't match live reality found the real issue: <code>trend_follow</code>'s stops (M15 ATR × 1.5/2.5) are much wider than <code>dd_ranging_breakout</code>'s (M5 ATR × 1.0/1.5), so the same 4-hour simulation window left <strong>43% of trades unresolved</strong> for this strategy (vs 1.0% for <code>dd_ranging_breakout</code> — confirmed that one's shipped fix, Part 5, is unaffected). Unresolved trades were silently dropped from the win-rate math, distorting the comparison. Re-ran at a 24h window: unresolved dropped to 6.9%, and only then did the numbers become trustworthy enough to act on.</p>
+    </div>
+
+    <div class="section-eyebrow" style="margin-top:20px;">The actual test, properly resolved</div>
+    <p>Relaxed check (2) from "M5 regime must equal the trend direction" to "M5 regime must not equal the <em>opposite</em> direction" (allows <code>ranging</code>/<code>breakout</code> through, only blocks an actively contrary M5 trend). Check (1), the one tied to the original bug, left fully intact in both variants. Same real-cooldown simulation as before, 24h resolution window:</p>
+
+    <table>
+      <tr><th></th><th class="num">Matched</th><th class="num">Skipped by cooldown</th><th class="num">Win rate</th><th class="num">Fast losses (≤15min)</th></tr>
+      <tr><td>Strict (current code)</td><td class="num">160</td><td class="num">200</td><td class="num">70.5%</td><td class="num">11%</td></tr>
+      <tr class="ok"><td><strong>Relaxed</strong></td><td class="num"><strong>704 (4.4×)</strong></td><td class="num">1,658</td><td class="num"><strong>84.4%</strong></td><td class="num"><strong>7%</strong></td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">The "fast losses ≤15min" column is the check for whether relaxing brings back the original 2026-08-03 bug — a loss closing that fast is the signature of the watcher force-closing a trade that opened already contradicting itself. Relaxed shows a <em>lower</em> rate than strict (7% vs 11%), not higher — no sign of the old problem returning. More trades, better win rate, no regression on the one thing this gate specifically exists to prevent.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;">Relaxed <code>trend_follow</code>'s M5-regime check in <span class="mono">internal/strategy/trend_follow/strategy.go</span>: blocks only when M5 is actively trending against the trade direction, no longer requires it to exactly match. EMA-alignment check unchanged. Full history and rationale kept here rather than as a code comment — the code stays focused on what it does, this report carries why.</p>
     </div>
   </div>
 
