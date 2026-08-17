@@ -14,7 +14,16 @@ import (
 // → 60–64% BUY win at 4h (n=59–71).
 //
 // Thesis: when H1 is ranging (no macro headwind), a confirmed M5 breakout with bullish
-// EMA and RSI momentum has clear room to run. TP=1.5×ATR, SL=0.5×ATR matches analysis.
+// EMA and RSI momentum has clear room to run. TP=1.5×ATR, SL=1.0×ATR (widened from the
+// 0.5x this was originally backtested at — see analysis/daily/2026-08-13/report.html).
+//
+// M15-trending-down filter (2026-08-17): full-history replay of every historical
+// moment matching this condition shape (982 instances, not just the ~40 that ever
+// live-fired) found the strategy never checks the medium-term chart at all. When M15
+// happened to also be trending down — i.e. actively disagreeing with the BUY — win
+// rate dropped from a 61-70% baseline to 50.8% (n=63). See
+// analysis/daily/2026-08-17/report.html for the full investigation, including why the
+// same filter would hurt dd_oversold_bounce (opposite thesis, opposite effect).
 
 const (
 	tpATRMult                  = 1.5
@@ -33,7 +42,6 @@ func New() *DDRangingBreakout { return &DDRangingBreakout{} }
 func (s *DDRangingBreakout) Name() string           { return "dd_ranging_breakout" }
 func (s *DDRangingBreakout) UsesTrendWatcher() bool { return true }
 
-// OnClosed implements strategy.OutcomeAware. This strategy only ever signals BUY.
 func (s *DDRangingBreakout) OnClosed(side, closeReason string, closeTime time.Time) {
 	switch strategy.ClassifyCloseReason(closeReason) {
 	case strategy.CloseInvalidated:
@@ -91,6 +99,9 @@ func (s *DDRangingBreakout) Evaluate(states map[string]indicator.MarketState, cu
 	}
 	if m15.ADX < 20 {
 		return hold("M15 ADX too low — breakout has no real momentum")
+	}
+	if m15.Regime == config.TrendingDown {
+		return hold("M15 trending down — medium-term chart disagrees with the BUY breakout")
 	}
 
 	slPrice := currentPrice - slATRMult*m5.ATR
