@@ -21,6 +21,20 @@ import (
 	"github.com/denismgaya/t-bot/internal/database"
 )
 
+var tz = func() *time.Location {
+	loc, err := time.LoadLocation("Africa/Dar_es_Salaam")
+	if err != nil {
+		log.Fatal("load Africa/Dar_es_Salaam timezone:", err)
+	}
+	return loc
+}()
+
+// startOfTodayTZ returns midnight of the current Dar-es-Salaam calendar day.
+func startOfTodayTZ() time.Time {
+	now := time.Now().In(tz)
+	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, tz)
+}
+
 func main() {
 	godotenv.Load()
 
@@ -85,7 +99,7 @@ func (h *handler) metrics(w http.ResponseWriter, r *http.Request) {
 
 	switch {
 	case date != "":
-		start, err = time.Parse("2006-01-02", date)
+		start, err = time.ParseInLocation("2006-01-02", date, tz)
 		if err != nil {
 			jsonErr(w, "invalid date", http.StatusBadRequest)
 			return
@@ -93,26 +107,26 @@ func (h *handler) metrics(w http.ResponseWriter, r *http.Request) {
 		end = start.AddDate(0, 0, 1)
 	case fromStr != "" || toStr != "":
 		if fromStr != "" {
-			start, err = time.Parse("2006-01-02", fromStr)
+			start, err = time.ParseInLocation("2006-01-02", fromStr, tz)
 			if err != nil {
 				jsonErr(w, "invalid from", http.StatusBadRequest)
 				return
 			}
 		} else {
-			start = time.Now().AddDate(0, -1, 0)
+			start = startOfTodayTZ().AddDate(0, -1, 0)
 		}
 		if toStr != "" {
-			end, err = time.Parse("2006-01-02", toStr)
+			end, err = time.ParseInLocation("2006-01-02", toStr, tz)
 			if err != nil {
 				jsonErr(w, "invalid to", http.StatusBadRequest)
 				return
 			}
 			end = end.AddDate(0, 0, 1)
 		} else {
-			end = time.Now().AddDate(0, 0, 1)
+			end = startOfTodayTZ().AddDate(0, 0, 1)
 		}
 	default:
-		start = time.Now().Truncate(24 * time.Hour)
+		start = startOfTodayTZ()
 		end = start.AddDate(0, 0, 1)
 	}
 
@@ -228,7 +242,7 @@ func (h *handler) trades(w http.ResponseWriter, r *http.Request) {
 
 	var start, end time.Time
 	if date := q.Get("date"); date != "" {
-		t, err := time.Parse("2006-01-02", date)
+		t, err := time.ParseInLocation("2006-01-02", date, tz)
 		if err != nil {
 			jsonErr(w, "invalid date", http.StatusBadRequest)
 			return
@@ -236,7 +250,7 @@ func (h *handler) trades(w http.ResponseWriter, r *http.Request) {
 		start, end = t, t.AddDate(0, 0, 1)
 	} else {
 		if f := q.Get("from"); f != "" {
-			t, err := time.Parse("2006-01-02", f)
+			t, err := time.ParseInLocation("2006-01-02", f, tz)
 			if err != nil {
 				jsonErr(w, "invalid from", http.StatusBadRequest)
 				return
@@ -244,7 +258,7 @@ func (h *handler) trades(w http.ResponseWriter, r *http.Request) {
 			start = t
 		}
 		if t := q.Get("to"); t != "" {
-			parsed, err := time.Parse("2006-01-02", t)
+			parsed, err := time.ParseInLocation("2006-01-02", t, tz)
 			if err != nil {
 				jsonErr(w, "invalid to", http.StatusBadRequest)
 				return
@@ -252,7 +266,7 @@ func (h *handler) trades(w http.ResponseWriter, r *http.Request) {
 			end = parsed.AddDate(0, 0, 1)
 		}
 		if start.IsZero() {
-			start = time.Now().Truncate(24 * time.Hour)
+			start = startOfTodayTZ()
 			end = start.AddDate(0, 0, 1)
 		}
 	}
