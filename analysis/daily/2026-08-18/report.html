@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Analysis — 2026-08-18</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Lato', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #000;
+  background: #fff;
+  padding-bottom: 80px;
+}
+
+/* ── Header ── */
+.header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 28px 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.header-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: #1d4ed8;
+  background: #eaf0ff; padding: 3px 10px; border-radius: 4px;
+  display: inline-block; margin-bottom: 8px;
+}
+.header h1 { font-size: 22px; font-weight: 900; letter-spacing: -.3px; margin-bottom: 6px; }
+.header-meta { font-size: 13px; color: #6b7280; display: flex; gap: 20px; flex-wrap: wrap; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.chip {
+  font-size: 12px; font-weight: 700; padding: 5px 12px;
+  border-radius: 20px; color: #6b7280;
+}
+.chip.loss { color: #dc2626; background: #fef2f2; }
+.chip.win  { color: #16a34a; background: #f0fdf4; }
+.chip.info { color: #1d4ed8; background: #eaf0ff; }
+
+/* ── Page ── */
+.page { max-width: 920px; margin: 0 auto; padding: 40px 24px 0; }
+.section { margin-bottom: 48px; }
+.section-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: #6b7280; margin-bottom: 10px;
+}
+.section-title { font-size: 18px; font-weight: 900; letter-spacing: -.2px; margin-bottom: 16px; }
+hr { border: none; border-top: 1px solid #e5e7eb; margin: 44px 0; }
+
+/* ── Cards ── */
+.finding {
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 20px 22px; margin-bottom: 16px;
+  background: #fff;
+}
+.finding-header {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.finding-title { font-size: 15px; font-weight: 700; flex: 1; }
+.badge {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+  white-space: nowrap; margin-top: 2px;
+}
+.badge.fixed   { background: #f0fdf4; color: #16a34a; }
+.badge.gap     { background: #fef2f2; color: #dc2626; }
+.badge.pending { background: #fff7ed; color: #c2410c; }
+.badge.info    { background: #eaf0ff; color: #1d4ed8; }
+
+p { margin-bottom: 10px; max-width: 70ch; }
+code {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 13px;
+  background: #f3f4f6; padding: 1px 6px; border-radius: 4px;
+}
+pre {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px;
+  background: #f3f4f6; color: #000;
+  padding: 14px 16px; border-radius: 8px; overflow-x: auto;
+  margin: 10px 0 14px;
+}
+pre .cmt { color: #6b7280; }
+
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.5px; }
+th {
+  text-align: left; font-weight: 700; font-size: 11px;
+  letter-spacing: .04em; text-transform: uppercase; color: #6b7280;
+  padding: 8px 10px; border-bottom: 2px solid #e5e7eb;
+}
+td { padding: 9px 10px; border-bottom: 1px solid #f0f1f3; }
+tr.highlight td { background: #fef2f2; }
+tr.ok td { background: #f0fdf4; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.mono { font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px; }
+
+.quote {
+  background: #f8fafc; border-radius: 8px;
+  padding: 12px 16px; margin: 12px 0 16px; font-size: 14px; color: #000;
+}
+.quote .src { font-size: 11.5px; color: #9ca3af; margin-top: 6px; font-family: 'SF Mono', Menlo, monospace; }
+
+.decision {
+  background: #f5f8ff; border-radius: 8px;
+  padding: 18px 20px; margin-top: 10px;
+}
+.decision-title { font-weight: 900; font-size: 14px; color: #1d4ed8; margin-bottom: 8px; }
+
+footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <span class="header-eyebrow">Daily Analysis</span>
+    <h1>2026-08-18 — Break-even confirmation, trend_follow backtests, and the breakout SL/TP anchor bug</h1>
+    <div class="header-meta">
+      <span>Bot: T-Bot (cTrader, XAUUSD + EURUSD)</span>
+      <span>Prepared as a follow-up to live trades flagged during the day</span>
+    </div>
+  </div>
+  <div class="chips">
+    <span class="chip win">3 production fixes shipped</span>
+    <span class="chip loss">3 of 10 strategies anchor SL/TP to different reference prices</span>
+    <span class="chip info">2 strategies still open — session_open, ema_pullback</span>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="section">
+    <div class="section-eyebrow">Part 1 — trend_follow</div>
+    <div class="section-title">Break-even fires, logs success, and the broker never confirms it</div>
+
+    <p>Two trades in one overnight session — <code>f21fd931</code> (-$4.63) and <code>a69ed10c</code> (-$6.16) — both had break-even activate mid-trade, both still closed at a real loss via the reversal watcher. On <code>f21fd931</code>: break-even moved the stop from 4415.20 to 4425.55 at 03:24:07 (peak gain $6.02 against a $5.82 trigger). Price later fell from 4425.44 (04:20) to 4423.81 (04:25) — straight through the new stop — and nothing closed the position. It sat open another 15 minutes until the watcher's regular 5-minute check force-closed it at 4420.70, well below where the "protected" stop should have fired.</p>
+
+    <div class="section-eyebrow" style="margin-top:24px;">Tracing it through the actual journal logs</div>
+    <p>Checked for a broker rejection first — none. Checked for the confirmation event the code already listens for — <code>ORDER_REPLACED</code>, logged as <code>"SL/TP amendment confirmed by broker"</code> — also never arrived. Confirmed DEBUG logging was enabled in production (so a silently-dropped/unrecognized frame would have shown too) and searched the exact 3-minute window around the amend: nothing came back from cTrader at all, not a confirmation, not an error, not an unrecognized frame.</p>
+    <div class="quote">
+      <code>AmendPositionSL</code> → <code>Connection.SendRaw</code> writes the request to the socket and returns whatever the OS-level write error is — that's the entire extent of its "success" signal.
+      <div class="src">internal/provider/ctrader/api/connection.go:63-73</div>
+    </div>
+    <p>The bot logged <code>"break-even stop set"</code> and wrote the <code>position_adjustments</code> row purely because the network write didn't error — with zero verification that cTrader actually applied it. Checked against every break-even activation in history (31 total): most resolved fine (peak-drawback or a real <code>breakeven_sl</code> hit both closed correctly), but three — <code>470d4af9</code> (2026-08-13, -$2.47) and today's two — show the exact same signature: break-even "confirmed" in our own logs, then a real loss anyway via a mechanism unrelated to the stop that was supposedly active.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;"><code>checkBreakEven</code> now sends the amend and waits — on a separate goroutine, so a slow or absent broker response can't stall M1 processing for other positions — for the real <code>ORDER_REPLACED</code> event before marking <code>BreakEvenActive</code> or writing <code>position_adjustments</code>. Retries up to 3 times on timeout (5s each), then gives up loudly (<code>"GIVING UP, position is running on its ORIGINAL stop, not newSL"</code>) instead of silently trusting an unconfirmed amend for the rest of the trade's life.</p>
+    </div>
+
+    <div class="section-eyebrow" style="margin-top:24px;">What had to change to make this possible</div>
+    <p><code>ORDER_REPLACED</code> events didn't carry a position ID before — nothing could route a confirmation back to the specific position waiting on it. Threaded a <code>PositionID</code> through the proto decoder (<code>decodeFullExecutionEvent</code>), the client layer, and the provider translation layer, plus a <code>pendingBreakEven map[string]chan struct{}</code> on <code>Bot</code> that <code>onExecution</code>'s <code>ExecOrderReplaced</code> case signals into.</p>
+    <pre>case config.ExecOrderReplaced:
+    slog.Info("SL/TP amendment confirmed by broker", "brokerOrderID", exec.BrokerOrderID, "posID", exec.PositionID)
+    b.signalBreakEvenConfirmed(exec.PositionID)
+    return</pre>
+    <p><span class="mono">internal/bot/watcher.go</span>, <span class="mono">internal/bot/bot.go</span>, <span class="mono">internal/bot/registry.go</span>, <span class="mono">internal/provider/{provider.go, ctrader/ctrader.go, ctrader/api/{client.go, proto.go}}</span>. Shipped as <code>fix: confirm break-even SL amendment with broker before trusting it</code> via <code>feat → dev (squash) → main (merge) → tag</code>, deployed through the CI/CD pipeline (Part 6 covers finding that pipeline — this fix and the breakout fix below were the first two to actually go out through it).</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 2 — trend_follow, continued</div>
+    <div class="section-title">Two follow-up hypotheses tested on the same losing streak — both rejected by the backtest</div>
+
+    <p>Separately, the four trades from yesterday's relaxed M5-regime fix (2026-08-17, Part 8) all lost. Real <code>checked_market_states</code> data showed why: the relaxed gate (<code>M5 regime != trending_down</code>) fires on nearly every M5 bar during a slow grind, since M5 regime reads <code>ranging</code>/<code>breakout</code> almost continuously and rarely <code>trending_down</code> — not just genuinely-confirming bars. Two theories followed, both tested full-history before touching any code:</p>
+
+    <table>
+      <tr><th>Variant</th><th class="num">Matched</th><th class="num">Win rate</th><th>Verdict</th></tr>
+      <tr class="ok"><td><strong>relaxed (shipped 8/17)</strong></td><td class="num">707</td><td class="num">84.2%</td><td>Baseline — best of everything tested</td></tr>
+      <tr class="highlight"><td>moderate — block <code>ranging</code>, allow <code>breakout</code></td><td class="num">391</td><td class="num">75.5%</td><td>Worse. Blocking <code>ranging</code> removes a mix of good and bad trades, not just bad ones.</td></tr>
+      <tr class="highlight"><td>relaxed + M5 ADX not declining</td><td class="num">454</td><td class="num">81.5%</td><td>Also worse, and cuts the sample by a third for no gain.</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">Both hypotheses were plausible from the live evidence (the losing streak had a falling M5 ADX and mixed regime labels) but neither held up against the full-history backtest. Four losses in one correlated overnight session isn't strong evidence against an 84%-win-rate strategy — shipping either "fix" would have made the strategy worse to explain a streak that's most likely ordinary variance. <span class="mono">analysis/daily/2026-08-18/queries/{trend_follow_moderate_sim,trend_follow_adx_sim}/main.go</span>. No code change — decision was to leave <code>trend_follow</code> as shipped.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 3 — Loss-minimization sweep</div>
+    <div class="section-title">Tightening the stop shrinks average loss ~2x at flat expectancy; a "lock in gains" rule makes it worse</div>
+
+    <p>Separate question from the above: not "should trend_follow enter differently," but "once a trade is open and going to lose, can the loss itself be made smaller." Two real per-trade levers, full-history backtested on trend_follow's relaxed-gate entries with real cooldown simulation:</p>
+
+    <table>
+      <tr><th>SL distance</th><th class="num">Win rate</th><th class="num">Avg win</th><th class="num">Avg loss</th><th class="num">Expectancy/trade</th></tr>
+      <tr class="ok"><td>1.5× ATR (current)</td><td class="num">72.3%</td><td class="num">$13.59</td><td class="num">$7.79</td><td class="num">$7.67</td></tr>
+      <tr><td>1.2× ATR</td><td class="num">66.0%</td><td class="num">$14.62</td><td class="num">$6.31</td><td class="num">$7.51</td></tr>
+      <tr><td>1.0× ATR</td><td class="num">61.4%</td><td class="num">$15.50</td><td class="num">$5.15</td><td class="num">$7.53</td></tr>
+      <tr class="highlight"><td>0.75× ATR</td><td class="num">55.0%</td><td class="num">$16.83</td><td class="num">$3.88</td><td class="num">$7.51</td></tr>
+    </table>
+    <p>Expectancy stays flat (~$7.5/trade) across every tested SL distance — win rate drops, but a fixed TP means the R:R improves proportionally, netting out even. Tightening to 0.75× ATR nearly halves the average loss ($7.79 → $3.88) for effectively no cost to overall profitability. This is the one lever tested today that looks close to free.</p>
+
+    <table>
+      <tr><th>Peak-giveback cut</th><th class="num">Win rate</th><th class="num">Avg win</th><th class="num">Avg loss</th><th class="num">Expectancy/trade</th></tr>
+      <tr class="ok"><td>No early cut (baseline)</td><td class="num">29.9%</td><td class="num">$14.05</td><td class="num">$0.99</td><td class="num">$3.51</td></tr>
+      <tr class="highlight"><td>Cut at 40–60% giveback</td><td class="num">90.3%</td><td class="num">~$1.65</td><td class="num">$7.52</td><td class="num">$0.71–0.80</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">The opposite lever — close early once a trade gives back 40–60% of its own peak gain (with a real minimum-peak-gain floor this time; an earlier pass without one produced a nonsensical 4.6% "win rate" from triggering on tick-level noise, caught before it was reported) — pushes win rate to 90% but collapses the average win to ~$1.65, cutting real winners short before they reach TP. Net effect is worse expectancy despite the flattering win rate. <span class="mono">analysis/daily/2026-08-18/queries/loss_minimization_sim/main.go</span>. Not shipped — flagged as a candidate for <code>trend_follow</code>'s SL multiplier, pending a decision on scope.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 4 — breakout</div>
+    <div class="section-title">SL anchored to a stale breakout level, TP anchored to the live entry price</div>
+
+    <p>Flagged from a real trade: <code>#237373667</code>, XAUUSD SELL, opened and closed in <strong>55 seconds</strong> via <code>sl_hit</code>, net -$2.41. SL was $2.21 away; TP was $17.92 away — an 8:1 ratio, nowhere near the strategy's intended 1.0×ATR / 2.0×ATR (a 2:1 shape). Price fell almost $40 past where TP was within the next hour — the setup was right, the stop just wasn't sized the way the code thought it was.</p>
+
+    <pre>if dir == config.SignalBuy {
+    slPrice = level - slATRMult*atr        <span class="cmt">// stale — from the signal-detection bar</span>
+    tpPrice = currentPrice + tpATRMult*atr <span class="cmt">// fresh — from the actual entry bar</span>
+} else {
+    slPrice = level + slATRMult*atr
+    tpPrice = currentPrice - tpATRMult*atr
+}</pre>
+    <p><span class="mono">internal/strategy/breakout/strategy.go:152-158</span> (before fix). Entry only fires after "await next-bar confirmation" (<code>Evaluate</code>'s <code>pendingDir</code> flow) — by construction, price has already moved from <code>level</code> by the time <code>tryEnter</code> runs. The only guard was <code>slPips < 3</code>, a bare non-zero floor that doesn't check the realized risk against the intended ATR distance at all. The faster and more genuine the breakout, the more <code>currentPrice</code> has moved from <code>level</code> — meaning the bug is worst on exactly the trades that would otherwise have worked best.</p>
+
+    <p>Checked today's other 2 breakout trades for the same pattern — both had normal ~$11-12 SL distances, so this is real but intermittent, not universal: it only bites when price has drifted meaningfully between level-detection and confirmed entry.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;">SL now anchors to <code>currentPrice</code>, same as TP — matching how <code>dd_ranging_breakout</code> and <code>dd_early_breakout</code> (checked directly, confirmed already correct) construct both sides. <code>level</code> is still used for the entry-confirmation check itself (did price stay past the level after next-bar close) — that logic is untouched, only the stop-distance calculation changed. Shipped as <code>fix: anchor breakout SL to currentPrice, not the stale breakout level</code>.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 5 — Checking the other 8 strategies</div>
+    <div class="section-title">Two more share the pattern — neither gets the same fix</div>
+
+    <p>Read every strategy's SL/TP construction directly rather than assume breakout was the only one. Clean — both sides anchor to <code>currentPrice</code>: <code>trend_follow</code>, <code>rsi_reversal</code>, <code>dd_ranging_breakout</code>, <code>dd_early_breakout</code>, <code>sr_bounce</code>, <code>session_momentum</code>, <code>dd_oversold_bounce</code>. Two more have the same structural shape as breakout — SL and TP reading from different reference prices — but each is a genuinely different problem, not a copy of the same bug:</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">session_open — SL anchors to the far side of the entire pre-session range</span>
+        <span class="badge pending">Open</span>
+      </div>
+      <p><code>slPrice = m15.SessionLow - slATRMult*atr</code> for a BUY, vs. <code>tpPrice = currentPrice + rangeSize*tpRangeMult</code>. Unlike breakout's <code>level</code>, the session range boundary is stable for the whole session — not recalculated per bar — so this doesn't have breakout's "drifts arbitrarily by entry time" problem. It looks like a deliberate design ("if price fully reverses through the whole range, the thesis failed"), but the realized risk is often <em>much wider</em> than a plain 1×ATR stop — range width plus overshoot plus buffer — the opposite failure mode from breakout. Not touched pending a decision on whether the wide stop is intentional.</p>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">ema_pullback — TP targets the recent H1 extreme, no ATR relationship at all</span>
+        <span class="badge pending">Open</span>
+      </div>
+      <p><code>slPrice = h1.EMASlow ± slATRMult*atr</code>, <code>tpPrice = h1.TrendHigh</code> (or <code>TrendLow</code>). SL is reasonably bounded in practice — the entry gate already requires <code>currentPrice</code> within 1×M5-ATR of the EMA before it'll signal, so SL-from-EMA can't drift far from SL-from-currentPrice. TP is the real gap: there's no <code>tpATRMult</code> constant in this file at all — reward is whatever the rolling 20-bar H1 high/low happens to be, checked only against a bare <code>tpPips &lt; slPips → hold</code> floor. Reward size is inconsistent trade to trade: sometimes a real target, sometimes barely past breakeven, sometimes unrealistically far. This may explain <code>ema_pullback</code>'s previously-flagged, unresolved 5.1% simulated win rate from the 2026-08-17 price-action investigation — an inconsistent, sometimes-unreachable TP is a plausible cause, not confirmed.</p>
+    </div>
+
+    <p style="font-size:13px; color:#6b7280;">Neither is a "just copy the breakout fix" situation — both look like deliberate, just-uncalibrated design choices. Left as-is pending dedicated investigation (real trade history + backtest, same rigor as breakout) for each.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 6 — Dashboard, and finding the real deploy path</div>
+    <div class="section-title">Trade-detail chart overhaul, plus a wasted hour that a five-minute check would have avoided</div>
+
+    <p>Trade-detail page now shows: entry/peak/adverse/exit as distinct markers (color legend, not inline text — text labels collided whenever markers land close together, which is common on short trades), SL/TP lines always visible (previously could render entirely off-screen if price never approached a distant TP), a "CLOSED" divider, and — the main ask — <strong>4 hours of real candle data past the close</strong>, so a trade's chart shows what price actually did after the bot exited.</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Peak/trough markers could land after the close line</span>
+        <span class="badge fixed">Fixed</span>
+      </div>
+      <p>Marker candles were picked by "closest candle to this price" searched across the <em>entire</em> loaded window — once that window included 4 hours of post-close data, a coincidentally similar post-close price could steal the "PEAK" marker onto a point in time after the trade had already ended, which is factually impossible (peak favorable is a fact about the trade while open). Caught by testing a second real trade, not assumed from the first. Fixed by restricting the marker search to pre-close candles only.</p>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Markers on short trades silently vanished — Recharts drops any point that doesn't land on a real candle</span>
+        <span class="badge fixed">Fixed</span>
+      </div>
+      <p>A 5-minute trade's entry/peak/adverse/exit can all resolve to the same 1-2 M5 candles. Spreading them apart with arbitrary continuous time offsets (in seconds) made 3 of 4 markers disappear from the DOM entirely — no error, no console warning. Root-caused by inspecting the actual rendered SVG directly rather than guessing further: the X-axis is a discrete category scale (one tick per real candle), and any <code>ReferenceDot</code> x-value that doesn't land exactly on one gets silently discarded. Fixed by spreading markers in candle-index space (snap to the next real candle) instead of continuous time.</p>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Manual API deploy got silently reverted by the real CI/CD pipeline</span>
+        <span class="badge fixed">Fixed</span>
+      </div>
+      <p>Deployed the 4-hour-window <code>cmd/api</code> change by hand (cross-compiled, scp'd, restarted the service) before discovering <span class="mono">.github/workflows/deploy.yml</span> already exists — triggers on any <code>v*</code> tag push, builds on a native Linux GitHub runner (no cross-compile problem there at all), and deploys+restarts all three services. The next tag push (for the breakout fix) rebuilt <code>cmd/api</code> from git HEAD, which didn't have the uncommitted manual change, and silently overwrote it back to the old 10-minute window. Caught by re-verifying live on the production dashboard rather than assuming the earlier manual deploy still held. Fixed by committing the change properly and re-tagging — confirmed on the real production site afterward (<code>close_at</code> 04:40, last candle 08:40, exactly +4h).</p>
+    </div>
+
+    <p style="font-size:13px; color:#6b7280;">Net effect going forward: the trading-bot binary and the API binary both deploy through <code>git tag v*</code> → GitHub Actions, not local cross-compilation. The earlier struggle to cross-compile <code>cmd/bot</code> locally (blocked on ONNX/CGO, never resolved) was solving a problem that didn't need solving.</p>
+  </div>
+
+</div>
+
+<footer>Generated 2026-08-18 · positions/orders/signals/fills data from tbot_prod · strategy source: internal/strategy/*/strategy.go · dashboard source: t-bot-web/src/app/trades/[id]/_components/trade_chart.tsx</footer>
+
+</body>
+</html>
