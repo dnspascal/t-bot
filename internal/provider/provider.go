@@ -81,6 +81,7 @@ type ExecutionEvent struct {
 	Deal             *DealInfo
 	HasDeal          bool
 	ClosedPositionID string // set when broker closed position without deal details (TP/SL hit server-side)
+	PositionID       string // set whenever the event references a position (open or closed) — e.g. ORDER_REPLACED confirming an SL/TP amend
 	ErrorCode        string
 	Timestamp        time.Time
 }

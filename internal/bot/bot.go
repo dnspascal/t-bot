@@ -79,6 +79,9 @@ type Bot struct {
 
 	pendingCloseReasons map[string]pendingClose
 
+	pendingBreakEvenMu sync.Mutex
+	pendingBreakEven   map[string]chan struct{} // providerPositionID -> signaled when broker confirms the SL amend
+
 	dispatcher notify.Dispatcher
 
 	pausedMu sync.Mutex
@@ -154,6 +157,7 @@ func New(
 		pendingOrders:       make(map[string]*pendingOrderState),
 		brokerOrderIDs:      make(map[int64]string),
 		pendingCloseReasons: make(map[string]pendingClose),
+		pendingBreakEven:    make(map[string]chan struct{}),
 		tickCh:              make(chan tick.Tick, 500),
 		testCloseTrigger:    make(chan struct{}, 1),
 		lookup:              lookup,
@@ -716,7 +720,8 @@ func (b *Bot) onExecution(ctx context.Context, exec provider.ExecutionEvent) {
 				}
 			}
 		case config.ExecOrderReplaced:
-			slog.Info("SL/TP amendment confirmed by broker", "brokerOrderID", exec.BrokerOrderID)
+			slog.Info("SL/TP amendment confirmed by broker", "brokerOrderID", exec.BrokerOrderID, "posID", exec.PositionID)
+			b.signalBreakEvenConfirmed(exec.PositionID)
 			return
 		case config.ExecOrderCancelled:
 			return

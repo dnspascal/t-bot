@@ -68,6 +68,9 @@ func (c *CTrader) pipeExecEvents() {
 		if event.ClosedPositionID != 0 {
 			execEvent.ClosedPositionID = fmt.Sprintf("%d", event.ClosedPositionID)
 		}
+		if event.PositionID != 0 {
+			execEvent.PositionID = fmt.Sprintf("%d", event.PositionID)
+		}
 		if event.HasDeal {
 			deal := event.Deal
 			execEvent.Deal = &provider.DealInfo{

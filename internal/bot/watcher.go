@@ -212,8 +212,28 @@ func (b *Bot) checkPeakDrawback(ctx context.Context, currentPrice float64) {
 	}
 }
 
+// The bot has no way to know an AmendPositionSLTPReq actually landed at the
+// broker just because the network write succeeded — cTrader does not always
+// respond, and on 2026-08-18 two trades (f21fd931, a69ed10c) lost real money
+// after the bot logged "break-even stop set" for an amend that was never
+// confirmed by a broker ORDER_REPLACED event: price ran straight through the
+// supposed new stop with nothing closing the position, until the reversal
+// watcher (watchPositions, a separate check) eventually market-closed it at
+// a much worse price. See analysis/daily/2026-08-18 for the full trace.
+//
+// So break-even is now confirm-then-commit: send the amend, wait (off the
+// main loop, so a slow/absent broker response can't stall other positions'
+// M1 checks) for the ORDER_REPLACED execution event, and only mark
+// BreakEvenActive / write position_adjustments once that confirmation
+// actually arrives. If it doesn't arrive in time, retry a bounded number of
+// times, and log loudly (not silently) once we give up — so "is this trade
+// actually protected" is answered by a log line, not by reconstructing it
+// after the fact from price data and position_adjustments like this time.
+const breakEvenConfirmTimeout = 5 * time.Second
+const breakEvenMaxAttempts = 3
+
 func (b *Bot) checkBreakEven(ctx context.Context, pos trackedPosition) {
-	if pos.BreakEvenActive {
+	if pos.BreakEvenActive || pos.BreakEvenPending || pos.BreakEvenGaveUp {
 		return
 	}
 
@@ -244,13 +264,21 @@ func (b *Bot) checkBreakEven(ctx context.Context, pos trackedPosition) {
 	}
 
 	if err := b.provider.AmendPositionSL(ctx, pos.ProviderPositionID, newSL, pos.TPPrice); err != nil {
-		slog.Error("checkBreakEven: AmendPositionSL failed",
+		slog.Error("break-even amend SEND FAILED — network/write error, not retried until next tick",
 			"posID", pos.ProviderPositionID, "newSL", newSL, "err", err,
 		)
 		return
 	}
 
-	slog.Info("break-even stop set",
+	attempt := b.registry.IncrementBreakEvenAttempts(pos.ProviderPositionID)
+	b.registry.SetBreakEvenPending(pos.ProviderPositionID, true)
+
+	confirmCh := make(chan struct{})
+	b.pendingBreakEvenMu.Lock()
+	b.pendingBreakEven[pos.ProviderPositionID] = confirmCh
+	b.pendingBreakEvenMu.Unlock()
+
+	slog.Info("break-even amend SENT — awaiting broker confirmation",
 		"posID", pos.ProviderPositionID,
 		"side", pos.Side,
 		"openPrice", pos.OpenPrice,
@@ -258,13 +286,69 @@ func (b *Bot) checkBreakEven(ctx context.Context, pos trackedPosition) {
 		"newSL", newSL,
 		"peakGain", peakGain,
 		"tpDist", tpDist,
+		"attempt", attempt,
+		"maxAttempts", breakEvenMaxAttempts,
 	)
 
-	b.registry.SetBreakEven(pos.ProviderPositionID)
+	go b.awaitBreakEvenConfirmation(ctx, pos, newSL, peakGain, tpDist, attempt, confirmCh)
+}
 
+// awaitBreakEvenConfirmation runs off the main event loop so a slow or
+// absent broker response can't stall M1 processing for other positions.
+func (b *Bot) awaitBreakEvenConfirmation(ctx context.Context, pos trackedPosition, newSL, peakGain, tpDist float64, attempt int, confirmCh chan struct{}) {
+	select {
+	case <-ctx.Done():
+		b.pendingBreakEvenMu.Lock()
+		delete(b.pendingBreakEven, pos.ProviderPositionID)
+		b.pendingBreakEvenMu.Unlock()
+		return
+
+	case <-confirmCh:
+		slog.Info("break-even CONFIRMED by broker — position now protected",
+			"posID", pos.ProviderPositionID, "newSL", newSL, "attempt", attempt,
+		)
+		b.registry.SetBreakEven(pos.ProviderPositionID)
+		b.recordBreakEvenAdjustment(ctx, pos, newSL)
+
+	case <-time.After(breakEvenConfirmTimeout):
+		b.pendingBreakEvenMu.Lock()
+		delete(b.pendingBreakEven, pos.ProviderPositionID)
+		b.pendingBreakEvenMu.Unlock()
+
+		if attempt >= breakEvenMaxAttempts {
+			b.registry.SetBreakEvenGaveUp(pos.ProviderPositionID)
+			slog.Error("break-even UNCONFIRMED after max attempts — GIVING UP, position is running on its ORIGINAL stop, not newSL",
+				"posID", pos.ProviderPositionID, "attemptedNewSL", newSL, "originalSL", pos.SLPrice, "attempts", attempt,
+			)
+			return
+		}
+
+		b.registry.SetBreakEvenPending(pos.ProviderPositionID, false)
+		slog.Warn("break-even UNCONFIRMED after timeout — no broker response, will retry on next check",
+			"posID", pos.ProviderPositionID, "attemptedNewSL", newSL, "timeout", breakEvenConfirmTimeout, "attempt", attempt,
+		)
+	}
+}
+
+func (b *Bot) signalBreakEvenConfirmed(providerPositionID string) {
+	if providerPositionID == "" {
+		return
+	}
+	b.pendingBreakEvenMu.Lock()
+	ch, ok := b.pendingBreakEven[providerPositionID]
+	if ok {
+		delete(b.pendingBreakEven, providerPositionID)
+	}
+	b.pendingBreakEvenMu.Unlock()
+	if ok {
+		close(ch)
+	}
+}
+
+func (b *Bot) recordBreakEvenAdjustment(ctx context.Context, pos trackedPosition, newSL float64) {
 	posUUID, err := b.positions.IDByProviderPositionID(ctx, b.provider.Name(), pos.ProviderPositionID)
 	if err != nil {
-		slog.Warn("checkBreakEven: could not resolve position UUID for adjustment record",
+		slog.Warn("recordBreakEvenAdjustment: could not resolve position UUID for adjustment record",
 			"posID", pos.ProviderPositionID, "err", err,
 		)
 		return
@@ -274,7 +358,7 @@ func (b *Bot) checkBreakEven(ctx context.Context, pos trackedPosition) {
 		 VALUES ($1, $2, $3, $4)`,
 		posUUID, pos.SLPrice, newSL, "break_even",
 	); err != nil {
-		slog.Warn("checkBreakEven: failed to record adjustment in DB",
+		slog.Warn("recordBreakEvenAdjustment: failed to record adjustment in DB",
 			"posUUID", posUUID, "err", err,
 		)
 	}

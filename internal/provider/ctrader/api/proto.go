@@ -599,7 +599,7 @@ func decodeBrokerOrderID(data []byte) int64 {
 	return 0
 }
 
-func decodeFullExecutionEvent(data []byte) (execType string, deal DealInfo, hasDeal bool, closedPosID int64, clientOrderID string, brokerOrderID int64) {
+func decodeFullExecutionEvent(data []byte) (execType string, deal DealInfo, hasDeal bool, posID int64, closedPosID int64, clientOrderID string, brokerOrderID int64) {
 	clientOrderID = decodeClientOrderID(data)
 	brokerOrderID = decodeBrokerOrderID(data)
 	i := 0
@@ -637,7 +637,8 @@ func decodeFullExecutionEvent(data []byte) (execType string, deal DealInfo, hasD
 		hasDeal = true
 	}
 	if rawPosition != nil && !hasDeal {
-		posID, isClosed := decodePositionIDAndStatus(rawPosition)
+		var isClosed bool
+		posID, isClosed = decodePositionIDAndStatus(rawPosition)
 		if isClosed {
 			closedPosID = posID
 		}
