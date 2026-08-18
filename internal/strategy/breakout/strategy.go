@@ -150,10 +150,10 @@ func (s *Breakout) tryEnter(states map[string]indicator.MarketState, m15 indicat
 	var slPrice, tpPrice float64
 
 	if dir == config.SignalBuy {
-		slPrice = level - slATRMult*atr
+		slPrice = currentPrice - slATRMult*atr
 		tpPrice = currentPrice + tpATRMult*atr
 	} else {
-		slPrice = level + slATRMult*atr
+		slPrice = currentPrice + slATRMult*atr
 		tpPrice = currentPrice - tpATRMult*atr
 	}
 
