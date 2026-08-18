@@ -1,4 +1,4 @@
-# t-bot
+# T-bot
 
 Algorithmic trading bot for forex and commodities via cTrader.
 
