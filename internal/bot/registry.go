@@ -28,7 +28,10 @@ type trackedPosition struct {
 	MaxFavorable       float64
 	MaxAdverse         float64
 	StrategyName       string
-	BreakEvenActive    bool // true once position reached 40% of SL distance favorable
+	BreakEvenActive    bool // true once the broker has CONFIRMED the break-even SL amendment
+	BreakEvenPending   bool // true while an amendment has been sent but not yet confirmed or timed out
+	BreakEvenAttempts  int  // number of amend attempts sent, so we can give up after breakEvenMaxAttempts
+	BreakEvenGaveUp    bool // true once we've stopped retrying an unconfirmed amendment
 }
 
 type PositionRegistry struct {
@@ -91,11 +94,44 @@ func (r *PositionRegistry) Register(pos trackedPosition) {
 	r.positions[pos.ProviderPositionID] = &pos
 }
 
+// SetBreakEven marks a break-even amendment as CONFIRMED by the broker.
 func (r *PositionRegistry) SetBreakEven(id string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if p, ok := r.positions[id]; ok {
 		p.BreakEvenActive = true
+		p.BreakEvenPending = false
+	}
+}
+
+// SetBreakEvenPending marks that an amendment was sent and is awaiting broker
+// confirmation, so checkBreakEven doesn't fire a duplicate amend on the next tick.
+func (r *PositionRegistry) SetBreakEvenPending(id string, pending bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if p, ok := r.positions[id]; ok {
+		p.BreakEvenPending = pending
+	}
+}
+
+// IncrementBreakEvenAttempts records another amend attempt and returns the new count.
+func (r *PositionRegistry) IncrementBreakEvenAttempts(id string) int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if p, ok := r.positions[id]; ok {
+		p.BreakEvenAttempts++
+		return p.BreakEvenAttempts
+	}
+	return 0
+}
+
+// SetBreakEvenGaveUp stops further amend retries for this position.
+func (r *PositionRegistry) SetBreakEvenGaveUp(id string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if p, ok := r.positions[id]; ok {
+		p.BreakEvenGaveUp = true
+		p.BreakEvenPending = false
 	}
 }
 

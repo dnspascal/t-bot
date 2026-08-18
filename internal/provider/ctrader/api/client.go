@@ -21,6 +21,7 @@ type ExecutionEvent struct {
 	Type             string
 	Deal             DealInfo
 	HasDeal          bool
+	PositionID       int64
 	ClosedPositionID int64
 	ErrorCode        string
 	ClientOrderID    string
@@ -415,7 +416,7 @@ func (c *Client) handleMessage(payloadType uint32, payload []byte) {
 		}
 
 	case ProtoOAExecutionEvent:
-		execType, deal, hasDeal, closedPosID, clientOrderID, brokerOrderID := decodeFullExecutionEvent(payload)
+		execType, deal, hasDeal, posID, closedPosID, clientOrderID, brokerOrderID := decodeFullExecutionEvent(payload)
 
 		if hasDeal && deal.IsClose {
 			c.pendingCloses.Add(-1)
@@ -426,6 +427,7 @@ func (c *Client) handleMessage(payloadType uint32, payload []byte) {
 			Type:             execType,
 			Deal:             deal,
 			HasDeal:          hasDeal,
+			PositionID:       posID,
 			ClosedPositionID: closedPosID,
 			ClientOrderID:    clientOrderID,
 			BrokerOrderID:    brokerOrderID,
