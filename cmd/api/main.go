@@ -430,9 +430,11 @@ func (h *handler) trade(w http.ResponseWriter, r *http.Request) {
 	t.CloseAt = closeAt.Format(time.RFC3339)
 	pipsFields(&t, pipSize)
 
-	// Fetch M5 candles: open_at - 2 bars before, close_at + 2 bars after
+	// Fetch M5 candles: open_at - 2 bars before, close_at + 4h after — the
+	// post-close window lets the chart show what price actually did after
+	// the bot exited (would it have hit TP, kept running against, etc).
 	candleStart := openAt.Add(-10 * time.Minute)
-	candleEnd := closeAt.Add(10 * time.Minute)
+	candleEnd := closeAt.Add(4 * time.Hour)
 
 	rows, err := h.db.Query(r.Context(), `
 		SELECT bar_time, open, high, low, close
