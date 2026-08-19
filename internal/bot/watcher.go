@@ -137,23 +137,23 @@ func countReversalSignals(ms indicator.MarketState, pos trackedPosition, pipSize
 		signals = append(signals, fmt.Sprintf(strat.PeakDrawbackPrefix+"%.0f%%", pct))
 	}
 
-	if (pos.Side == "BUY" && (ms.Regime == "trending_down" || ms.Regime == "ranging")) ||
-		(pos.Side == "SELL" && (ms.Regime == "trending_up" || ms.Regime == "ranging")) {
+	if (pos.Side == config.SignalBuy && (ms.Regime == config.TrendingDown || ms.Regime == config.Ranging)) ||
+		(pos.Side == config.SignalSell && (ms.Regime == config.TrendingUp || ms.Regime == config.Ranging)) {
 		signals = append(signals, strat.ReversalRegimeAgainst)
 	}
 
-	if (pos.Side == "BUY" && ms.RSI < rsiMidline) ||
-		(pos.Side == "SELL" && ms.RSI > rsiMidline) {
+	if (pos.Side == config.SignalBuy && ms.RSI < rsiMidline) ||
+		(pos.Side == config.SignalSell && ms.RSI > rsiMidline) {
 		signals = append(signals, strat.ReversalRSIAgainst)
 	}
 
-	if (pos.Side == "BUY" && ms.EMAFast < ms.EMASlow) ||
-		(pos.Side == "SELL" && ms.EMAFast > ms.EMASlow) {
+	if (pos.Side == config.SignalBuy && ms.EMAFast < ms.EMASlow) ||
+		(pos.Side == config.SignalSell && ms.EMAFast > ms.EMASlow) {
 		signals = append(signals, strat.ReversalEMACrossAgainst)
 	}
 
-	if (pos.Side == "BUY" && ms.MomentumDirection == "falling") ||
-		(pos.Side == "SELL" && ms.MomentumDirection == "rising") {
+	if (pos.Side == config.SignalBuy && ms.MomentumDirection == config.MomentumFalling) ||
+		(pos.Side == config.SignalSell && ms.MomentumDirection == config.MomentumRising) {
 		signals = append(signals, strat.ReversalMomentumAgainst)
 	}
 
@@ -431,9 +431,9 @@ func (b *Bot) checkTimeStop(ctx context.Context, _ float64) {
 
 		if time.Since(pos.OpenTime) >= neverProfitableTimeout {
 			neverProfitable := false
-			if pos.Side == "BUY" && pos.MaxFavorable <= pos.OpenPrice+b.pipSize {
+			if pos.Side == config.SignalBuy && pos.MaxFavorable <= pos.OpenPrice+b.pipSize {
 				neverProfitable = true
-			} else if pos.Side == "SELL" && pos.MaxFavorable >= pos.OpenPrice-b.pipSize {
+			} else if pos.Side == config.SignalSell && pos.MaxFavorable >= pos.OpenPrice-b.pipSize {
 				neverProfitable = true
 			}
 			if neverProfitable {
@@ -485,7 +485,7 @@ func (b *Bot) logM1State(currentPrice float64) {
 
 	for _, pos := range positions {
 		var unrealized float64
-		if pos.Side == "BUY" {
+		if pos.Side == config.SignalBuy {
 			unrealized = b.unrealizedUSD(currentPrice-pos.OpenPrice, pos.Volume)
 		} else {
 			unrealized = b.unrealizedUSD(pos.OpenPrice-currentPrice, pos.Volume)
