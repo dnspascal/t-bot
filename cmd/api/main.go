@@ -150,10 +150,12 @@ func (h *handler) metrics(w http.ResponseWriter, r *http.Request) {
 			COALESCE(MAX(f.net_profit), 0)                                   AS largest_win,
 			COALESCE(MIN(f.net_profit), 0)                                   AS largest_loss
 		FROM positions p
+		JOIN orders o ON o.id = p.our_order_id
 		JOIN symbols sym ON sym.id = p.symbol_id
 		JOIN fills f ON f.our_position_id = p.id AND f.close_reason IS NOT NULL
 		WHERE p.open_timestamp >= $1 AND p.open_timestamp < $2
 		  AND p.provider = 'ctrader'
+		  AND o.signal_id IS NOT NULL
 		  `+symbolFilter+`
 	`, args...)
 
