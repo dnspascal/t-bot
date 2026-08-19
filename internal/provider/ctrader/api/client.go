@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"log/slog"
+	"math"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -266,6 +267,12 @@ func (c *Client) AmendPositionSL(positionID int64, newSL, tp float64) error {
 
 	if !authed {
 		return fmt.Errorf("not authenticated")
+	}
+
+
+	newSL = math.Round(newSL*c.priceDivisor) / c.priceDivisor
+	if tp > 0 {
+		tp = math.Round(tp*c.priceDivisor) / c.priceDivisor
 	}
 
 	inner := encodeAmendPositionSLTPReq(accountID, positionID, newSL, tp)
