@@ -100,6 +100,9 @@ type Bot struct {
 	testCloseMode    atomic.Bool
 	testCloseTrigger chan struct{}
 
+	testAmendMode    atomic.Bool
+	testAmendTrigger chan struct{}
+
 	db        *pgxpool.Pool
 	lookup    *symbol.SymbolLookup
 	ticks     *tick.Repository
@@ -160,6 +163,7 @@ func New(
 		pendingBreakEven:    make(map[string]chan struct{}),
 		tickCh:              make(chan tick.Tick, 500),
 		testCloseTrigger:    make(chan struct{}, 1),
+		testAmendTrigger:    make(chan struct{}, 1),
 		lookup:              lookup,
 		ticks:               ticks,
 		candles:             candles,
@@ -217,6 +221,11 @@ func (b *Bot) Run(ctx context.Context, startedAt time.Time) {
 		case <-b.testCloseTrigger:
 			slog.Info("TESTCLOSE: opening test position to diagnose close rejection")
 			b.testCloseMode.Store(true)
+			b.sendTestPosition(ctx)
+
+		case <-b.testAmendTrigger:
+			slog.Info("TESTAMEND: opening test position to diagnose SL amend confirmation")
+			b.testAmendMode.Store(true)
 			b.sendTestPosition(ctx)
 
 		case <-discCh:
@@ -1059,6 +1068,12 @@ func (b *Bot) recordOpenFill(ctx context.Context, exec provider.ExecutionEvent, 
 			b.closeTrackedPosition(ctx, pos, "test_close_cmd")
 		}
 	}
+
+	if b.testAmendMode.CompareAndSwap(true, false) {
+		if pos, ok := b.registry.Get(provPosID); ok {
+			go b.runTestAmend(ctx, pos)
+		}
+	}
 }
 
 func (b *Bot) recordCloseFill(ctx context.Context, exec provider.ExecutionEvent) {
@@ -1451,7 +1466,12 @@ func (b *Bot) sendTestPosition(ctx context.Context) {
 		return
 	}
 
-	testVolume := int64(100_000)
+	// Was hardcoded to 100_000 regardless of symbol — a safe 1000-unit
+	// micro-lot for forex (lotUnit=100_000), but the same raw value on gold
+	// (lotUnit=100, 1 troy ounce per unit) would place a 1000oz test order.
+	// Real strategy sizing already uses b.lotUnit (see position sizing
+	// above); this now matches instead of bypassing it.
+	testVolume := b.lotUnit
 	const (
 		testSLPips float64 = 10.0
 		testTPPips float64 = 20.0
@@ -1579,6 +1599,18 @@ func (b *Bot) TriggerTestClose() string {
 	select {
 	case b.testCloseTrigger <- struct{}{}:
 		return fmt.Sprintf("[%s] test triggered — opening micro lot and closing immediately. Watch journalctl.", b.symbol)
+	default:
+		return fmt.Sprintf("[%s] trigger channel busy", b.symbol)
+	}
+}
+
+func (b *Bot) TriggerTestAmend() string {
+	if b.testAmendMode.Load() {
+		return fmt.Sprintf("[%s] test amend already in progress", b.symbol)
+	}
+	select {
+	case b.testAmendTrigger <- struct{}{}:
+		return fmt.Sprintf("[%s] test triggered — opening micro lot, amending SL, watching for broker confirmation. Watch journalctl.", b.symbol)
 	default:
 		return fmt.Sprintf("[%s] trigger channel busy", b.symbol)
 	}

@@ -330,6 +330,62 @@ func (b *Bot) awaitBreakEvenConfirmation(ctx context.Context, pos trackedPositio
 	}
 }
 
+func (b *Bot) runTestAmend(ctx context.Context, pos trackedPosition) {
+	var newSL float64
+	if pos.Side == config.SignalBuy {
+		newSL = pos.OpenPrice + breakEvenBufferPips*b.pipSize
+	} else {
+		newSL = pos.OpenPrice - breakEvenBufferPips*b.pipSize
+	}
+
+	confirmed := false
+	for attempt := 1; attempt <= breakEvenMaxAttempts; attempt++ {
+		if err := b.provider.AmendPositionSL(ctx, pos.ProviderPositionID, newSL, pos.TPPrice); err != nil {
+			slog.Error("TESTAMEND: AmendPositionSL send FAILED",
+				"posID", pos.ProviderPositionID, "newSL", newSL, "attempt", attempt, "err", err,
+			)
+			break
+		}
+
+		confirmCh := make(chan struct{})
+		b.pendingBreakEvenMu.Lock()
+		b.pendingBreakEven[pos.ProviderPositionID] = confirmCh
+		b.pendingBreakEvenMu.Unlock()
+
+		slog.Info("TESTAMEND: amend SENT — awaiting broker confirmation",
+			"posID", pos.ProviderPositionID, "openPrice", pos.OpenPrice, "newSL", newSL,
+			"attempt", attempt, "maxAttempts", breakEvenMaxAttempts,
+		)
+
+		select {
+		case <-confirmCh:
+			slog.Info("TESTAMEND: CONFIRMED by broker", "posID", pos.ProviderPositionID, "newSL", newSL, "attempt", attempt)
+			confirmed = true
+		case <-time.After(breakEvenConfirmTimeout):
+			b.pendingBreakEvenMu.Lock()
+			delete(b.pendingBreakEven, pos.ProviderPositionID)
+			b.pendingBreakEvenMu.Unlock()
+			slog.Warn("TESTAMEND: UNCONFIRMED after timeout — no broker response",
+				"posID", pos.ProviderPositionID, "attempt", attempt, "timeout", breakEvenConfirmTimeout,
+			)
+		}
+		if confirmed {
+			break
+		}
+	}
+
+	if !confirmed {
+		slog.Error("TESTAMEND: never confirmed after max attempts — this is the exact gap real break-even hits",
+			"posID", pos.ProviderPositionID, "attemptedNewSL", newSL,
+		)
+	}
+
+	if livePos, ok := b.registry.Get(pos.ProviderPositionID); ok {
+		slog.Info("TESTAMEND: closing test position (cleanup)", "posID", pos.ProviderPositionID, "confirmed", confirmed)
+		b.closeTrackedPosition(ctx, livePos, "test_amend_cmd")
+	}
+}
+
 func (b *Bot) signalBreakEvenConfirmed(providerPositionID string) {
 	if providerPositionID == "" {
 		return
