@@ -1497,11 +1497,22 @@ func (b *Bot) sendTestPosition(ctx context.Context) {
 		return
 	}
 
+	// Estimated from the signal-time mid price, same as the real-trade path
+	// (result.SLPrice/TPPrice) — the exact fill price isn't known yet since
+	// PlaceMarketOrder only sends relative distances. Without this the
+	// registry entry gets SLPrice/TPPrice == 0, which broke runTestAmend
+	// (tried to amend to a negative price and got rejected).
+	mid := b.currentPrice.Mid
+	if mid == 0 {
+		mid = (b.currentPrice.Bid + b.currentPrice.Ask) / 2
+	}
 	b.pendingOrders[orderID] = &pendingOrderState{
 		ourOrderID: orderID,
 		sentAt:     sentAt,
 		side:       config.SignalBuy,
 		tier:       config.TierNormal,
+		slPrice:    mid - testSLPips*b.pipSize,
+		tpPrice:    mid + testTPPips*b.pipSize,
 	}
 
 	if b.provider.Name() == "binance" {
