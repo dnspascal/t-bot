@@ -25,13 +25,13 @@ const breakEvenBufferPips = 2.0
 
 func decisionParams() map[string]any {
 	return map[string]any{
-		"peak_drawback_gate_pct":       peakDrawbackGatePct,
-		"peak_drawback_threshold_pct":  peakDrawbackThreshold,
-		"breakeven_trigger_pct":        breakEvenTriggerPct,
-		"breakeven_buffer_pips":        breakEvenBufferPips,
-		"signals_to_close":             signalsToClose,
-		"signals_to_reduce":            signalsToReduce,
-		"never_profitable_timeout_min": int(neverProfitableTimeout / time.Minute),
+		"peak_drawback_gate_pct":            peakDrawbackGatePct,
+		"peak_drawback_threshold_pct_of_tp": peakDrawbackThreshold,
+		"breakeven_trigger_pct":             breakEvenTriggerPct,
+		"breakeven_buffer_pips":             breakEvenBufferPips,
+		"signals_to_close":                  signalsToClose,
+		"signals_to_reduce":                 signalsToReduce,
+		"never_profitable_timeout_min":      int(neverProfitableTimeout / time.Minute),
 	}
 }
 
@@ -153,10 +153,10 @@ func peakDrawbackPct(pos trackedPosition, currentPrice, pipSize float64) float64
 	} else {
 		tpDist = pos.OpenPrice - pos.TPPrice
 	}
-	minPeakGain := tpDist * (peakDrawbackGatePct / 100)
-	if minPeakGain <= 0 {
-		minPeakGain = 3 * pipSize
+	if tpDist <= 0 {
+		return 0
 	}
+	minPeakGain := tpDist * (peakDrawbackGatePct / 100)
 
 	var peakGain, currentGain float64
 	if pos.Side == config.SignalBuy {
@@ -176,7 +176,7 @@ func peakDrawbackPct(pos trackedPosition, currentPrice, pipSize float64) float64
 		return 0
 	}
 
-	return (gaveBack / peakGain) * 100
+	return (gaveBack / tpDist) * 100
 }
 
 func (b *Bot) checkPeakDrawback(ctx context.Context, currentPrice float64) {
@@ -212,23 +212,7 @@ func (b *Bot) checkPeakDrawback(ctx context.Context, currentPrice float64) {
 	}
 }
 
-// The bot has no way to know an AmendPositionSLTPReq actually landed at the
-// broker just because the network write succeeded — cTrader does not always
-// respond, and on 2026-08-18 two trades (f21fd931, a69ed10c) lost real money
-// after the bot logged "break-even stop set" for an amend that was never
-// confirmed by a broker ORDER_REPLACED event: price ran straight through the
-// supposed new stop with nothing closing the position, until the reversal
-// watcher (watchPositions, a separate check) eventually market-closed it at
-// a much worse price. See analysis/daily/2026-08-18 for the full trace.
-//
-// So break-even is now confirm-then-commit: send the amend, wait (off the
-// main loop, so a slow/absent broker response can't stall other positions'
-// M1 checks) for the ORDER_REPLACED execution event, and only mark
-// BreakEvenActive / write position_adjustments once that confirmation
-// actually arrives. If it doesn't arrive in time, retry a bounded number of
-// times, and log loudly (not silently) once we give up — so "is this trade
-// actually protected" is answered by a log line, not by reconstructing it
-// after the fact from price data and position_adjustments like this time.
+
 const breakEvenConfirmTimeout = 5 * time.Second
 const breakEvenMaxAttempts = 3
 
