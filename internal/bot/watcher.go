@@ -277,8 +277,6 @@ func (b *Bot) checkBreakEven(ctx context.Context, pos trackedPosition) {
 	go b.awaitBreakEvenConfirmation(ctx, pos, newSL, peakGain, tpDist, attempt, confirmCh)
 }
 
-// awaitBreakEvenConfirmation runs off the main event loop so a slow or
-// absent broker response can't stall M1 processing for other positions.
 func (b *Bot) awaitBreakEvenConfirmation(ctx context.Context, pos trackedPosition, newSL, peakGain, tpDist float64, attempt int, confirmCh chan struct{}) {
 	select {
 	case <-ctx.Done():

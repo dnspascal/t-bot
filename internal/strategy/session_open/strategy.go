@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	slATRMult                  = 0.5
-	tpRangeMult                = 1.5
+	slATRMult                  = 1.5
+	tpATRMult                  = 2.5
 	minRangePips               = 5.0
 	consecutiveFailsToCooldown = 2
 	cooldownDuration           = 30 * time.Minute
@@ -29,7 +29,6 @@ func New() *SessionOpen { return &SessionOpen{} }
 func (s *SessionOpen) Name() string           { return "session_open" }
 func (s *SessionOpen) UsesTrendWatcher() bool { return true }
 
-// OnClosed implements strategy.OutcomeAware.
 func (s *SessionOpen) OnClosed(side, closeReason string, closeTime time.Time) {
 	switch strategy.ClassifyCloseReason(closeReason) {
 	case strategy.CloseInvalidated:
@@ -109,9 +108,7 @@ func (s *SessionOpen) Evaluate(states map[string]indicator.MarketState, currentP
 		}
 	}
 
-	// Require M5 to confirm the breakout direction. A breakout with M5 regime or EMA
-	// against the direction is a fakeout — the same pattern that immediately triggers
-	// the watcher's ema_cross_against + regime_against signals and forces an early close.
+
 	m5, ok := states[config.PeriodM5]
 	if !ok || !m5.IsWarmedUp {
 		return hold("M5 not warmed up")
@@ -138,11 +135,11 @@ func (s *SessionOpen) Evaluate(states map[string]indicator.MarketState, currentP
 	atr := m15.ATR
 	var slPrice, tpPrice float64
 	if dir == config.SignalBuy {
-		slPrice = m15.SessionLow - slATRMult*atr
-		tpPrice = currentPrice + rangeSize*tpRangeMult
+		slPrice = currentPrice - slATRMult*atr
+		tpPrice = currentPrice + tpATRMult*atr
 	} else {
-		slPrice = m15.SessionHigh + slATRMult*atr
-		tpPrice = currentPrice - rangeSize*tpRangeMult
+		slPrice = currentPrice + slATRMult*atr
+		tpPrice = currentPrice - tpATRMult*atr
 	}
 
 	slPips := math.Abs(currentPrice-slPrice) / pipSize
