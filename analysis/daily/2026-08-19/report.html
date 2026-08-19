@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Analysis — 2026-08-19</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Lato', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #000;
+  background: #fff;
+  padding-bottom: 80px;
+}
+
+/* ── Header ── */
+.header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 28px 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.header-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: #1d4ed8;
+  background: #eaf0ff; padding: 3px 10px; border-radius: 4px;
+  display: inline-block; margin-bottom: 8px;
+}
+.header h1 { font-size: 22px; font-weight: 900; letter-spacing: -.3px; margin-bottom: 6px; }
+.header-meta { font-size: 13px; color: #6b7280; display: flex; gap: 20px; flex-wrap: wrap; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.chip {
+  font-size: 12px; font-weight: 700; padding: 5px 12px;
+  border-radius: 20px; color: #6b7280;
+}
+.chip.loss { color: #dc2626; background: #fef2f2; }
+.chip.win  { color: #16a34a; background: #f0fdf4; }
+.chip.info { color: #1d4ed8; background: #eaf0ff; }
+
+/* ── Page ── */
+.page { max-width: 920px; margin: 0 auto; padding: 40px 24px 0; }
+.section { margin-bottom: 48px; }
+.section-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: #6b7280; margin-bottom: 10px;
+}
+.section-title { font-size: 18px; font-weight: 900; letter-spacing: -.2px; margin-bottom: 16px; }
+hr { border: none; border-top: 1px solid #e5e7eb; margin: 44px 0; }
+
+/* ── Cards ── */
+.finding {
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 20px 22px; margin-bottom: 16px;
+  background: #fff;
+}
+.finding-header {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.finding-title { font-size: 15px; font-weight: 700; flex: 1; }
+.badge {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+  white-space: nowrap; margin-top: 2px;
+}
+.badge.fixed   { background: #f0fdf4; color: #16a34a; }
+.badge.gap     { background: #fef2f2; color: #dc2626; }
+.badge.pending { background: #fff7ed; color: #c2410c; }
+.badge.info    { background: #eaf0ff; color: #1d4ed8; }
+
+p { margin-bottom: 10px; max-width: 70ch; }
+code {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 13px;
+  background: #f3f4f6; padding: 1px 6px; border-radius: 4px;
+}
+pre {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px;
+  background: #f3f4f6; color: #000;
+  padding: 14px 16px; border-radius: 8px; overflow-x: auto;
+  margin: 10px 0 14px;
+}
+pre .cmt { color: #6b7280; }
+
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.5px; }
+th {
+  text-align: left; font-weight: 700; font-size: 11px;
+  letter-spacing: .04em; text-transform: uppercase; color: #6b7280;
+  padding: 8px 10px; border-bottom: 2px solid #e5e7eb;
+}
+td { padding: 9px 10px; border-bottom: 1px solid #f0f1f3; }
+tr.highlight td { background: #fef2f2; }
+tr.ok td { background: #f0fdf4; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.mono { font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px; }
+
+.quote {
+  background: #f8fafc; border-radius: 8px;
+  padding: 12px 16px; margin: 12px 0 16px; font-size: 14px; color: #000;
+}
+.quote .src { font-size: 11.5px; color: #9ca3af; margin-top: 6px; font-family: 'SF Mono', Menlo, monospace; }
+
+.decision {
+  background: #f5f8ff; border-radius: 8px;
+  padding: 18px 20px; margin-top: 10px;
+}
+.decision-title { font-weight: 900; font-size: 14px; color: #1d4ed8; margin-bottom: 8px; }
+
+footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <span class="header-eyebrow">Daily Analysis</span>
+    <h1>2026-08-19 — Break-even amend precision, peak-drawback math, session_open sizing, and new exit thresholds</h1>
+    <div class="header-meta">
+      <span>Bot: T-Bot (cTrader, XAUUSD + EURUSD)</span>
+      <span>Started as a single break-even diagnostic, chained into 9 fixes across the day</span>
+    </div>
+  </div>
+  <div class="chips">
+    <span class="chip win">9 production fixes shipped</span>
+    <span class="chip loss">Break-even amends were 0% confirmed on gold for the prior week</span>
+    <span class="chip info">2 items diagnosed, not yet resolved — regime-shift lag, position sizing</span>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="section">
+    <div class="section-eyebrow">Part 1 — Break-even amend</div>
+    <div class="section-title">Every break-even amend on gold was being rejected by the broker — floating point noise, not a broken confirmation path</div>
+
+    <p>Pulled 7 days of gold journal logs looking for the confirmed-vs-actual gap the 2026-08-18 fix was meant to close. Found something upstream of that instead: every single real break-even attempt in the window — dozens of them, across every process restart — failed with <code>INVALID_REQUEST</code> ("more digits than allowed") or <code>TRADING_BAD_STOPS</code> ("Allowed 2 digits"). Confirmation was never the problem; the amend was never being accepted in the first place.</p>
+
+    <div class="quote">
+      <code>newSL: 4335.110000000001</code> sent to a symbol that only allows 2 decimal digits.
+      <div class="src">internal/provider/ctrader/api/client.go — AmendPositionSL, before fix</div>
+    </div>
+
+    <p>Order-open SL/TP already rounds correctly (<code>encodeNewOrderReq</code>, via a <code>priceDecimals</code>-derived scale) — that path was never affected. The amend path never got the same treatment: it sends an absolute price as a raw float, and nothing snapped it back onto the symbol's tick grid before it went on the wire.</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">First fix attempt used the wrong reference number, and looked correct by coincidence</span>
+        <span class="badge gap">Caught before shipping wrong</span>
+      </div>
+      <p>Rounded against <code>c.priceDivisor</code> — the raw spot-quote wire scale (1/100000, same for every symbol) — instead of the symbol's actual tradable precision. The first live test (a real trade whose <code>newSL</code> was built purely from <code>OpenPrice + a clean pip buffer</code>) passed, because that value only carried float noise past the 5th decimal, which the wrong rounding happened to catch anyway. A second test — <code>newSL</code> built from a live mid-quote instead of a clean fill price — carries genuine 3rd-decimal precision that isn't noise, and sailed straight through un-rounded. Corrected to round against <code>priceDecimals</code> (the same value <code>encodeNewOrderReq</code> already uses), confirmed via <code>journalctl</code>: broker confirmation in 96ms, first attempt.</p>
+    </div>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;"><code>AmendPositionSL</code> rounds <code>newSL</code>/<code>tp</code> to the symbol's tick size before encoding. Verified against a real live trade the same day: break-even amend sent, confirmed by broker, position protected — the first successful break-even confirmation on gold in the entire week of logs checked.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 2 — Telegram routing</div>
+    <div class="section-title">Gold couldn't receive commands at all — found while building the tooling to test Part 1</div>
+
+    <p>Needed <code>/testamend</code> to validate the fix live without waiting for a real trade to cross the break-even trigger. It never reached gold. Gold and EURUSD share one Telegram bot token and one webhook port, and the reverse proxy (Caddy) statically forwards the whole domain to a single backend port — registration order at the Telegram API level was irrelevant, since only one process was ever actually listening on the port Caddy points at. Every command landed on EURUSD regardless of which bot last restarted.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;">Gave gold its own dedicated webhook port and secret. EURUSD temporarily lost inbound command access as a trade-off — flagged as an open item below, not resolved today.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 3 — Peak-drawback math</div>
+    <div class="section-title">Percentages above 100% on peak-drawback closes — EURUSD only, never gold</div>
+
+    <p>Some closed trades logged a "gave back 107%" or "201%" of their peak — a number that should be capped near 100 by construction. Pulled the full 30-day distribution before assuming anything about the cause:</p>
+
+    <table>
+      <tr><th>Symbol</th><th class="num">Peak-drawback closes</th><th class="num">Avg %</th><th class="num">Max %</th><th class="num">Over 100%</th></tr>
+      <tr class="highlight"><td>EURUSD</td><td class="num">17</td><td class="num">97.5%</td><td class="num">201%</td><td class="num">8 (47%)</td></tr>
+      <tr class="ok"><td>XAUUSD</td><td class="num">42</td><td class="num">67.8%</td><td class="num">149%</td><td class="num">2 (5%)</td></tr>
+    </table>
+
+    <p>The formula divided the amount given back by <em>how far the trade's peak actually got</em> (<code>peakGain</code>) — a number that's small and unstable right after a trade barely clears its 70% gate. Checked why this lands on EURUSD specifically rather than assuming: EURUSD's median TP distance is 14 pips against gold's 194 — over 13x smaller — so the same ordinary tick-to-tick noise that's negligible on gold becomes a large swing on EURUSD once divided by such a small base.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;">Divide by <code>tpDist</code> (distance to TP, fixed at trade open) instead of <code>peakGain</code>. Same style of percentage, same intuitive reading, but the denominator can no longer collapse toward zero just because a trade barely cleared the gate.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 4 — Peak-drawback timing</div>
+    <div class="section-title">Separate from the math bug: peak-drawback has been cutting trades that go on to hit TP anyway, and this isn't new</div>
+
+    <p>Today, gold: 4 positions closed via peak-drawback. 3 of the 4 hit their TP within 1–12 minutes of being closed early. Checked whether today was unusual before treating it as representative — pulled every peak-drawback close over the prior 30 days and tested whether price touched the recorded TP within 6 hours after each one:</p>
+
+    <table>
+      <tr><th>Sample</th><th class="num">Closes</th><th class="num">Went on to hit TP</th></tr>
+      <tr class="highlight"><td>30-day history, both symbols</td><td class="num">51</td><td class="num">31 (61%)</td></tr>
+    </table>
+
+    <p style="font-size:13px; color:#6b7280;">Persistent across every week checked in the window, not a today-only anomaly. The <code>tpDist</code> fix in Part 3 directly addresses the mechanism — a trade on the margin now needs to give back proportionally more of its full target before the rule fires.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 5 — Reversal watcher</div>
+    <div class="section-title">The regime/RSI/EMA/momentum close often fires only after real damage is already done</div>
+
+    <p>Checked 25 <code>regime_against</code>-tagged closes over the prior 14 days for how much of the position's stop-loss room had already been used, in the loss direction, at the moment the close fired:</p>
+
+    <table>
+      <tr><th>Sample</th><th class="num">Closes checked</th><th class="num">Already loss-side at close</th><th>Deepest cases</th></tr>
+      <tr class="highlight"><td>regime_against combo, 14 days</td><td class="num">25</td><td class="num">16 (64%)</td><td class="mono">57.4% / 56.9% / 44.8% of SL room</td></tr>
+    </table>
+
+    <p>Root mechanism: <code>watchPositions</code> only runs once per M5 candle close — every 5 minutes — and its regime signal is an EMA crossover, a lagging indicator by construction that only flips after price has already moved. But checking 4 of the fastest cases individually showed something more specific: those closed within 4–5 minutes of opening, at the very first check opportunity, and had <em>already</em> burned 27–57% of their stop room by then. So the problem isn't purely check frequency — gold can move fast enough that some reaction lag is structurally unavoidable regardless of how often the check runs.</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Not resolved today</span>
+        <span class="badge pending">Open</span>
+      </div>
+      <p>The new exit thresholds in Part 7 reduce how much this watcher is relied on for the cases it handles worst, but the underlying 5-minute cadence and the choice of a lagging indicator as the trigger are unchanged. Flagged for a dedicated look — likely a faster check cadence and/or a less lagging confirming signal, not a parameter tweak.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 6 — session_open</div>
+    <div class="section-title">SL/TP sized off a single pre-session clock hour, with no ceiling</div>
+
+    <p>Two gold trades today opened with a $105.70 / $107.69 stop-loss — full position size, same as every other trade, on a ~$400 account. Traced the mechanism rather than assume a data glitch: pulled the actual M15 candles for the pre-session accumulation hour and confirmed a genuine $80.30 range (gold rallied from ~4362 to ~4442 within that single hour) — real market action, not corrupted data.</p>
+
+    <pre>if dir == config.SignalBuy {
+    slPrice = m15.SessionLow - slATRMult*atr        <span class="cmt">// anchored to the hour's low</span>
+    tpPrice = currentPrice + rangeSize*tpRangeMult  <span class="cmt">// range had no ceiling</span>
+} else {
+    slPrice = m15.SessionHigh + slATRMult*atr
+    tpPrice = currentPrice - rangeSize*tpRangeMult
+}</pre>
+    <p><span class="mono">internal/strategy/session_open/strategy.go</span> (before fix). The strategy's premise is a calm pre-session consolidation before a clean breakout — nothing checks whether that premise actually held for the specific hour in question. When real volatility lands inside the accumulation window instead, both SL and TP scale up together, proportionally, unconditionally. Both trades closed safely at +$28–29 via the reversal watcher before the stop was ever tested — a lucky outcome, not a protected one.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;">Switched SL/TP sizing to ATR off the current price — the same pattern already used by <code>trend_follow</code> and the rest. The breakout entry logic (price crossing the pre-session range) is untouched; only the sizing basis changed.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 7 — Exit thresholds</div>
+    <div class="section-title">Break-even trigger lowered to 25%, and a new stall detector — both derived from real trade data, not picked by feel</div>
+
+    <p>Two of today's losing trades (28.7% and 32.7% of the way to TP) reversed just under the old 33% break-even line before protection could ever engage. Lowered <code>breakEvenTriggerPct</code> to 25% — would have protected both.</p>
+
+    <p>Separately: the existing 30-minute "zero favorable movement" time-stop only catches a trade pinned at literally 0% progress. It misses trades that show a little promise (1–14% of TP) and then go nowhere — one gold position sat for 130 minutes, having peaked at 28.7%, before the reversal watcher finally caught it. A candidate fix needed a real threshold, not a guess — first instinct (20–25 minutes) turned out to be far too aggressive once checked against data:</p>
+
+    <table>
+      <tr><th>Percentile of winning trades (30 days, 154 winners)</th><th class="num">Time to first reach 15% of TP</th></tr>
+      <tr><td>Median</td><td class="num">4.5 min</td></tr>
+      <tr><td>p75</td><td class="num">12.3 min</td></tr>
+      <tr><td>p90</td><td class="num">34.8 min</td></tr>
+      <tr class="highlight"><td>p95 — cutoff chosen just above here</td><td class="num">53.0 min</td></tr>
+      <tr><td>Max observed</td><td class="num">132.3 min</td></tr>
+    </table>
+
+    <p>60 minutes only risks prematurely cutting the slowest 5–10% of genuine winners. Before shipping it as a <em>replacement</em> for the 30-minute check, tested that assumption directly: pulled the one real gold case that triggered the 30-minute check in the last 30 days (-$39.02) and checked what price did in the following 30 minutes had the bot waited instead — it kept sliding, to -$44.47 at its worst. Waiting longer would have cost more, not less, for the pattern that check exists to catch (a position pinned at 0% favorable can be actively bleeding the whole time, which staying flat on <code>MaxFavorable</code> doesn't rule out).</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;">Kept both checks, run separately: the existing 30-minute/0% check (fast reaction to the worst pattern), plus a new 60-minute/15%-of-TP stall check alongside it (broader net, slower trigger) — closing as <code>time_stop=stalled_60m</code>. Both timeouts, the stall threshold, and the new break-even trigger are recorded in <code>decisionParams()</code> so every trade's own snapshot carries the values that were live when it opened.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 8 — Today's P&L shape</div>
+    <div class="section-title">The day closed positive. The path there is the actual concern.</div>
+
+    <p>Raised directly from a live observation: most days this week, the morning session sits at a meaningful realized loss before a handful of afternoon trades pull the day back to positive. Checked today specifically:</p>
+
+    <table>
+      <tr><th>Window</th><th class="num">Trades</th><th class="num">Wins</th><th class="num">Losses</th><th class="num">Net</th></tr>
+      <tr class="highlight"><td>00:00 – 13:00</td><td class="num">18</td><td class="num">5</td><td class="num">13</td><td class="num">-$45.17</td></tr>
+      <tr class="ok"><td>13:00 – close</td><td class="num">16</td><td class="num">12</td><td class="num">4</td><td class="num">+$70.85</td></tr>
+      <tr><td><strong>Full day</strong></td><td class="num">34</td><td class="num">17</td><td class="num">17</td><td class="num">+$25.68</td></tr>
+    </table>
+
+    <p style="font-size:13px; color:#6b7280;">Losers outnumbered winners nearly 3-to-1 through the morning; full-day win rate lands exactly at 50/50 by trade count. The day was rescued by a few large afternoon trades, not by trade selection. Directly connects to Part 4 (winners closed early) and Part 5 (reversal watcher catching losers late) — both push in the direction of a steadier day, though neither is confirmed against live results yet.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 9 — Code hygiene</div>
+    <div class="section-title">Swept watcher.go for the exact class of silent-drift bug that caused Part 1</div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Raw string literals compared against values that already had shared constants</span>
+        <span class="badge fixed">Fixed</span>
+      </div>
+      <p><code>"BUY"</code>, <code>"trending_up"</code>, <code>"falling"</code> etc. compared as bare strings in ~17 places despite <code>config.SignalBuy</code>/<code>TrendingUp</code>/<code>MomentumFalling</code> already existing and being used correctly in the strategy packages. Same values today — no behavior change — but a raw literal wouldn't get caught by the compiler if one of those constants is ever renamed; a constant reference would.</p>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Four dead function parameters</span>
+        <span class="badge fixed">Fixed</span>
+      </div>
+      <p><code>peakDrawbackPct</code>'s <code>pipSize</code> and <code>awaitBreakEvenConfirmation</code>'s <code>peakGain</code>/<code>tpDist</code> were passed around and never read. Invisible to <code>go build</code>, <code>go vet</code>, and <code>staticcheck</code> — none of them flag unused parameters, only unused declarations. Found by manually checking every function signature in the file against its body.</p>
+    </div>
+  </div>
+
+</div>
+
+<footer>Generated 2026-08-19 · positions/orders/signals/fills/price_ticks/candles data from tbot_prod · provider source: internal/provider/ctrader/api/{client.go,proto.go} · strategy source: internal/strategy/session_open/strategy.go · bot source: internal/bot/{bot.go,watcher.go}</footer>
+
+</body>
+</html>
