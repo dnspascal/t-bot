@@ -331,18 +331,21 @@ func (b *Bot) awaitBreakEvenConfirmation(ctx context.Context, pos trackedPositio
 }
 
 func (b *Bot) runTestAmend(ctx context.Context, pos trackedPosition) {
-	var newSL float64
+
+	var newSL, newTP float64
 	if pos.Side == config.SignalBuy {
-		newSL = pos.OpenPrice + breakEvenBufferPips*b.pipSize
+		newSL = pos.SLPrice - breakEvenBufferPips*b.pipSize
+		newTP = pos.TPPrice + breakEvenBufferPips*b.pipSize
 	} else {
-		newSL = pos.OpenPrice - breakEvenBufferPips*b.pipSize
+		newSL = pos.SLPrice + breakEvenBufferPips*b.pipSize
+		newTP = pos.TPPrice - breakEvenBufferPips*b.pipSize
 	}
 
 	confirmed := false
 	for attempt := 1; attempt <= breakEvenMaxAttempts; attempt++ {
-		if err := b.provider.AmendPositionSL(ctx, pos.ProviderPositionID, newSL, pos.TPPrice); err != nil {
+		if err := b.provider.AmendPositionSL(ctx, pos.ProviderPositionID, newSL, newTP); err != nil {
 			slog.Error("TESTAMEND: AmendPositionSL send FAILED",
-				"posID", pos.ProviderPositionID, "newSL", newSL, "attempt", attempt, "err", err,
+				"posID", pos.ProviderPositionID, "newSL", newSL, "newTP", newTP, "attempt", attempt, "err", err,
 			)
 			break
 		}
@@ -353,13 +356,13 @@ func (b *Bot) runTestAmend(ctx context.Context, pos trackedPosition) {
 		b.pendingBreakEvenMu.Unlock()
 
 		slog.Info("TESTAMEND: amend SENT — awaiting broker confirmation",
-			"posID", pos.ProviderPositionID, "openPrice", pos.OpenPrice, "newSL", newSL,
+			"posID", pos.ProviderPositionID, "openPrice", pos.OpenPrice, "newSL", newSL, "newTP", newTP,
 			"attempt", attempt, "maxAttempts", breakEvenMaxAttempts,
 		)
 
 		select {
 		case <-confirmCh:
-			slog.Info("TESTAMEND: CONFIRMED by broker", "posID", pos.ProviderPositionID, "newSL", newSL, "attempt", attempt)
+			slog.Info("TESTAMEND: CONFIRMED by broker", "posID", pos.ProviderPositionID, "newSL", newSL, "newTP", newTP, "attempt", attempt)
 			confirmed = true
 		case <-time.After(breakEvenConfirmTimeout):
 			b.pendingBreakEvenMu.Lock()
