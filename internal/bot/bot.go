@@ -1460,12 +1460,6 @@ func ms(t time.Time) int64 {
 }
 
 func (b *Bot) sendTestPosition(ctx context.Context) {
-	if len(b.pendingOrders) > 0 || b.registry.Count() > 0 {
-		slog.Info("DEV: test position skipped — order already pending or position open",
-			"provider", b.provider.Name())
-		return
-	}
-
 	// Was hardcoded to 100_000 regardless of symbol — a safe 1000-unit
 	// micro-lot for forex (lotUnit=100_000), but the same raw value on gold
 	// (lotUnit=100, 1 troy ounce per unit) would place a 1000oz test order.
