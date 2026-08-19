@@ -17,6 +17,7 @@ type botController interface {
 	StatusText(ctx context.Context) string
 	TodayText(ctx context.Context) string
 	TriggerTestClose() string
+	TriggerTestAmend() string
 }
 
 type telegramCommandHandler struct {
@@ -62,6 +63,8 @@ func (h *telegramCommandHandler) Handle(ctx context.Context, update notify.Updat
 		h.handleBalance(ctx, chatID)
 	case "/testclose":
 		h.handleTestClose(ctx, chatID)
+	case "/testamend":
+		h.handleTestAmend(ctx, chatID)
 	}
 }
 
@@ -119,6 +122,14 @@ func (h *telegramCommandHandler) handleTestClose(ctx context.Context, chatID str
 	var results []string
 	for _, b := range h.getTradingInstances() {
 		results = append(results, b.TriggerTestClose())
+	}
+	h.tg.SendText(ctx, chatID, strings.Join(results, "\n"))
+}
+
+func (h *telegramCommandHandler) handleTestAmend(ctx context.Context, chatID string) {
+	var results []string
+	for _, b := range h.getTradingInstances() {
+		results = append(results, b.TriggerTestAmend())
 	}
 	h.tg.SendText(ctx, chatID, strings.Join(results, "\n"))
 }
