@@ -270,9 +270,18 @@ func (c *Client) AmendPositionSL(positionID int64, newSL, tp float64) error {
 	}
 
 
-	newSL = math.Round(newSL*c.priceDivisor) / c.priceDivisor
+	// priceDivisor is the raw spot-quote wire scale (1/100000, same for every
+	// symbol) — not the symbol's tradable precision. Rounding against it barely
+	// rounds anything, which is exactly how this got missed the first time:
+	// values built from OpenPrice only carried float noise past the 5th decimal,
+	// which priceDivisor rounding happened to clean up anyway. Values built from
+	// a raw mid-quote carry genuine sub-cent precision that isn't noise, and
+	// need rounding to priceDecimals (2 for XAUUSD) — the same precision
+	// encodeNewOrderReq already rounds SL/TP distances to.
+	scale := math.Pow(10, float64(c.priceDecimals))
+	newSL = math.Round(newSL*scale) / scale
 	if tp > 0 {
-		tp = math.Round(tp*c.priceDivisor) / c.priceDivisor
+		tp = math.Round(tp*scale) / scale
 	}
 
 	inner := encodeAmendPositionSLTPReq(accountID, positionID, newSL, tp)
