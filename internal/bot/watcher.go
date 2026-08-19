@@ -96,7 +96,7 @@ func (b *Bot) watchPositions(ctx context.Context, ms indicator.MarketState) {
 		}
 
 		if b.usesTrendWatcher(pos.StrategyName) {
-			n, signals := countReversalSignals(ms, pos, b.pipSize)
+			n, signals := countReversalSignals(ms, pos)
 			if n == 0 {
 				continue
 			}
@@ -130,10 +130,10 @@ func (b *Bot) usesTrendWatcher(strategyName string) bool {
 	return true // unknown strategy — safe default is to apply watcher
 }
 
-func countReversalSignals(ms indicator.MarketState, pos trackedPosition, pipSize float64) (int, []string) {
+func countReversalSignals(ms indicator.MarketState, pos trackedPosition) (int, []string) {
 	var signals []string
 
-	if pct := peakDrawbackPct(pos, ms.Close, pipSize); pct >= peakDrawbackThreshold {
+	if pct := peakDrawbackPct(pos, ms.Close); pct >= peakDrawbackThreshold {
 		signals = append(signals, fmt.Sprintf(strat.PeakDrawbackPrefix+"%.0f%%", pct))
 	}
 
@@ -160,7 +160,7 @@ func countReversalSignals(ms indicator.MarketState, pos trackedPosition, pipSize
 	return len(signals), signals
 }
 
-func peakDrawbackPct(pos trackedPosition, currentPrice, pipSize float64) float64 {
+func peakDrawbackPct(pos trackedPosition, currentPrice float64) float64 {
 	if pos.OpenPrice == 0 {
 		return 0
 	}
@@ -218,7 +218,7 @@ func (b *Bot) checkPeakDrawback(ctx context.Context, currentPrice float64) {
 
 		b.checkBreakEven(ctx, pos)
 
-		if pct := peakDrawbackPct(pos, currentPrice, b.pipSize); pct >= peakDrawbackThreshold {
+		if pct := peakDrawbackPct(pos, currentPrice); pct >= peakDrawbackThreshold {
 			reason := fmt.Sprintf(strat.PeakDrawbackPrefix+"%.0f%%", pct)
 			slog.Info("peak drawback — closing position",
 				"posID", pos.ProviderPositionID,
@@ -292,10 +292,10 @@ func (b *Bot) checkBreakEven(ctx context.Context, pos trackedPosition) {
 		"maxAttempts", breakEvenMaxAttempts,
 	)
 
-	go b.awaitBreakEvenConfirmation(ctx, pos, newSL, peakGain, tpDist, attempt, confirmCh)
+	go b.awaitBreakEvenConfirmation(ctx, pos, newSL, attempt, confirmCh)
 }
 
-func (b *Bot) awaitBreakEvenConfirmation(ctx context.Context, pos trackedPosition, newSL, peakGain, tpDist float64, attempt int, confirmCh chan struct{}) {
+func (b *Bot) awaitBreakEvenConfirmation(ctx context.Context, pos trackedPosition, newSL float64, attempt int, confirmCh chan struct{}) {
 	select {
 	case <-ctx.Done():
 		b.pendingBreakEvenMu.Lock()
