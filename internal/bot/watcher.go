@@ -16,19 +16,7 @@ const peakDrawbackThreshold = 60.0
 const peakDrawbackGatePct = 70.0
 const neverProfitableTimeout = 30 * time.Minute
 
-// stallTimeout/stallMaxFavPct catch a different pattern than neverProfitableTimeout:
-// a trade that showed a little life (up to stallMaxFavPct of the way to TP) and then
-// went nowhere, rather than one that never moved favorably at all. Both close
-// reasons feed the same CloseInvalidated classification via TimeStopPrefix, but
-// neverProfitableTimeout fires first (and stays separate, not replaced by this)
-// because a trade pinned at 0% favorable can be actively bleeding the whole time
-// with nothing to show for it - confirmed against a real case where waiting the
-// extra 30 minutes this check allows would have cost ~$6 more, not less.
-// stallMaxFavPct=15 and stallTimeout=60m are picked from the actual distribution
-// of winning trades: p90/p95 of "time to first reach 15% of TP" was 34.8/53.0
-// minutes, so 60 minutes only risks cutting the slowest ~5-10% of genuine winners
-// early while still bounding how long a truly stalled trade can run (one real
-// case sat for 130 minutes before the reversal watcher finally caught it).
+
 const stallTimeout = 60 * time.Minute
 const stallMaxFavPct = 15.0
 
