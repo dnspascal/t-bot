@@ -12,6 +12,7 @@ const (
 	TimeStopPrefix     = "time_stop="
 
 	CloseReasonTimeStopNeverProfitable30m = TimeStopPrefix + "never_profitable_30m"
+	CloseReasonTimeStopStalled60m         = TimeStopPrefix + "stalled_60m"
 
 	ReversalRegimeAgainst   = "regime_against"
 	ReversalRSIAgainst      = "rsi_against"

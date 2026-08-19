@@ -16,11 +16,27 @@ const peakDrawbackThreshold = 60.0
 const peakDrawbackGatePct = 70.0
 const neverProfitableTimeout = 30 * time.Minute
 
+// stallTimeout/stallMaxFavPct catch a different pattern than neverProfitableTimeout:
+// a trade that showed a little life (up to stallMaxFavPct of the way to TP) and then
+// went nowhere, rather than one that never moved favorably at all. Both close
+// reasons feed the same CloseInvalidated classification via TimeStopPrefix, but
+// neverProfitableTimeout fires first (and stays separate, not replaced by this)
+// because a trade pinned at 0% favorable can be actively bleeding the whole time
+// with nothing to show for it - confirmed against a real case where waiting the
+// extra 30 minutes this check allows would have cost ~$6 more, not less.
+// stallMaxFavPct=15 and stallTimeout=60m are picked from the actual distribution
+// of winning trades: p90/p95 of "time to first reach 15% of TP" was 34.8/53.0
+// minutes, so 60 minutes only risks cutting the slowest ~5-10% of genuine winners
+// early while still bounding how long a truly stalled trade can run (one real
+// case sat for 130 minutes before the reversal watcher finally caught it).
+const stallTimeout = 60 * time.Minute
+const stallMaxFavPct = 15.0
+
 const signalsToClose = 3
 
 const signalsToReduce = 2
 
-const breakEvenTriggerPct = 33.0
+const breakEvenTriggerPct = 25.0
 const breakEvenBufferPips = 2.0
 
 func decisionParams() map[string]any {
@@ -32,6 +48,8 @@ func decisionParams() map[string]any {
 		"signals_to_close":                  signalsToClose,
 		"signals_to_reduce":                 signalsToReduce,
 		"never_profitable_timeout_min":      int(neverProfitableTimeout / time.Minute),
+		"stall_timeout_min":                 int(stallTimeout / time.Minute),
+		"stall_max_favorable_pct_of_tp":     stallMaxFavPct,
 	}
 }
 
@@ -407,26 +425,51 @@ func (b *Bot) recordBreakEvenAdjustment(ctx context.Context, pos trackedPosition
 
 func (b *Bot) checkTimeStop(ctx context.Context, _ float64) {
 	for _, pos := range b.registry.All() {
-		if time.Since(pos.OpenTime) < neverProfitableTimeout {
-			continue
-		}
 		if _, pending := b.pendingCloseReasons[pos.ProviderPositionID]; pending {
 			continue
 		}
-		neverProfitable := false
-		if pos.Side == "BUY" && pos.MaxFavorable <= pos.OpenPrice+b.pipSize {
-			neverProfitable = true
-		} else if pos.Side == "SELL" && pos.MaxFavorable >= pos.OpenPrice-b.pipSize {
-			neverProfitable = true
+
+		if time.Since(pos.OpenTime) >= neverProfitableTimeout {
+			neverProfitable := false
+			if pos.Side == "BUY" && pos.MaxFavorable <= pos.OpenPrice+b.pipSize {
+				neverProfitable = true
+			} else if pos.Side == "SELL" && pos.MaxFavorable >= pos.OpenPrice-b.pipSize {
+				neverProfitable = true
+			}
+			if neverProfitable {
+				slog.Info("time stop — position never profitable in 30m, closing",
+					"posID", pos.ProviderPositionID,
+					"side", pos.Side,
+					"openPrice", pos.OpenPrice,
+					"maxFavorable", pos.MaxFavorable,
+				)
+				b.closeTrackedPosition(ctx, pos, strat.CloseReasonTimeStopNeverProfitable30m)
+				continue
+			}
 		}
-		if neverProfitable {
-			slog.Info("time stop — position never profitable in 30m, closing",
-				"posID", pos.ProviderPositionID,
-				"side", pos.Side,
-				"openPrice", pos.OpenPrice,
-				"maxFavorable", pos.MaxFavorable,
-			)
-			b.closeTrackedPosition(ctx, pos, strat.CloseReasonTimeStopNeverProfitable30m)
+
+		if time.Since(pos.OpenTime) >= stallTimeout {
+			var tpDist, peakGain float64
+			if pos.Side == config.SignalBuy {
+				tpDist = pos.TPPrice - pos.OpenPrice
+				peakGain = pos.MaxFavorable - pos.OpenPrice
+			} else {
+				tpDist = pos.OpenPrice - pos.TPPrice
+				peakGain = pos.OpenPrice - pos.MaxFavorable
+			}
+			if tpDist <= 0 {
+				continue
+			}
+			maxFavPct := (peakGain / tpDist) * 100
+			if maxFavPct < stallMaxFavPct {
+				slog.Info("time stop — stalled, never made meaningful progress toward TP",
+					"posID", pos.ProviderPositionID,
+					"side", pos.Side,
+					"maxFavorablePctOfTP", fmt.Sprintf("%.1f%%", maxFavPct),
+					"duration", time.Since(pos.OpenTime).Round(time.Minute),
+				)
+				b.closeTrackedPosition(ctx, pos, strat.CloseReasonTimeStopStalled60m)
+			}
 		}
 	}
 }
