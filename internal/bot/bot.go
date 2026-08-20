@@ -500,6 +500,9 @@ func (b *Bot) onCandleReceived(ctx context.Context, c provider.Candle) {
 		if b.registry.Count() > 0 {
 			b.checkPeakDrawback(ctx, c.Close)
 			b.logM1State(c.Close)
+			if m1, ok := b.marketStates[b.symbolUUID]["M1"]; ok && m1.IsWarmedUp {
+				b.watchPositions(ctx, m1)
+			}
 		}
 	case "M5":
 		if c.OpenTime != b.lastCandleOpenTime {
@@ -544,8 +547,6 @@ func (b *Bot) processClosedCandle(ctx context.Context, _ float64) {
 	}
 
 	b.logUnrealizedPnL(mid)
-
-	b.watchPositions(ctx, m5)
 
 	barTime := time.Unix(m5.BarTime, 0).UTC()
 	snapshots := buildMarketStateSnapshots(states)
