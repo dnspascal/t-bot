@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Analysis — 2026-08-20</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Lato', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #000;
+  background: #fff;
+  padding-bottom: 80px;
+}
+.header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 28px 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.header-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: #1d4ed8;
+  background: #eaf0ff; padding: 3px 10px; border-radius: 4px;
+  display: inline-block; margin-bottom: 8px;
+}
+.header h1 { font-size: 22px; font-weight: 900; letter-spacing: -.3px; margin-bottom: 6px; }
+.header-meta { font-size: 13px; color: #6b7280; display: flex; gap: 20px; flex-wrap: wrap; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.chip {
+  font-size: 12px; font-weight: 700; padding: 5px 12px;
+  border-radius: 20px; color: #6b7280;
+}
+.chip.loss { color: #dc2626; background: #fef2f2; }
+.chip.win  { color: #16a34a; background: #f0fdf4; }
+.chip.info { color: #1d4ed8; background: #eaf0ff; }
+.page { max-width: 920px; margin: 0 auto; padding: 40px 24px 0; }
+.section { margin-bottom: 48px; }
+.section-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: #6b7280; margin-bottom: 10px;
+}
+.section-title { font-size: 18px; font-weight: 900; letter-spacing: -.2px; margin-bottom: 16px; }
+hr { border: none; border-top: 1px solid #e5e7eb; margin: 44px 0; }
+.finding {
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 20px 22px; margin-bottom: 16px;
+  background: #fff;
+}
+.finding-header {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.finding-title { font-size: 15px; font-weight: 700; flex: 1; }
+.badge {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+  white-space: nowrap; margin-top: 2px;
+}
+.badge.fixed   { background: #f0fdf4; color: #16a34a; }
+.badge.gap     { background: #fef2f2; color: #dc2626; }
+.badge.pending { background: #fff7ed; color: #c2410c; }
+.badge.info    { background: #eaf0ff; color: #1d4ed8; }
+.badge.reverted { background: #f3f4f6; color: #4b5563; }
+p { margin-bottom: 10px; max-width: 70ch; }
+code {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 13px;
+  background: #f3f4f6; padding: 1px 6px; border-radius: 4px;
+}
+pre {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px;
+  background: #f3f4f6; color: #000;
+  padding: 14px 16px; border-radius: 8px; overflow-x: auto;
+  margin: 10px 0 14px;
+}
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.5px; }
+th {
+  text-align: left; font-weight: 700; font-size: 11px;
+  letter-spacing: .04em; text-transform: uppercase; color: #6b7280;
+  padding: 8px 10px; border-bottom: 2px solid #e5e7eb;
+}
+td { padding: 9px 10px; border-bottom: 1px solid #f0f1f3; }
+tr.highlight td { background: #fef2f2; }
+tr.ok td { background: #f0fdf4; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.mono { font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px; }
+.quote {
+  background: #f8fafc; border-radius: 8px;
+  padding: 12px 16px; margin: 12px 0 16px; font-size: 14px; color: #000;
+}
+.quote .src { font-size: 11.5px; color: #9ca3af; margin-top: 6px; font-family: 'SF Mono', Menlo, monospace; }
+.decision {
+  background: #f5f8ff; border-radius: 8px;
+  padding: 18px 20px; margin-top: 10px;
+}
+.decision-title { font-weight: 900; font-size: 14px; color: #1d4ed8; margin-bottom: 8px; }
+footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <span class="header-eyebrow">Daily Analysis</span>
+    <h1>2026-08-20 — What the real P&L says under real rules, and why trend_follow's M5 gate is back</h1>
+    <div class="header-meta">
+      <span>Bot: T-Bot (cTrader, XAUUSD + EURUSD)</span>
+      <span>Follows directly from 2026-08-19's fixes — this is what happened after they shipped</span>
+    </div>
+  </div>
+  <div class="chips">
+    <span class="chip loss">Real day: -$54.93 to -$70.24 depending on bucketing method</span>
+    <span class="chip loss">Simulated real-$100-account week: +$96.42 (demo) becomes -$3.56 (real rules)</span>
+    <span class="chip info">trend_follow's Aug 17 relaxation reverted — backtest and live results disagreed</span>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="section">
+    <div class="section-eyebrow">Part 1 — The real number, and why it took three tries to get right</div>
+    <div class="section-title">-$42 became -$54.93 became -$70.24 — same day, three different honest answers</div>
+
+    <p>Checking today's P&L wasn't a single query. First pass: trades <em>closed</em> today, mid-day, showed -$42.16. Pushed on directly — a position sized at 0.02 lot instead of the corrected 0.01 was excluded entirely rather than halved, understating the loss by ~$13. Corrected: ~-$29. Full day, same close-date bucketing: -$54.93. Then pushed again — the dashboard API buckets by <code>open_timestamp</code>, not <code>close_timestamp</code>, so a trade opened late on the 19th and closed early on the 20th lands in a different day under each method. Re-ran matching <span class="mono">cmd/api/main.go</span>'s exact query, exact timezone logic (<code>startOfTodayTZ()</code>, Africa/Dar_es_Salaam): <strong>-$70.24</strong>.</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">The dashboard API itself was returning 404 on every route while this was being checked</span>
+        <span class="badge gap">Found, not yet root-caused</span>
+      </div>
+      <p><code>/metrics</code> and <code>/trades</code> both 404'd directly against <code>localhost:8090</code> on the server — not a data problem, the API wasn't routing at all. Whatever the web dashboard was showing during this window couldn't have been live. A later deploy (for an unrelated fix) restarted the API service as a side effect; not confirmed fixed, just not actively investigated further tonight.</p>
+    </div>
+
+    <p style="font-size:13px; color:#6b7280;">Of the 24 trades opened today, only one was a genuine win — <span class="mono">237870957</span>, <code>dd_ranging_breakout</code>, +$13.98, real <code>tp_hit</code>. Five others show small positive numbers, but they're break-even saves (a few cents each), not the strategy's thesis playing out. 18 of 24 were real losses.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 2 — Risk-limit simulation</div>
+    <div class="section-title">This week's demo profitability doesn't survive contact with the daily-loss rule the real account will actually run under</div>
+
+    <p>Raised directly: on a real account with <code>MAX_DAILY_LOSS_PCT=2.0</code> actually enforced, would this week still look profitable? Simulated it — walked every trade this week in close order, cut off each day's remaining trades the moment cumulative loss crossed -2% of a $100 balance (-$2.00), same logic as <span class="mono">internal/risk/manager.go</span>'s <code>CanTrade</code>.</p>
+
+    <table>
+      <tr><th>Day</th><th class="num">Actual (demo, unrestricted)</th><th class="num">Simulated ($100, 2% limit)</th><th class="num">Trades allowed</th></tr>
+      <tr><td>Aug 13</td><td class="num">-5.42</td><td class="num">-6.77</td><td class="num">3 of 31</td></tr>
+      <tr><td>Aug 14</td><td class="num">-5.10</td><td class="num">-5.19</td><td class="num">13 of 14</td></tr>
+      <tr><td>Aug 17</td><td class="num">+32.45</td><td class="num">+32.45</td><td class="num">7 of 7</td></tr>
+      <tr class="highlight"><td>Aug 18</td><td class="num">+47.73</td><td class="num">-3.95</td><td class="num">1 of 15</td></tr>
+      <tr class="highlight"><td>Aug 19</td><td class="num">+54.01</td><td class="num">-8.88</td><td class="num">2 of 37</td></tr>
+      <tr><td>Aug 20</td><td class="num">-27.25*</td><td class="num">-11.22*</td><td class="num">5 of 8*</td></tr>
+      <tr><td><strong>Total</strong></td><td class="num"><strong>+96.42</strong></td><td class="num"><strong>-3.56</strong></td><td class="num"></td></tr>
+    </table>
+    <p style="font-size:12px; color:#9ca3af;">*Aug 20 row captured mid-day during this check; day continued afterward, see Part 1 for the final number.</p>
+
+    <p>The two days that make this week's demo track record look good — Aug 18 and Aug 19 — become losses of -$3.95 and -$8.88 under real rules, because the account locks out after 1-2 trades and never reaches the trades that made those days look profitable. Confirmed the same finding a second way: for every day this week, P&L <em>as of 14:00</em> versus the eventual close —</p>
+
+    <table>
+      <tr><th>Day</th><th class="num">P&L as of 14:00</th><th class="num">Final P&L</th></tr>
+      <tr class="highlight"><td>Aug 18</td><td class="num">-31.10</td><td class="num">+47.73</td></tr>
+      <tr class="highlight"><td>Aug 19</td><td class="num">-45.58</td><td class="num">+54.01</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">Both of the week's "good" days were down $31-46 by 2pm. Every dollar of eventual profit came from a handful of trades after 14:00 — exactly the trades a real, risk-limited account would never reach. Not a coding fix — a finding about what the demo track record actually represents. No code changed for this part; recorded here because it changes how every other number in this report (and prior reports) should be read.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 3 — Reversal watcher cadence: shipped, then reverted</div>
+    <div class="section-title">M1 cadence measurably worked on the exact thing it targeted — and got reverted anyway on a broader risk call</div>
+
+    <p>Diagnosed why the regime/RSI/EMA/momentum watcher wasn't catching two live losses (-$7.90, -$8.26): it only ran once per M5 candle, and its regime signal (EMA crossover) is lagging by construction. Checked the three worst losses of the day against <code>peak_drawback</code>'s 70% gate specifically — none were even eligible to reach it (24.3%, 3.4%, 1.8% of TP), ruling that mechanism out as a fix for this pattern. Moved <code>watchPositions</code> from the M5 candle-close path to the M1 path — same market-state pipeline, already subscribed, just not wired in.</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Measured effect: real, and in the right direction</span>
+        <span class="badge reverted">Shipped, then reverted same day</span>
+      </div>
+      <p>Post-deploy <code>regime_against</code> closes: 14, 22, 27, 33, 9, 14, 5 minutes — down from 40-45 minutes pre-deploy. Losses on those closes: -$0.31 to -$5.75, versus -$7.90/-$8.26 before. The mechanism worked exactly as designed. It didn't rescue the day, because two unrelated <code>dd_ranging_breakout</code> losses (-$11.23, -$12.80) hit real stops in ~2 minutes each — confirmed via raw tick data, a genuine continuous price move, not a data glitch — faster than any check cadence, even a hypothetical instant one, could react to.</p>
+    </div>
+
+    <p>Reverted back to M5 at the user's direction after reviewing the full day's results, independent of whether the M1 change itself was working — a broader call on where to spend risk tonight, not a finding that the change was wrong. <span class="mono">internal/bot/bot.go</span>, <code>watchPositions</code> moved back to the <code>M5</code> case in <code>processClosedCandle</code>.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 4 — trend_follow's M5 gate: the 2026-08-17 relaxation, checked against 30 days of live results</div>
+    <div class="section-title">The backtest that justified relaxing it said 84.4%. Live trading since then says 40.4%. Reverted back to the original strict check.</div>
+
+    <p>Noticed a pattern across today's losses: <code>trend_follow</code> accounted for most of the day's volume and most of its damage, and every single one of its 8 real losses closed via the identical <code>regime_against,rsi_against,ema_cross_against[,momentum_against]</code> combo. Checked what actually let these trades open in the first place, using the market state recorded at signal time (<code>signals.checked_market_states</code>, joined through to <code>market_states</code>):</p>
+
+    <p><strong>Every one of today's 14 <code>trend_follow</code> trades entered with M5 regime reading <code>ranging</code> or <code>breakout</code> — not one entered with M5 genuinely <code>trending_up</code>.</strong> Under the strategy's original code (pre-2026-08-17), none of today's trades would have fired at all.</p>
+
+    <div class="quote">
+      "M5 regime not confirming H1 uptrend" (original check, exact match required) relaxed to "M5 actively trending down — against the H1 uptrend" (only blocks the opposite direction, lets ranging/breakout through) in commit <code>c827b4f</code>, 2026-08-17 — full rationale, two self-caught methodology corrections, and the 704-trade backtest that justified it: <a href="../2026-08-17/report.html">analysis/daily/2026-08-17/report.html, Part 8</a>.
+      <div class="src">That backtest: 704 matched (4.4x more than strict), 84.4% win rate, 7% fast-loss rate (vs 11% for strict) — a full-history simulation replayed against 83,977 historical M1 moments, not live signals.</div>
+    </div>
+
+    <p>Split the last 30 days of <em>actual live signals</em> (not simulated) into the same two buckets the relaxation created — trades where M5 genuinely confirmed the trend (would have passed the original strict gate) versus trades where M5 only read ranging/breakout (relax-only):</p>
+
+    <table>
+      <tr><th>Bucket</th><th class="num">Trades</th><th class="num">Win rate</th><th class="num">Net P&L (30d)</th><th class="num">Avg / trade</th></tr>
+      <tr class="ok"><td>M5 confirms trend (strict-gate-eligible)</td><td class="num">20</td><td class="num">65.0%</td><td class="num">+188.09</td><td class="num">+9.40</td></tr>
+      <tr class="highlight"><td>M5 ranging/breakout (relax-only)</td><td class="num">136</td><td class="num">36.8%</td><td class="num">-0.28</td><td class="num">~0.00</td></tr>
+    </table>
+
+    <p>The confirmed subset is genuinely strong. The relax-only subset — <strong>136 of 156 trades, 87% of all of this strategy's live volume over the last month</strong> — is dead weight: under 50% win rate, essentially flat P&L across 136 trades. Today was 14-for-14 sampled from exactly that subset.</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Backtest and live results disagree, and it's worth being precise about why that's not a contradiction</span>
+        <span class="badge info">Unresolved — flagged for next backtest pass</span>
+      </div>
+      <p>The Aug 17 backtest was a full-history <em>simulation</em> — the strategy logic replayed against historical candles, not real signals that fired. The 30-day figures here are <em>actual live trades</em> since deployment. Two live possibilities, not distinguished yet: the market genuinely behaved differently in the last 30 days than the broader historical sample the backtest drew from, or live execution diverges from the backtest's replay in some way that matters. The clean way to tell which: re-run the same <span class="mono">queries/trend_follow_relaxed_sim</span> methodology restricted to just the last 30 days. If it still predicts ~84% for that specific window, the gap is in live execution, not the market. If it also shows degradation, the edge decayed and the backtest's full-history number was already stale by the time it shipped. Not run tonight — flagged as the next concrete step.</p>
+    </div>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;">Reverted <code>trend_follow</code>'s M5 regime check in <span class="mono">internal/strategy/trend_follow/strategy.go</span> back to requiring exact confirmation (<code>m5.Regime != TrendingUp/TrendingDown</code> blocks), undoing <code>c827b4f</code>. The EMA-alignment check added in the same original 2026-08-03 fix (<code>5b6880d</code>) was never touched by either the relax or this revert. Made on live 30-day evidence, not a re-run of the original backtest — that re-run is still open, see above.</p>
+    </div>
+  </div>
+
+</div>
+
+<footer>Generated 2026-08-20 · positions/orders/signals/fills/market_states/price_ticks data from tbot_prod · strategy source: internal/strategy/trend_follow/strategy.go · risk source: internal/risk/manager.go · prior context: analysis/daily/2026-08-17/report.html Part 8, analysis/daily/2026-08-19/report.html</footer>
+
+</body>
+</html>
