@@ -832,14 +832,7 @@ func (b *Bot) onTradeSignal(ctx context.Context, result strat.EntryResult, price
 
 	var volume int64
 	if b.provider.Name() == "ctrader" {
-		switch {
-		case result.Confluence >= 6:
-			volume = b.lotUnit * 3
-		case result.Confluence >= 4:
-			volume = b.lotUnit * 2
-		default:
-			volume = b.lotUnit
-		}
+		volume = b.lotUnit
 	} else {
 		var sizeErr error
 		volume, sizeErr = b.riskMgr.PositionSizeForTier(b.getBalance(), result.SLPips, result.Tier)
