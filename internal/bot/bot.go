@@ -951,6 +951,34 @@ func (b *Bot) recordOpenFill(ctx context.Context, exec provider.ExecutionEvent, 
 	provOrderID := fmt.Sprintf("%d", deal.OrderID)
 	provPosID := fmt.Sprintf("%d", deal.PositionID)
 
+	// The market order's SL/TP were sent as distances from the price at signal
+	// time, but the broker applies them relative to the actual fill price —
+	// if the market moved (or the spread is wide) between decision and fill,
+	// the effective stop can land far closer than intended, or under the
+	// broker's minimum stop distance, in which case it's silently dropped
+	// with the entry still filling. Re-anchor to the strategy's real target
+	// price, floored to a safe minimum distance from the actual fill, and
+	// push it as an explicit absolute amend so the position is never left
+	// without a real broker-side stop.
+	minStopDist := 3 * (b.currentPrice.Ask - b.currentPrice.Bid)
+	if minStopDist < 10*b.pipSize {
+		minStopDist = 10 * b.pipSize
+	}
+	if ps.side == config.SignalBuy {
+		if deal.ExecutionPrice-ps.slPrice < minStopDist {
+			ps.slPrice = deal.ExecutionPrice - minStopDist
+		}
+	} else {
+		if ps.slPrice-deal.ExecutionPrice < minStopDist {
+			ps.slPrice = deal.ExecutionPrice + minStopDist
+		}
+	}
+	if err := b.provider.AmendPositionSL(ctx, provPosID, ps.slPrice, ps.tpPrice); err != nil {
+		slog.Error("post-fill SL/TP amend FAILED — position may be unprotected, will rely on watcher",
+			"posID", provPosID, "sl", ps.slPrice, "tp", ps.tpPrice, "err", err,
+		)
+	}
+
 	if err := b.orders.UpdateExecution(ctx,
 		ps.ourOrderID, provOrderID, provPosID,
 		deal.ExecutionPrice, 0, "filled",
