@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: Prod
     env:
-      TBOT_SYMBOLS: "eurusd xauusd" # add a lowercase ticker here to onboard a new tbot@<symbol> instance
+      TBOT_SYMBOLS: "eurusd xauusd xpdusd xptusd" # add a lowercase ticker here to onboard a new tbot@<symbol> instance
 
     steps:
       - uses: actions/checkout@v4
