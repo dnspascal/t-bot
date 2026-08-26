@@ -123,6 +123,7 @@ footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; f
     <span class="chip info">30d-restricted backtest: relaxed gate 88.1% WR (535 trades) — live relax-only bucket was 36.8%</span>
     <span class="chip win">Reconnect-hang bug fixed and deployed — provider now retries until it actually reconnects</span>
     <span class="chip win">M5 regime-freshness gate shipped to trend_follow — entry now blocked once a regime alignment is 3+ bars stale</span>
+    <span class="chip win">breakEvenTriggerPct raised 25→50 — buffer widening and confirmation-gating both tested and rejected first</span>
   </div>
 </div>
 
@@ -280,9 +281,46 @@ footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; f
     </div>
   </div>
 
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 8 — Break-even cuts real winners short too, same as peak-drawback. Two proposed fixes tested and rejected; a third shipped.</div>
+    <div class="section-title">Widening the buffer and requiring close-confirmation both fail on inspection. Raising when protection engages is the one lever that works without changing what "break-even" means.</div>
+
+    <p>Spotted live: a <code>breakout</code> XAUUSD SELL closed via <code>breakeven_sl</code> for +$0.13 after 2.3 minutes, having pulled back only $2.02 (ordinary noise, not a reversal) — price then ran to $24.88 in the trade's favor over the next 40 minutes, crossing the TP level entirely. Pulled all 19 real <code>breakeven_sl</code> closes in history (11 EURUSD, 8 XAUUSD) and checked whether each one's TP was hit within 24h afterward, ordering against the <em>original</em> stop (the one that applied before break-even moved it) to see which came first:</p>
+
+    <table>
+      <tr><th>Outcome</th><th class="num">N</th></tr>
+      <tr class="highlight"><td>TP would have hit first — cut short, real winner given up</td><td class="num">11 (58%)</td></tr>
+      <tr class="ok"><td>Original SL would have hit first — break-even correctly saved a real loss</td><td class="num">7 (37%)</td></tr>
+      <tr><td>Neither resolved within 24h</td><td class="num">1 (5%)</td></tr>
+    </table>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Fix attempt 1 — widen the buffer to scale with ATR — rejected on the concept, not the numbers</span>
+        <span class="badge gap">Tested, net-positive in isolation, rejected</span>
+      </div>
+      <p>Backtested <span class="mono">queries/breakeven_buffer_sim</span>: replacing the fixed 2-pip buffer with 0.3-0.6× M5 ATR at the real trigger moment. Net effect was strongly positive in aggregate (+$18 to +$33 across the 19 trades vs. the real +$1.41), but on inspection this doesn't fix the mechanism — it replaces it. A buffer wide enough to survive normal noise is, by the same construction, wide enough to give back real money on a genuine reversal: several trades that currently exit for pennies would instead exit for $1-8 real losses. That's no longer "no loss, no gain" — it's a smaller stop-loss with the break-even label still on it, which risks being confused with a genuine regime-driven loss (a functionally different, deliberately-larger exit). Rejected on that basis, not on the P&L number.</p>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Fix attempt 2 — require an M1 candle close (not a wick touch) before triggering — tested, made things worse</span>
+        <span class="badge gap">Empirically rejected</span>
+      </div>
+      <p><span class="mono">queries/breakeven_confirmation_sim</span>: kept the exit price exactly as-is (the true fee-sized level, untouched) and only required an M1 candle to actually <em>close</em> past it, instead of firing on the first tick touch — the resting broker-side stop is what currently fires instantly, since a stop order can't be given a "wait and confirm" condition once placed. Result: <strong>zero of 19 trades flipped to a TP win</strong>, and the total went from +$1.41 to <strong>-$6.54</strong>. None of these were single-tick noise — every one had a real M1 candle close past the level before any later reversal, so confirmation doesn't filter anything out; it only delays the exit, letting price drift further past the tiny buffer before the (still fee-sized) close actually fires.</p>
+    </div>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;">Left the buffer and the trigger mechanism untouched — raised <em>when</em> break-even engages instead. <span class="mono">queries/breakeven_trigger_pct_sim</span>: replayed the same 19 trades with the trigger point moved later (30-50% of TP progress instead of 25%), keeping the exact same fee-sized exit level. 25-40% changed nothing (all 19 still protected at the same tiny amount either way); at 50%, 3 of 19 reach TP instead, worth +$14.52 relative to the 25% baseline in this same replay, with every other trade still exiting at the same near-zero amount as before — no trade becomes a real loss at any tested percentage. <span class="mono">internal/bot/watcher.go</span>: <code>breakEvenTriggerPct</code> raised from 25.0 to 50.0. Not pushed further: the replay's fallback for "never reached this much of TP" isn't yet correct beyond 50% (it assumes the trade behaves the same as today, when in reality it would have gone completely unprotected for longer and could hit the original, much wider stop for a real loss instead) — flagged as the next step before testing anything past 50%, and worth stopping well short of <code>peak_drawback_gate_pct = 70.0</code> regardless, to keep the two mechanisms doing distinct jobs.</p>
+    </div>
+  </div>
+
 </div>
 
-<footer>Generated 2026-08-26 · positions/orders/signals/fills/market_states/candles/account_snapshots/daily_pnl data from tbot_prod · strategy source: internal/strategy/trend_follow/strategy.go, internal/strategy/close_reason.go · bot source: internal/bot/{bot.go,registry.go} · ml source: ml/train.py, internal/ml/predictor.go · prior context: analysis/daily/2026-08-17/report.html Part 8, analysis/daily/2026-08-20/report.html Parts 3-4</footer>
+<footer>Generated 2026-08-26 · positions/orders/signals/fills/market_states/candles/account_snapshots/daily_pnl/position_adjustments data from tbot_prod · strategy source: internal/strategy/trend_follow/strategy.go, internal/strategy/close_reason.go · bot source: internal/bot/{bot.go,registry.go,watcher.go} · ml source: ml/train.py, internal/ml/predictor.go · prior context: analysis/daily/2026-08-17/report.html Part 8, analysis/daily/2026-08-20/report.html Parts 3-4</footer>
 
 </body>
 </html>
