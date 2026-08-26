@@ -28,8 +28,10 @@ type RSIReversal struct {
 
 func New() *RSIReversal { return &RSIReversal{} }
 
-func (s *RSIReversal) Name() string           { return "rsi_reversal" }
-func (s *RSIReversal) UsesTrendWatcher() bool { return true }
+func (s *RSIReversal) Name() string { return "rsi_reversal" }
+
+// False — see analysis/daily/2026-08-26/report.html Part 9.
+func (s *RSIReversal) UsesTrendWatcher() bool { return false }
 
 func (s *RSIReversal) OnClosed(side, closeReason string, closeTime time.Time) {
 	switch strategy.ClassifyCloseReason(closeReason) {

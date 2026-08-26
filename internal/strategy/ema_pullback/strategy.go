@@ -26,8 +26,10 @@ type EMAPullback struct {
 
 func New() *EMAPullback { return &EMAPullback{} }
 
-func (s *EMAPullback) Name() string           { return "ema_pullback" }
-func (s *EMAPullback) UsesTrendWatcher() bool { return true }
+func (s *EMAPullback) Name() string { return "ema_pullback" }
+
+// False — see analysis/daily/2026-08-26/report.html Part 9.
+func (s *EMAPullback) UsesTrendWatcher() bool { return false }
 
 // OnClosed implements strategy.OutcomeAware.
 func (s *EMAPullback) OnClosed(side, closeReason string, closeTime time.Time) {
