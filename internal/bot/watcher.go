@@ -16,7 +16,6 @@ const peakDrawbackThreshold = 60.0
 const peakDrawbackGatePct = 70.0
 const neverProfitableTimeout = 30 * time.Minute
 
-
 const stallTimeout = 60 * time.Minute
 const stallMaxFavPct = 15.0
 
@@ -24,7 +23,8 @@ const signalsToClose = 3
 
 const signalsToReduce = 2
 
-const breakEvenTriggerPct = 25.0
+// Raised from 25.0 — see analysis/daily/2026-08-26/report.html Part 8.
+const breakEvenTriggerPct = 50.0
 const breakEvenBufferPips = 2.0
 
 func decisionParams() map[string]any {
@@ -217,7 +217,6 @@ func (b *Bot) checkPeakDrawback(ctx context.Context, currentPrice float64) {
 		}
 	}
 }
-
 
 const breakEvenConfirmTimeout = 5 * time.Second
 const breakEvenMaxAttempts = 3
