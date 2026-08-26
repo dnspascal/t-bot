@@ -65,9 +65,13 @@ func main() {
 		fmt.Fprintln(os.Stderr, "account auth failed:", err)
 		os.Exit(1)
 	}
-	fmt.Fprintln(os.Stderr, "account authed, requesting symbols with empty id list...")
+	fmt.Fprintln(os.Stderr, "account authed, requesting symbol id range 1-400...")
 
-	syms, err := c.GetSymbolsByIds(nil)
+	var idRange []int64
+	for i := int64(1); i <= 400; i++ {
+		idRange = append(idRange, i)
+	}
+	syms, err := c.GetSymbolsByIds(idRange)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "GetSymbolsByIds failed:", err)
 		os.Exit(1)

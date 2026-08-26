@@ -41,7 +41,19 @@ func decisionParams() map[string]any {
 	}
 }
 
-func isEODWindow() bool {
+// Symbols that trade continuously (crypto spot/CFDs) — no weekend close, no EOD window.
+var continuousTradingSymbols = map[string]bool{
+	"XRPUSD": true,
+}
+
+func (b *Bot) tradesContinuously() bool {
+	return continuousTradingSymbols[b.symbol]
+}
+
+func (b *Bot) isEODWindow() bool {
+	if b.tradesContinuously() {
+		return false
+	}
 	now := time.Now().UTC()
 	wd := now.Weekday()
 	if wd == time.Saturday || wd == time.Sunday {
@@ -51,7 +63,7 @@ func isEODWindow() bool {
 }
 
 func (b *Bot) watchPositions(ctx context.Context, ms indicator.MarketState) {
-	if isEODWindow() {
+	if b.isEODWindow() {
 		for _, pos := range b.registry.All() {
 			if _, pending := b.pendingCloseReasons[pos.ProviderPositionID]; pending {
 				continue

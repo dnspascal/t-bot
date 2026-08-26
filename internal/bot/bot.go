@@ -185,7 +185,7 @@ func (b *Bot) Run(ctx context.Context, startedAt time.Time) {
 	b.refresherOnce.Do(func() { go b.tokenRefresher(ctx) })
 	b.watchDogOnce.Do(func() { go b.botWatchDog(ctx) })
 	b.tickWriterOnce.Do(func() { go b.tickWriter(ctx) })
-	if b.provider.Name() == "ctrader" {
+	if b.provider.Name() == "ctrader" && !b.tradesContinuously() {
 		b.weekendCloserOnce.Do(func() { go b.weekendPositionCloser(ctx) })
 	}
 	b.dailySummaryOnce.Do(func() { go b.dailySummarySender(ctx) })
@@ -553,7 +553,7 @@ func (b *Bot) processClosedCandle(ctx context.Context, _ float64) {
 	for _, s := range b.strategies {
 		evalStart := time.Now()
 		var result strat.EntryResult
-		if isEODWindow() {
+		if b.isEODWindow() {
 			result = strat.EntryResult{Signal: config.SignalHold, Reason: "EOD window — no new entries before dead session"}
 		} else {
 			result = s.Evaluate(states, mid, b.pipSize)
