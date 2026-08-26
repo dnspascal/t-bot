@@ -32,8 +32,10 @@ type DDOversoldBounce struct {
 
 func New() *DDOversoldBounce { return &DDOversoldBounce{} }
 
-func (s *DDOversoldBounce) Name() string           { return "dd_oversold_bounce" }
-func (s *DDOversoldBounce) UsesTrendWatcher() bool { return true }
+func (s *DDOversoldBounce) Name() string { return "dd_oversold_bounce" }
+
+// False — see analysis/daily/2026-08-26/report.html Part 9.
+func (s *DDOversoldBounce) UsesTrendWatcher() bool { return false }
 
 // OnClosed implements strategy.OutcomeAware. This strategy only ever signals BUY.
 func (s *DDOversoldBounce) OnClosed(side, closeReason string, closeTime time.Time) {

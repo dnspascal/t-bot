@@ -124,6 +124,7 @@ footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; f
     <span class="chip win">Reconnect-hang bug fixed and deployed — provider now retries until it actually reconnects</span>
     <span class="chip win">M5 regime-freshness gate shipped to trend_follow — entry now blocked once a regime alignment is 3+ bars stale</span>
     <span class="chip win">breakEvenTriggerPct raised 25→50 — buffer widening and confirmation-gating both tested and rejected first</span>
+    <span class="chip win">UsesTrendWatcher disabled for ema_pullback, dd_oversold_bounce, rsi_reversal — watcher was closing 75-85% of their trades on their own entry conditions</span>
   </div>
 </div>
 
@@ -318,9 +319,34 @@ footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; f
     </div>
   </div>
 
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 9 — The shared reversal watcher is only valid for trend-following strategies; three reversal strategies were left on it by mistake</div>
+    <div class="section-title">ema_pullback, dd_oversold_bounce, and rsi_reversal enter deliberately against the exact signals the watcher checks — confirmed with real entry-time data, not just a duration statistic</div>
+
+    <p>Triggered by three live <code>dd_oversold_bounce</code> BUY trades today, each closed within 5.0 minutes by <code>regime_against,rsi_against,ema_cross_against</code>, all three winning (+$0.94, +$2.49, +$3.28) with price still climbing. Traced each one's real M1 forward path: all three would have hit full TP within 13-24 minutes of being force-closed (worth ~$13.30 each — 7-25% of that was actually captured). The M5 state at each close showed regime, RSI, and EMA all still reading exactly as they had at entry — nothing had changed, the watcher fired on the position's own entry conditions, not a real reversal.</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Systemic, not isolated to one strategy — checked the same signature across all ten</span>
+        <span class="badge fixed">Root cause confirmed, fixed and shipped for 3 strategies</span>
+      </div>
+      <p>Fraction of each strategy's full history closed within one M5 candle by the watcher: <code>ema_pullback</code> 85.0% (17/20), <code>dd_oversold_bounce</code> 80.0% (8/10), <code>rsi_reversal</code> 75.0% (18/24) — versus <code>dd_ranging_breakout</code> and <code>session_open</code> at 0% (0/73, 0/20), and <code>trend_follow</code>/<code>breakout</code> at a moderate 45.1%/32.1%. <code>sr_bounce</code> and <code>session_momentum</code> already have <code>UsesTrendWatcher() → false</code> — someone had already recognized and fixed this exact mismatch for those two; these three were missed.</p>
+      <p>Confirmed with real entry-time market-state values, not just the duration statistic: 5 real <code>ema_pullback</code> SELL closes all show M5 EMA already crossed bullish and M5 RSI already above 50 <em>at the exact moment of entry</em> — because a pullback entry, by definition, requires a recent M5-level counter-move, and that counter-move necessarily drags M5's own lagging EMA/RSI into "against" territory before the trade even opens. 5 real <code>rsi_reversal</code> closes show the same for a different reason: H1 regime was <code>breakout</code> (not confirmed reversed — a real gap in the entry gate, which only excludes explicit <code>TrendingUp</code>) and M5 regime/RSI/EMA were all still reading the pre-reversal direction, since RSI hitting an extreme is definitionally ahead of the slower trend/EMA classifiers catching up.</p>
+    </div>
+
+    <p>The general principle, not three coincidences: the watcher's premise — "regime/RSI/EMA currently against my position is a warning sign" — only holds for trend-following strategies, where the position is supposed to already agree with those readings at entry. For a reversal strategy, the position is deliberately opposite those readings at entry; that's the entire bet. The check is true from the first candle by construction and never gets a chance to test whether the reversal thesis is actually failing.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;"><code>UsesTrendWatcher()</code> flipped to <code>false</code> for <code>ema_pullback</code>, <code>dd_oversold_bounce</code>, <code>rsi_reversal</code> — matching the precedent already set for <code>sr_bounce</code>/<code>session_momentum</code>. This does not leave them protected by the hard SL alone: <code>UsesTrendWatcher</code> only gates the regime/RSI/EMA/momentum block inside <code>watchPositions</code> (<span class="mono">watcher.go:86</span>) — break-even (<code>checkBreakEven</code>), peak-drawback, the 30-min/60-min time-stops, and the EOD close all run unconditionally for every position regardless of this flag, and are unchanged. Only the specific mechanism proven to fire on these strategies' own entry conditions was removed.</p>
+    </div>
+  </div>
+
 </div>
 
-<footer>Generated 2026-08-26 · positions/orders/signals/fills/market_states/candles/account_snapshots/daily_pnl/position_adjustments data from tbot_prod · strategy source: internal/strategy/trend_follow/strategy.go, internal/strategy/close_reason.go · bot source: internal/bot/{bot.go,registry.go,watcher.go} · ml source: ml/train.py, internal/ml/predictor.go · prior context: analysis/daily/2026-08-17/report.html Part 8, analysis/daily/2026-08-20/report.html Parts 3-4</footer>
+<footer>Generated 2026-08-26 · positions/orders/signals/fills/market_states/candles/account_snapshots/daily_pnl/position_adjustments data from tbot_prod · strategy source: internal/strategy/{trend_follow,ema_pullback,dd_oversold_bounce,rsi_reversal}/strategy.go, internal/strategy/close_reason.go · bot source: internal/bot/{bot.go,registry.go,watcher.go} · ml source: ml/train.py, internal/ml/predictor.go · prior context: analysis/daily/2026-08-17/report.html Part 8, analysis/daily/2026-08-20/report.html Parts 3-4</footer>
 
 </body>
 </html>
