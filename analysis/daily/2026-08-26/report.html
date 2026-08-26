@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Analysis — 2026-08-26</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Lato', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #000;
+  background: #fff;
+  padding-bottom: 80px;
+}
+.header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 28px 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.header-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: #1d4ed8;
+  background: #eaf0ff; padding: 3px 10px; border-radius: 4px;
+  display: inline-block; margin-bottom: 8px;
+}
+.header h1 { font-size: 22px; font-weight: 900; letter-spacing: -.3px; margin-bottom: 6px; }
+.header-meta { font-size: 13px; color: #6b7280; display: flex; gap: 20px; flex-wrap: wrap; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.chip {
+  font-size: 12px; font-weight: 700; padding: 5px 12px;
+  border-radius: 20px; color: #6b7280;
+}
+.chip.loss { color: #dc2626; background: #fef2f2; }
+.chip.win  { color: #16a34a; background: #f0fdf4; }
+.chip.info { color: #1d4ed8; background: #eaf0ff; }
+.page { max-width: 920px; margin: 0 auto; padding: 40px 24px 0; }
+.section { margin-bottom: 48px; }
+.section-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: #6b7280; margin-bottom: 10px;
+}
+.section-title { font-size: 18px; font-weight: 900; letter-spacing: -.2px; margin-bottom: 16px; }
+hr { border: none; border-top: 1px solid #e5e7eb; margin: 44px 0; }
+.finding {
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 20px 22px; margin-bottom: 16px;
+  background: #fff;
+}
+.finding-header {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.finding-title { font-size: 15px; font-weight: 700; flex: 1; }
+.badge {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+  white-space: nowrap; margin-top: 2px;
+}
+.badge.fixed   { background: #f0fdf4; color: #16a34a; }
+.badge.gap     { background: #fef2f2; color: #dc2626; }
+.badge.pending { background: #fff7ed; color: #c2410c; }
+.badge.info    { background: #eaf0ff; color: #1d4ed8; }
+.badge.reverted { background: #f3f4f6; color: #4b5563; }
+p { margin-bottom: 10px; max-width: 70ch; }
+code {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 13px;
+  background: #f3f4f6; padding: 1px 6px; border-radius: 4px;
+}
+pre {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px;
+  background: #f3f4f6; color: #000;
+  padding: 14px 16px; border-radius: 8px; overflow-x: auto;
+  margin: 10px 0 14px;
+}
+pre .cmt { color: #6b7280; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.5px; }
+th {
+  text-align: left; font-weight: 700; font-size: 11px;
+  letter-spacing: .04em; text-transform: uppercase; color: #6b7280;
+  padding: 8px 10px; border-bottom: 2px solid #e5e7eb;
+}
+td { padding: 9px 10px; border-bottom: 1px solid #f0f1f3; }
+tr.highlight td { background: #fef2f2; }
+tr.ok td { background: #f0fdf4; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.mono { font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px; }
+.quote {
+  background: #f8fafc; border-radius: 8px;
+  padding: 12px 16px; margin: 12px 0 16px; font-size: 14px; color: #000;
+}
+.quote .src { font-size: 11.5px; color: #9ca3af; margin-top: 6px; font-family: 'SF Mono', Menlo, monospace; }
+.decision {
+  background: #f5f8ff; border-radius: 8px;
+  padding: 18px 20px; margin-top: 10px;
+}
+.decision-title { font-weight: 900; font-size: 14px; color: #1d4ed8; margin-bottom: 8px; }
+footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <span class="header-eyebrow">Daily Analysis</span>
+    <h1>2026-08-26 — trend_follow's cooldown does not hold in live trading: 82 entries fired that the code's own rule should have blocked</h1>
+    <div class="header-meta">
+      <span>Bot: T-Bot (cTrader, XAUUSD + EURUSD)</span>
+      <span>Closes the open question from 2026-08-20, Part 4: backtest-vs-live gap was never re-tested restricted to 30 days — done here</span>
+    </div>
+  </div>
+  <div class="chips">
+    <span class="chip loss">82 cooldown violations, 30 days, trend_follow</span>
+    <span class="chip info">30d-restricted backtest: relaxed gate 88.1% WR (535 trades) — live relax-only bucket was 36.8%</span>
+    <span class="chip win">Reconnect-hang bug fixed and deployed — provider now retries until it actually reconnects</span>
+    <span class="chip win">M5 regime-freshness gate shipped to trend_follow — entry now blocked once a regime alignment is 3+ bars stale</span>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="section">
+    <div class="section-eyebrow">Part 0 — Why this report exists</div>
+    <div class="section-title">Account down from a $446.98 peak (Aug 20) to $295 today; asked to go deep rather than react to one bad day</div>
+
+    <p>Triggered by a production incident unrelated to strategy performance: <code>tbot-gold.service</code> was silently wedged for 23+ hours after a single failed reconnect attempt — the reconnect loop fell through to calling <code>Bot.Run()</code> again on a still-broken provider connection instead of retrying the connect/auth/setup/streaming sequence until it actually succeeded. Fixed in <span class="mono">cmd/bot/main.go</span> (now retries with backoff, capped at 5min, until reconnection genuinely succeeds), shipped via <code>feat → dev (squash) → main (merge) → v202608261136</code>. Both services confirmed back up and evaluating normally post-deploy.</p>
+
+    <p>That fix prompted a wider question: the account went from a $112.23 low (Jul 14) to a $446.98 peak (Aug 20) to $295.01 today. Initial per-strategy breakdown of the losing days (Aug 20, Aug 24) pointed at superficial explanations — position-sizing severity, momentum-exhaustion at entry — that didn't survive being checked against more data (see Part 1). Redirected to read the existing <span class="mono">analysis/daily/</span> reports first, since — correctly — that's where the real decision history already lives, rather than re-deriving it from scratch.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 1 — Two hypotheses tested and rejected before the real one</div>
+    <div class="section-title">Position-sizing severity is real but secondary; momentum-exhaustion at entry doesn't hold up</div>
+
+    <table>
+      <tr><th>Hypothesis</th><th>Test</th><th>Verdict</th></tr>
+      <tr><td>cTrader position size ignores SL distance (fixed lot regardless of ATR), so wider-ATR days amplify loss size</td><td>Confirmed in code (<span class="mono">bot.go:833-843</span> — <code>volume = b.lotUnit</code> for cTrader, bypassing <code>riskMgr.PositionSizeForTier</code>) and in data (Aug 24's SL distances ~2x Aug 19's, losses ~2x larger)</td><td>Real, but explains loss <em>size</em>, not <em>why trades lose</em> — user correctly redirected away from this as the primary question</td></tr>
+      <tr class="highlight"><td>trend_follow buys already-overbought (high H1 RSI) trends, causing reversals</td><td>Full-history bucket test: BUY with H1 RSI≥68 actually outperformed (avg +$4.48, 53% win) vs RSI&lt;68 (avg +$0.79, 41% win)</td><td>Rejected — opposite of the hypothesis, consistent with 2026-08-17's own finding that RSI is not a useful lever for this strategy</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">Both false leads are recorded here specifically so the next person doesn't re-test them from scratch.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 2 — What the existing reports already established (read in full before continuing)</div>
+    <div class="section-title">2026-08-17 through 2026-08-20 already diagnosed most of the real mechanisms — several conclusions I initially drew from raw data alone were wrong until I read them</div>
+
+    <table>
+      <tr><th>Date</th><th>Established</th></tr>
+      <tr><td>08-17</td><td><code>trend_follow</code>'s M5 regime-match check relaxed (allow ranging/breakout through, only block the opposite direction) — backtested at 704 matched trades, 84.4% win rate, fast-loss rate improved not worsened (7% vs 11% strict). <code>dd_ranging_breakout</code> shipped a real M15-trending-down filter (63.0%→63.9% WR). <code>ema_pullback</code> flagged with an alarming ~5% simulated win rate, unresolved.</td></tr>
+      <tr><td>08-18</td><td>Break-even amends were being silently "confirmed" in logs with zero broker verification — fixed to wait for a real <code>ORDER_REPLACED</code> event. <code>breakout</code>'s SL anchored to a stale pre-confirmation price while TP used the fresh entry price, producing real 8:1 risk:reward trades — fixed. <code>session_open</code> and <code>ema_pullback</code> flagged with structurally uncalibrated SL/TP, left open. Two "fix" hypotheses for the 08-17 relaxation's early losses were both tested against full history and rejected — decision was correctly to leave it shipped on the evidence available at the time.</td></tr>
+      <tr><td>08-19</td><td>Break-even amends were <em>also</em> being rejected by the broker outright (float-precision rounding bug) — a second, deeper bug behind the same symptom, fixed same day. Peak-drawback closes: 61% of the last 30 days' worth went on to hit TP anyway within 6 hours — a real, persistent pattern, not a one-off. Reversal watcher found to fire only after 64% of closes had already burned significant SL room — flagged, not resolved. First documented instance of the "morning bleeds, afternoon rescues" P&L shape.</td></tr>
+      <tr class="highlight"><td>08-20</td><td>Reversal watcher's M1-cadence experiment <strong>measured as working correctly</strong> (losses shrank from -$7.90/-$8.26 to -$0.31/-$5.75) — reverted anyway for an unrelated risk-appetite reason, not because it caused harm. Real Aug 20 damage traced to two <code>dd_ranging_breakout</code> stops hit via a genuine ~2-minute price move, too fast for any cadence to catch. <strong>30-day live-only split of trend_follow: strict-gate-eligible subset (M5 truly confirms) = 20 trades, 65.0% WR, +$9.40/trade; relax-only subset (M5 ranging/breakout) = 136 trades, 87% of all live volume, 36.8% WR, ~$0.00/trade.</strong> Reverted back to strict. Flagged explicitly as the next step: re-run the relaxed-vs-strict backtest restricted to the same 30-day live window, to determine whether the gap is a real regime change or a live-execution divergence. <strong>Never run — until this report.</strong> Also: a real 2%-daily-loss-cap simulation showed the week's apparent +$96.42 demo profit becomes -$3.56 once a real risk-limited account is simulated to lock out after early losses — the "good" days were down $31-46 by 2pm and only recovered late.</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">No report exists for 08-21 through 08-25 — the analysis pipeline stopped exactly when the reconnect-hang incident and this week's losses began. Aug 24's -$75.75 day (0 wins in 6 trades) has never been analyzed at this level of rigor before now.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 3 — Running the flagged next step: 30-day-restricted backtest</div>
+    <div class="section-title">The backtest still says the relaxed gate should be excellent for this exact window. It wasn't, live. That's the signature of an execution bug, not a market regime change.</div>
+
+    <p>Copied <span class="mono">analysis/daily/2026-08-17/queries/trend_follow_relaxed_sim</span> verbatim (real cooldown simulation, real M1 candle replay, 24h resolution window — the methodology already hardened against the two mistakes that report caught in itself) and restricted the signal-moment query to <code>created_at &gt;= now() - interval '30 days'</code>. See <span class="mono">queries/trend_follow_relaxed_sim_30d/main.go</span> (one-line diff from the original).</p>
+
+    <table>
+      <tr><th>Variant</th><th class="num">Matched</th><th class="num">Skipped (cooldown)</th><th class="num">Win rate</th><th class="num">Fast losses (≤15min)</th></tr>
+      <tr><td>Strict (current code)</td><td class="num">55</td><td class="num">33</td><td class="num">72.7%</td><td class="num">1/15 (7%)</td></tr>
+      <tr class="ok"><td>Relaxed (Aug 17-20's shipped variant)</td><td class="num">535</td><td class="num">708</td><td class="num"><strong>88.1%</strong></td><td class="num">1/57 (2%)</td></tr>
+    </table>
+
+    <p>Per the 2026-08-20 report's own framing: <em>"If it still predicts ~84% for that specific window, the gap is in live execution, not the market."</em> It does — 88.1%, even better than the original full-history 84.4%. But the live relax-only bucket for that same window scored 36.8%. The market didn't change; the backtest's assumptions about live execution don't match what actually happened.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 4 — Root cause: cooldown state does not survive contact with production</div>
+    <div class="section-title">82 same-direction entries fired in the last 30 days that the strategy's own code says should have been blocked</div>
+
+    <p><span class="mono">internal/strategy/trend_follow/strategy.go</span>: after 2 consecutive same-direction closes classified as <code>CloseInvalidated</code> (SL hit, time-stop, or any <code>*_against</code> reversal-watcher close — see <span class="mono">internal/strategy/close_reason.go</span>), <code>cooldownDir</code>/<code>cooldownUntil</code> are set and the next same-direction entry should <code>hold</code> for 60 minutes. Quantified directly against live trade history (LAG-window query over the last 30 days' closed <code>trend_follow</code> trades, same symbol+side, checking whether an entry followed two prior invalidated closes within 60 minutes):</p>
+
+    <pre>should_have_been_blocked = 82</pre>
+
+    <p>Concrete example, not a statistical artifact: XAUUSD SELL, 2026-07-31 18:05–21:45. 20+ consecutive <code>trend_follow</code> SELL closes, nearly all classified <code>CloseInvalidated</code> (<code>regime_against,rsi_against,ema_cross_against[,momentum_against]</code>), re-entering on almost every subsequent M5 candle for <strong>four continuous hours</strong> with no 60-minute gap ever appearing. Minimal case: 18:20 SELL closes -$1.18 at 18:25 (2nd consecutive invalidated close → cooldown should activate through 19:25) — 18:30 SELL opens anyway, five minutes later, and loses another -$2.06. The prior position had already fully closed; this isn't concurrent-position overlap (<code>maxPerStrategy=2</code>, and same-direction stacking in <span class="mono">registry.go</span>'s <code>CanOpen</code> already requires the existing position to be in profit, so that's not the mechanism either).</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Code reads correctly in isolation; wiring confirmed correct at every hop checked</span>
+        <span class="badge gap">Root cause narrowed, not yet pinned to one line</span>
+      </div>
+      <p>Traced the full path: both real close paths (<span class="mono">recordCloseFill</span> and <span class="mono">recordBrokerClose</span>) call <code>notifyStrategyClosed(tracked.StrategyName, tracked.Side, closeReason, ...)</code>, which correctly matches <code>s.Name() == "trend_follow"</code> and calls <code>OnClosed</code> with the right <code>side</code>/<code>closeReason</code>. <code>ClassifyCloseReason</code> correctly matches every observed combo string via <code>strings.Contains</code>. Nothing found in this pass explains the gap between "code says this should be impossible" and "it happened 82 times." Needs a live-instrumented pass (log <code>buyFailStreak</code>/<code>sellFailStreak</code>/<code>cooldownDir</code>/<code>cooldownUntil</code> on every <code>OnClosed</code> call and every <code>Evaluate</code> cooldown check) rather than further static reading — flagged as the next concrete step, the same way 08-20 flagged this one.</p>
+    </div>
+
+    <div class="decision">
+      <div class="decision-title">Why this matters more than any single strategy tweak</div>
+      <p style="margin-bottom:0;">This one mechanism failure is sufficient by itself to explain the central mystery in this week's data: a strategy that backtests strongly under both strict <em>and</em> relaxed gates, for the exact live window in question, still lost money live. It's also very likely why the 08-17 relaxation looked so good in its own backtest (which correctly simulates cooldown) and so bad live (where cooldown apparently isn't holding) — the same gap, discovered from a different angle. Fixing entry-gate strictness without fixing this would keep leaving real edge on the table blocked by an unrelated bug, or keep bleeding through a "protection" that isn't actually protecting anything.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 5 — ML predictor (sr_bounce) — methodology sound, training data stale</div>
+    <div class="section-title">RSI-extreme reversal classifier, XGBoost, time-ordered split — reasonable design, five weeks out of date</div>
+
+    <p><span class="mono">ml/train.py</span>: labels an M5 bar as a win if price hits 1.67R TP before 1R SL within 20 bars, from an RSI extreme (&gt;68/&lt;32 EURUSD, &gt;75/&lt;25 XAUUSD). Features: RSI + RSI velocity + M15/H1 RSI context + ATR + EMA position + hour. Class-imbalance handled (<code>scale_pos_weight</code>), split is time-ordered (no lookahead leakage), threshold tuned for precision. No methodology red flags found. But the training CSVs on the server (<span class="mono">/srv/tbot/{EURUSD,XAUUSD}.csv</span>) are dated <strong>2026-07-22</strong> — the model has not been retrained on the ~5 weeks of live data since, including the period gold moved from ~$4300 to ~$4700. <code>sr_bounce</code> fired zero live trades this week (confirmed against this week's per-strategy breakdown) — worth checking whether that's the ML gate correctly staying conservative in changed conditions, or the model silently degrading out-of-distribution. Not investigated further here — flagged.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 6 — So: is this "just betting"?</div>
+    <div class="section-title">No — there's real, quantified, reproducible edge in specific conditions. The live P&L is being eaten by fixable engineering bugs sitting on top of that edge, not by the absence of edge.</div>
+
+    <p>Evidence for real edge, each independently confirmed against hundreds-to-thousands of historical instances, not anecdotes: <code>dd_ranging_breakout</code>'s M15-agreement filter (982 instances, clean directional split, shipped). <code>trend_follow</code>'s strict-gate subset in live trading (20 trades, 65% WR, +$9.40/trade — this is <em>after</em> cooldown-independent, i.e. this subset's numbers aren't the ones distorted by the bug above). <code>dd_oversold_bounce</code>'s opposite-direction M15 relationship (245 instances, statistically clean). The 2026-08-03 EMA-alignment fix for <code>trend_follow</code> (real, documented, prevented a genuine 61-trades-in-5-minutes failure mode).</p>
+
+    <p>Evidence the losses are mechanism failures, not absence of edge: break-even protection didn't actually work for at least a week (two separate bugs, stacked). The cooldown meant to prevent exactly the kind of repeated-losing-streak seen on Aug 20 and in the 07-31 SELL cluster fires in the code but doesn't hold in production (82 confirmed violations). Peak-drawback exits cut real winners 61% of the time. <code>breakout</code> ran real 8:1 risk:reward trades for weeks before being caught. Position sizing on cTrader doesn't account for stop distance, so ordinary volatility swings translate directly into proportionally larger dollar losses. None of these are "the strategy doesn't work" — they're specific, fixable gaps between what the strategy code intends and what the account actually experiences.</p>
+
+    <div class="decision">
+      <div class="decision-title">Recommended order of attack</div>
+      <p style="margin-bottom:0;">1) Instrument and fix the cooldown gap (Part 4) — highest-leverage single item, directly explains the backtest/live divergence. 2) Re-run this same 30-day-restricted backtest <em>after</em> the cooldown fix, before deciding strict-vs-relaxed again — the 08-20 revert to strict was a reasonable call on the evidence available, but that evidence was measuring a strategy running with broken cooldown protection either way. 3) Resolve <code>ema_pullback</code>'s flagged-since-08-17 bad win rate and <code>session_open</code>'s uncalibrated SL/TP — both still open. 4) Wire cTrader position sizing through <code>riskMgr.PositionSizeForTier</code> like Binance already does, so loss severity scales down when stops widen. 5) Retrain or re-validate the <code>sr_bounce</code> ONNX model against current market data.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 7 — Separate from the cooldown gap: why do trend_follow entries lose even when correctly allowed to fire?</div>
+    <div class="section-title">Losers show almost no favorable excursion before reversing. Root cause: the entry gate can't tell a fresh regime alignment from a stale one — shipped a fix.</div>
+
+    <p>Set aside Part 4's cooldown-violation trades entirely and asked a narrower question: among trades the strategy was always going to be allowed to take, why do a large share lose? Compared <code>positions.max_favorable</code>/<code>max_adverse</code> (XAUUSD, 30 days) for winners vs losers:</p>
+
+    <table>
+      <tr><th>Outcome</th><th class="num">N</th><th class="num">Avg favorable move before turning</th><th class="num">Avg adverse move</th></tr>
+      <tr class="ok"><td>Win</td><td class="num">50</td><td class="num">$12.74</td><td class="num">$2.89</td></tr>
+      <tr class="highlight"><td>Loss</td><td class="num">70</td><td class="num">$2.81</td><td class="num">$5.93</td></tr>
+    </table>
+
+    <p><strong>41% of all losers moved less than $1 in the trade's favor before reversing</strong> — median favorable excursion for a loser is $1.25, against typical stop distances of $9-22. Most losing entries are wrong almost immediately, not "the trend tried and failed."</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Root cause: the entry gate is a static yes/no with no concept of how long it's been true</span>
+        <span class="badge fixed">Fixed and shipped</span>
+      </div>
+      <p>Tested whether winners disproportionately enter on a <em>fresh</em> M5 regime alignment (few consecutive prior bars already showing the same regime) versus losers entering on a <em>stale</em> one (<span class="mono">queries/regime_freshness_at_entry</span>, 120-125 trades — XAUUSD <code>trend_follow</code>'s entire live history in its current form, not just 30 days, since the strategy has been substantially rewritten multiple times this month). Clean, monotonic result:</p>
+      <table>
+        <tr><th>M5 regime streak at entry</th><th class="num">N</th><th class="num">Win rate</th><th class="num">Avg favorable move</th></tr>
+        <tr class="ok"><td>1-2 bars (fresh)</td><td class="num">64</td><td class="num">53.1%</td><td class="num">$8.53</td></tr>
+        <tr><td>3-5 bars</td><td class="num">21</td><td class="num">28.6%</td><td class="num">$5.87</td></tr>
+        <tr class="highlight"><td>6+ bars (stale, avg 12.8 bars)</td><td class="num">35</td><td class="num">28.6%</td><td class="num">$4.69</td></tr>
+      </table>
+      <p>Cumulative total P&amp;L by streak cutoff peaks precisely at <strong>streak ≤ 2 bars</strong> ($197.64 from 68 trades) and degrades from streak=3 onward (adding bar-3 trades alone is -$8.76); it never recovers past that peak. The entry gate (H1 regime + M5 regime/EMA alignment + ADX≥20) fires the instant it becomes true but has no memory of <em>when</em> — the same static condition being true for the first time versus already true for an hour looks identical to it, even though one is a fresh move and the other is often already exhausted.</p>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Counterfactual check before trusting the correlation: does rewinding a specific stale loser to its fresh moment turn it into a win?</span>
+        <span class="badge info">Mostly no — reframes the finding, doesn't invalidate it</span>
+      </div>
+      <p>Built a same-episode counterfactual (<span class="mono">queries/counterfactual_fresh_entry</span>): for every real stale losing trade, rewind to the exact bar its own regime run first became fresh, confirm the entry gate would have fired there too, and simulate forward from that bar using real M1 candles and the live SL/TP math. Of 39 gate-valid stale losers (full history): only <strong>18.4% would have won</strong> entered fresh instead, <strong>46.2% would still have lost</strong>, 35.9% unresolved within 24h. So this is <em>not</em> a timing-rescue effect — most stale losers were never going to be good trades even caught at their earliest moment. The real mechanism: episodes that only reach full alignment several bars late are a structurally weaker population of setups (marginal, indecisive moves) than episodes that align instantly (clean, strong moves) — freshness is a quality filter on <em>which setups to bother with</em>, not proof that late entries can be saved by better timing.</p>
+    </div>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;"><span class="mono">internal/strategy/trend_follow/strategy.go</span>: added <code>m5RegimeStreak</code> tracking (increments while <code>m5.Regime</code> stays the same bar-to-bar, resets to 1 on change) and a new gate — hold if the streak exceeds <code>maxFreshM5RegimeStreak = 2</code>. Fails safe across restarts: <code>unseenBarsTracked</code> blocks entries for the first 2 bars actually observed after any process start, since a freshly-restarted tracker can't distinguish a regime that just started from one that's been running for an hour before the process came up. No DB-backed history recovery added (strategies currently have no DB access — <code>trendfollow.New()</code> takes no arguments) — the safe-default approach costs at most one missed trade per restart rather than risk a false "fresh" read. Deployed via <code>feat → dev (squash) → main (merge) → tag</code>.</p>
+    </div>
+  </div>
+
+</div>
+
+<footer>Generated 2026-08-26 · positions/orders/signals/fills/market_states/candles/account_snapshots/daily_pnl data from tbot_prod · strategy source: internal/strategy/trend_follow/strategy.go, internal/strategy/close_reason.go · bot source: internal/bot/{bot.go,registry.go} · ml source: ml/train.py, internal/ml/predictor.go · prior context: analysis/daily/2026-08-17/report.html Part 8, analysis/daily/2026-08-20/report.html Parts 3-4</footer>
+
+</body>
+</html>
