@@ -14,6 +14,9 @@ const (
 	tpATRMult                  = 2.5
 	consecutiveFailsToCooldown = 2
 	cooldownDuration           = 60 * time.Minute
+
+
+	maxFreshM5RegimeStreak = 2
 )
 
 type TrendFollow struct {
@@ -21,7 +24,15 @@ type TrendFollow struct {
 	sellFailStreak int
 	cooldownDir    string
 	cooldownUntil  time.Time
+
+
+	lastM5Regime      string
+	lastM5BarTime     int64
+	m5RegimeStreak    int
+	unseenBarsTracked int
 }
+
+const minTrackedBarsBeforeTrusting = maxFreshM5RegimeStreak + 1
 
 func New() *TrendFollow { return &TrendFollow{} }
 
@@ -90,6 +101,19 @@ func (s *TrendFollow) Evaluate(states map[string]indicator.MarketState, currentP
 		return hold("M5 not warmed up")
 	}
 
+	if m5.BarTime != s.lastM5BarTime {
+		if m5.Regime == s.lastM5Regime {
+			s.m5RegimeStreak++
+		} else {
+			s.lastM5Regime = m5.Regime
+			s.m5RegimeStreak = 1
+		}
+		s.lastM5BarTime = m5.BarTime
+		if s.unseenBarsTracked < minTrackedBarsBeforeTrusting {
+			s.unseenBarsTracked++
+		}
+	}
+
 	if dir == config.SignalBuy && m5.EMAFast < m5.EMASlow {
 		return hold("M5 EMA bearish — not aligned with H1 uptrend")
 	}
@@ -104,6 +128,13 @@ func (s *TrendFollow) Evaluate(states map[string]indicator.MarketState, currentP
 
 	if dir == config.SignalSell && m5.Regime != config.TrendingDown {
 		return hold("M5 regime not confirming H1 downtrend")
+	}
+
+	if s.unseenBarsTracked < minTrackedBarsBeforeTrusting {
+		return hold("M5 regime freshness not yet trustworthy — too soon after startup")
+	}
+	if s.m5RegimeStreak > maxFreshM5RegimeStreak {
+		return hold("M5 regime alignment is stale — already running 3+ bars")
 	}
 
 	if h1.ADX < 20 {
