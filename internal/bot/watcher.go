@@ -41,7 +41,6 @@ func decisionParams() map[string]any {
 	}
 }
 
-// Symbols that trade continuously (crypto spot/CFDs) — no weekend close, no EOD window.
 var continuousTradingSymbols = map[string]bool{
 	"XRPUSD": true,
 }

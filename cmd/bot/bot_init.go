@@ -75,8 +75,11 @@ func initializeBot(ctx context.Context, cfg *config.Config, svc *Services, prov 
 	}
 
 	var lotUnit int64 = 100_000
-	if prov.Name() == "ctrader" && symbol == "XAUUSD" {
-		lotUnit = 100
+	if prov.Name() == "ctrader" {
+		switch symbol {
+		case "XAUUSD", "XPDUSD", "XPTUSD":
+			lotUnit = 100
+		}
 	}
 
 	strategies, err := buildStrategies(cfg.Strategy, symbol, cfg.MLModelDir, cfg.MLOnnxLib)
@@ -154,14 +157,17 @@ func buildSRBounce(symbol, mlModelDir, mlOnnxLib string) *srbounce.SRBounce {
 	var symbolID float32
 
 	switch symbol {
+	case "EURUSD":
+		modelFile = mlModelDir + "/eurusd_model.onnx"
+		threshold = 0.65
+		symbolID = 0
 	case "XAUUSD":
 		modelFile = mlModelDir + "/xauusd_model.onnx"
 		threshold = 0.75
 		symbolID = 1
-	default: // EURUSD
-		modelFile = mlModelDir + "/eurusd_model.onnx"
-		threshold = 0.65
-		symbolID = 0
+	default:
+		slog.Warn("sr_bounce: no trained model for this symbol — running without ML filter", "symbol", symbol)
+		return srbounce.New(nil, 0, 0)
 	}
 
 	predictor, err := ml.NewPredictor(modelFile, mlOnnxLib)

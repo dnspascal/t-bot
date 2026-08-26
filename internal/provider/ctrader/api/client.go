@@ -116,6 +116,10 @@ func (c *Client) SetAccountID(id int64) {
 	c.accountID = id
 }
 
+func (c *Client) SetSymbolID(id int64) {
+	c.symbolID = id
+}
+
 func (c *Client) AccountID() int64 {
 	return c.accountID
 }
@@ -268,7 +272,6 @@ func (c *Client) AmendPositionSL(positionID int64, newSL, tp float64) error {
 	if !authed {
 		return fmt.Errorf("not authenticated")
 	}
-
 
 	scale := math.Pow(10, float64(c.priceDecimals))
 	newSL = math.Round(newSL*scale) / scale

@@ -2,8 +2,10 @@ package api
 
 import (
 	"encoding/binary"
+	"fmt"
 	"log/slog"
 	"math"
+	"os"
 	"time"
 
 	"github.com/denismgaya/t-bot/internal/config"
@@ -1123,6 +1125,8 @@ func decodeSymbolByIdRes(data []byte) []LightSymbol {
 	return symbols
 }
 
+var DebugDumpSymbolFields = false
+
 func decodeFullSymbol(data []byte) LightSymbol {
 	var sym LightSymbol
 	var baseAsset, quoteAsset string
@@ -1140,17 +1144,33 @@ func decodeFullSymbol(data []byte) LightSymbol {
 			v, n2 := decodeVarint(data[i:])
 			i += n2
 			sym.SymbolID = int64(v)
-		case field == 23 && wire == 2: // quoteAsset name (e.g. "USD")
+			if DebugDumpSymbolFields {
+				fmt.Fprintf(os.Stderr, "  field=%d wire=varint value=%d\n", field, v)
+			}
+		case wire == 2: // length-delimited: string or bytes
 			l, n2 := decodeVarint(data[i:])
 			i += n2
-			quoteAsset = string(data[i : i+int(l)])
+			raw := data[i : i+int(l)]
 			i += int(l)
-		case field == 40 && wire == 2: // baseAsset name (e.g. "EUR")
-			l, n2 := decodeVarint(data[i:])
+			if DebugDumpSymbolFields {
+				fmt.Fprintf(os.Stderr, "  field=%d wire=bytes len=%d str=%q hex=%x\n", field, l, string(raw), raw)
+			}
+			switch field {
+			case 23:
+				quoteAsset = string(raw)
+			case 40:
+				baseAsset = string(raw)
+			}
+		case wire == 0: // varint
+			v, n2 := decodeVarint(data[i:])
 			i += n2
-			baseAsset = string(data[i : i+int(l)])
-			i += int(l)
+			if DebugDumpSymbolFields {
+				fmt.Fprintf(os.Stderr, "  field=%d wire=varint value=%d\n", field, v)
+			}
 		default:
+			if DebugDumpSymbolFields {
+				fmt.Fprintf(os.Stderr, "  field=%d wire=%d (skipped, unhandled wire type)\n", field, wire)
+			}
 			i = skipField(data, i, wire)
 		}
 	}

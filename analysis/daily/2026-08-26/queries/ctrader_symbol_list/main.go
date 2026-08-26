@@ -65,13 +65,9 @@ func main() {
 		fmt.Fprintln(os.Stderr, "account auth failed:", err)
 		os.Exit(1)
 	}
-	fmt.Fprintln(os.Stderr, "account authed, requesting symbol id range 1-400...")
-
-	var idRange []int64
-	for i := int64(1); i <= 400; i++ {
-		idRange = append(idRange, i)
-	}
-	syms, err := c.GetSymbolsByIds(idRange)
+	fmt.Fprintln(os.Stderr, "account authed, requesting id=41 and id=42 with field dump...")
+	api.DebugDumpSymbolFields = true
+	syms, err := c.GetSymbolsByIds([]int64{41, 42})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "GetSymbolsByIds failed:", err)
 		os.Exit(1)
