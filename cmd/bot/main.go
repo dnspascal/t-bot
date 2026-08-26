@@ -232,35 +232,32 @@ func startBotForProvider(
 		}
 
 		slog.Warn("provider disconnected — reconnecting",
-			"provider", prov.Name(), "attempt", attempt, "backoff", backoff)
+			"provider", prov.Name(), "attempt", attempt)
 
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(backoff):
+		for reconnectAttempt := 1; ; reconnectAttempt++ {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(backoff):
+			}
+
+			if err := prov.Connect(); err != nil {
+				slog.Error("reconnect: Connect failed", "provider", prov.Name(), "attempt", reconnectAttempt, "err", err)
+			} else if _, err := prov.Auth(ctx); err != nil {
+				slog.Error("reconnect: Auth failed", "provider", prov.Name(), "attempt", reconnectAttempt, "err", err)
+			} else if err := prov.Setup(); err != nil {
+				slog.Error("reconnect: Setup failed", "provider", prov.Name(), "attempt", reconnectAttempt, "err", err)
+			} else if err := prov.StartStreaming(); err != nil {
+				slog.Error("reconnect: StartStreaming failed", "provider", prov.Name(), "attempt", reconnectAttempt, "err", err)
+			} else {
+				slog.Info("reconnected", "provider", prov.Name(), "attempt", reconnectAttempt)
+				backoff = 15 * time.Second // reset on success
+				botResult.Bot.Reset()
+				break
+			}
+
+			backoff = min(backoff*2, maxBackoff)
 		}
-
-		if err := prov.Connect(); err != nil {
-			slog.Error("reconnect: Connect failed", "provider", prov.Name(), "err", err)
-		} else if _, err := prov.Auth(ctx); err != nil {
-			slog.Error("reconnect: Auth failed", "provider", prov.Name(), "err", err)
-		} else if err := prov.Setup(); err != nil {
-			slog.Error("reconnect: Setup failed", "provider", prov.Name(), "err", err)
-		} else if err := prov.StartStreaming(); err != nil {
-			slog.Error("reconnect: StartStreaming failed", "provider", prov.Name(), "err", err)
-		} else {
-			slog.Info("reconnected", "provider", prov.Name(), "attempt", attempt)
-			backoff = 15 * time.Second // reset on success
-			botResult.Bot.Reset()
-			continue
-		}
-
-		if backoff < maxBackoff {
-			backoff *= 2
-		}
-
-		// One of the steps above failed — apply backoff and retry
-		backoff = min(backoff*2, 5*time.Minute)
 	}
 }
 
