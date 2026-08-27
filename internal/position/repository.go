@@ -83,13 +83,20 @@ func (r *Repository) Close(ctx context.Context, provider, providerPositionID str
 }
 
 func (r *Repository) OpenByProvider(ctx context.Context, provider, symbolID string) ([]Position, error) {
+	// Strategy is joined in here (not part of the positions table itself) so
+	// that startup reconcile can restore trackedPosition.StrategyName — without
+	// it, a position that survives a restart loses its strategy attribution
+	// and silently falls back to the shared reversal watcher, even for
+	// strategies that explicitly opt out of it (UsesTrendWatcher() == false).
 	const q = `
-		SELECT id, provider, provider_position_id, provider_acct_id, symbol_id, side, volume,
-		       tier, open_price, current_sl, current_tp, swap, commission, used_margin,
-		       status, trailing_stop_loss, guaranteed_stop_loss, label, comment,
-		       open_timestamp, close_timestamp, created_at, updated_at
-		FROM positions
-		WHERE status = 'open' AND provider = $1 AND symbol_id = $2`
+		SELECT p.id, p.provider, p.provider_position_id, p.provider_acct_id, p.symbol_id, p.side, p.volume,
+		       p.tier, p.open_price, p.current_sl, p.current_tp, p.swap, p.commission, p.used_margin,
+		       p.status, p.trailing_stop_loss, p.guaranteed_stop_loss, p.label, p.comment,
+		       p.open_timestamp, p.close_timestamp, p.created_at, p.updated_at, COALESCE(sig.strategy, '')
+		FROM positions p
+		LEFT JOIN orders o ON o.id = p.our_order_id
+		LEFT JOIN signals sig ON sig.id = o.signal_id
+		WHERE p.status = 'open' AND p.provider = $1 AND p.symbol_id = $2`
 	rows, err := r.db.Query(ctx, q, provider, symbolID)
 	if err != nil {
 		return nil, fmt.Errorf("position.OpenByProvider: %w", err)
@@ -105,7 +112,7 @@ func (r *Repository) OpenByProvider(ctx context.Context, provider, symbolID stri
 			&p.Swap, &p.Commission, &p.UsedMargin,
 			&p.Status, &p.TrailingStopLoss, &p.GuaranteedStopLoss,
 			&p.Label, &p.Comment, &p.OpenTimestamp, &p.CloseTimestamp,
-			&p.CreatedAt, &p.UpdatedAt,
+			&p.CreatedAt, &p.UpdatedAt, &p.Strategy,
 		); err != nil {
 			return nil, fmt.Errorf("position.OpenByProvider scan: %w", err)
 		}

@@ -31,4 +31,5 @@ type Position struct {
 	RawPayload         []byte
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
+	Strategy           string // read-only: joined from orders/signals, only populated by OpenByProvider for startup reconcile
 }
