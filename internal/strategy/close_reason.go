@@ -7,6 +7,7 @@ const (
 	CloseReasonTPHit       = "tp_hit"
 	CloseReasonBreakevenSL = "breakeven_sl"
 	CloseReasonEODClose    = "eod_close"
+	CloseReasonUnexplained = "unexplained_close" // broker closed it without our involvement, and price wasn't near our recorded SL or TP
 
 	PeakDrawbackPrefix = "peak_drawback="
 	TimeStopPrefix     = "time_stop="

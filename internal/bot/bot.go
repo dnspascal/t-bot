@@ -303,9 +303,11 @@ func (b *Bot) reconcileOpenPositions(ctx context.Context) {
 			Tier:               p.Tier,
 			MaxFavorable:       maxFavorable,
 			MaxAdverse:         maxAdverse,
+			StrategyName:       p.Strategy,
 		})
 		slog.Info("startup reconcile: loaded open position",
 			"provider", b.provider.Name(),
+			"strategy", p.Strategy,
 			"maxFavorable", maxFavorable,
 			"maxAdverse", maxAdverse,
 			"posID", p.ProviderPositionID,
@@ -1566,14 +1568,10 @@ func (b *Bot) classifyBrokerClose(tracked trackedPosition, execPrice float64) st
 		return strat.CloseReasonTPHit
 	}
 
-	// Fallback: direction from open price
-	if tracked.Side == config.SignalBuy && execPrice > tracked.OpenPrice {
-		return strat.CloseReasonTPHit
-	}
-	if tracked.Side == config.SignalSell && execPrice < tracked.OpenPrice {
-		return strat.CloseReasonTPHit
-	}
-	return strat.CloseReasonSLHit
+	// Price isn't near either recorded level — we genuinely don't know why the
+	// broker closed this (manual close, margin stop-out, etc.). Say so rather
+	// than guessing tp_hit/sl_hit from price direction alone.
+	return strat.CloseReasonUnexplained
 }
 
 func (b *Bot) notifyStrategyClosed(strategyName, side, closeReason string, closeTime time.Time) {
