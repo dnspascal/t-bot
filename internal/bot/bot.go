@@ -990,7 +990,7 @@ func (b *Bot) recordOpenFill(ctx context.Context, exec provider.ExecutionEvent, 
 	}
 
 	openTime := deal.ExecTime
-	decisionParamsJSON, err := json.Marshal(decisionParams())
+	decisionParamsJSON, err := json.Marshal(b.decisionParams())
 	if err != nil {
 		slog.Error("marshal decisionParams failed", "err", err)
 	}
@@ -1548,14 +1548,17 @@ func (b *Bot) sendTestPosition(ctx context.Context) {
 func (b *Bot) classifyBrokerClose(tracked trackedPosition, execPrice float64) string {
 	tol := 5 * b.pipSize
 
+	// A break-even close, by definition, can't be worse than the open price —
+	// the stop was moved into profit, not left where it could lose. The old
+	// check compared execPrice to the theoretical break-even level with a
+	// tolerance (5 pips) wider than the buffer itself (2 pips), which let it
+	// mislabel real losses — including some that closed on the LOSING side of
+	// entry — as "breakeven_sl". Overshoot in the favorable direction (real
+	// slippage on a genuine stop) is still a legitimate break-even outcome, so
+	// only the unfavorable side is bounded.
 	if tracked.BreakEvenActive {
-		var beSL float64
-		if tracked.Side == config.SignalBuy {
-			beSL = tracked.OpenPrice + 2*b.pipSize
-		} else {
-			beSL = tracked.OpenPrice - 2*b.pipSize
-		}
-		if math.Abs(execPrice-beSL) <= tol {
+		if (tracked.Side == config.SignalBuy && execPrice >= tracked.OpenPrice) ||
+			(tracked.Side == config.SignalSell && execPrice <= tracked.OpenPrice) {
 			return strat.CloseReasonBreakevenSL
 		}
 	}

@@ -25,14 +25,25 @@ const signalsToReduce = 2
 
 // Raised from 25.0 — see analysis/daily/2026-08-26/report.html Part 8.
 const breakEvenTriggerPct = 50.0
-const breakEvenBufferPips = 2.0
+const breakEvenBufferPipsDefault = 2.0
 
-func decisionParams() map[string]any {
+var breakEvenBufferPipsOverride = map[string]float64{
+	"XAUUSD": 5.0,
+}
+
+func (b *Bot) breakEvenBufferPips() float64 {
+	if v, ok := breakEvenBufferPipsOverride[b.symbol]; ok {
+		return v
+	}
+	return breakEvenBufferPipsDefault
+}
+
+func (b *Bot) decisionParams() map[string]any {
 	return map[string]any{
 		"peak_drawback_gate_pct":            peakDrawbackGatePct,
 		"peak_drawback_threshold_pct_of_tp": peakDrawbackThreshold,
 		"breakeven_trigger_pct":             breakEvenTriggerPct,
-		"breakeven_buffer_pips":             breakEvenBufferPips,
+		"breakeven_buffer_pips":             b.breakEvenBufferPips(),
 		"signals_to_close":                  signalsToClose,
 		"signals_to_reduce":                 signalsToReduce,
 		"never_profitable_timeout_min":      int(neverProfitableTimeout / time.Minute),
@@ -256,11 +267,12 @@ func (b *Bot) checkBreakEven(ctx context.Context, pos trackedPosition) {
 		return
 	}
 
+	bufferPips := b.breakEvenBufferPips()
 	var newSL float64
 	if pos.Side == config.SignalBuy {
-		newSL = pos.OpenPrice + breakEvenBufferPips*b.pipSize
+		newSL = pos.OpenPrice + bufferPips*b.pipSize
 	} else {
-		newSL = pos.OpenPrice - breakEvenBufferPips*b.pipSize
+		newSL = pos.OpenPrice - bufferPips*b.pipSize
 	}
 
 	if err := b.provider.AmendPositionSL(ctx, pos.ProviderPositionID, newSL, pos.TPPrice); err != nil {
@@ -330,13 +342,14 @@ func (b *Bot) awaitBreakEvenConfirmation(ctx context.Context, pos trackedPositio
 
 func (b *Bot) runTestAmend(ctx context.Context, pos trackedPosition) {
 
+	bufferPips := b.breakEvenBufferPips()
 	var newSL, newTP float64
 	if pos.Side == config.SignalBuy {
-		newSL = pos.SLPrice - breakEvenBufferPips*b.pipSize
-		newTP = pos.TPPrice + breakEvenBufferPips*b.pipSize
+		newSL = pos.SLPrice - bufferPips*b.pipSize
+		newTP = pos.TPPrice + bufferPips*b.pipSize
 	} else {
-		newSL = pos.SLPrice + breakEvenBufferPips*b.pipSize
-		newTP = pos.TPPrice - breakEvenBufferPips*b.pipSize
+		newSL = pos.SLPrice + bufferPips*b.pipSize
+		newTP = pos.TPPrice - bufferPips*b.pipSize
 	}
 
 	confirmed := false
