@@ -953,15 +953,6 @@ func (b *Bot) recordOpenFill(ctx context.Context, exec provider.ExecutionEvent, 
 	provOrderID := fmt.Sprintf("%d", deal.OrderID)
 	provPosID := fmt.Sprintf("%d", deal.PositionID)
 
-	// The market order's SL/TP were sent as distances from the price at signal
-	// time, but the broker applies them relative to the actual fill price —
-	// if the market moved (or the spread is wide) between decision and fill,
-	// the effective stop can land far closer than intended, or under the
-	// broker's minimum stop distance, in which case it's silently dropped
-	// with the entry still filling. Re-anchor to the strategy's real target
-	// price, floored to a safe minimum distance from the actual fill, and
-	// push it as an explicit absolute amend so the position is never left
-	// without a real broker-side stop.
 	minStopDist := 3 * (b.currentPrice.Ask - b.currentPrice.Bid)
 	if minStopDist < 10*b.pipSize {
 		minStopDist = 10 * b.pipSize
@@ -1548,14 +1539,6 @@ func (b *Bot) sendTestPosition(ctx context.Context) {
 func (b *Bot) classifyBrokerClose(tracked trackedPosition, execPrice float64) string {
 	tol := 5 * b.pipSize
 
-	// A break-even close, by definition, can't be worse than the open price —
-	// the stop was moved into profit, not left where it could lose. The old
-	// check compared execPrice to the theoretical break-even level with a
-	// tolerance (5 pips) wider than the buffer itself (2 pips), which let it
-	// mislabel real losses — including some that closed on the LOSING side of
-	// entry — as "breakeven_sl". Overshoot in the favorable direction (real
-	// slippage on a genuine stop) is still a legitimate break-even outcome, so
-	// only the unfavorable side is bounded.
 	if tracked.BreakEvenActive {
 		if (tracked.Side == config.SignalBuy && execPrice >= tracked.OpenPrice) ||
 			(tracked.Side == config.SignalSell && execPrice <= tracked.OpenPrice) {
@@ -1571,9 +1554,6 @@ func (b *Bot) classifyBrokerClose(tracked trackedPosition, execPrice float64) st
 		return strat.CloseReasonTPHit
 	}
 
-	// Price isn't near either recorded level — we genuinely don't know why the
-	// broker closed this (manual close, margin stop-out, etc.). Say so rather
-	// than guessing tp_hit/sl_hit from price direction alone.
 	return strat.CloseReasonUnexplained
 }
 
