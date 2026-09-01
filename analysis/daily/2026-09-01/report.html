@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Analysis — 2026-09-01</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Lato', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #000;
+  background: #fff;
+  padding-bottom: 80px;
+}
+
+/* ── Header ── */
+.header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 28px 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.header-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: #1d4ed8;
+  background: #eaf0ff; padding: 3px 10px; border-radius: 4px;
+  display: inline-block; margin-bottom: 8px;
+}
+.header h1 { font-size: 22px; font-weight: 900; letter-spacing: -.3px; margin-bottom: 6px; }
+.header-meta { font-size: 13px; color: #6b7280; display: flex; gap: 20px; flex-wrap: wrap; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.chip {
+  font-size: 12px; font-weight: 700; padding: 5px 12px;
+  border-radius: 20px; color: #6b7280;
+}
+.chip.loss { color: #dc2626; background: #fef2f2; }
+.chip.win  { color: #16a34a; background: #f0fdf4; }
+.chip.info { color: #1d4ed8; background: #eaf0ff; }
+
+/* ── Page ── */
+.page { max-width: 920px; margin: 0 auto; padding: 40px 24px 0; }
+.section { margin-bottom: 48px; }
+.section-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: #6b7280; margin-bottom: 10px;
+}
+.section-title { font-size: 18px; font-weight: 900; letter-spacing: -.2px; margin-bottom: 16px; }
+hr { border: none; border-top: 1px solid #e5e7eb; margin: 44px 0; }
+
+/* ── Cards ── */
+.finding {
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 20px 22px; margin-bottom: 16px;
+  background: #fff;
+}
+.finding-header {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.finding-title { font-size: 15px; font-weight: 700; flex: 1; }
+.badge {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+  white-space: nowrap; margin-top: 2px;
+}
+.badge.fixed   { background: #f0fdf4; color: #16a34a; }
+.badge.gap     { background: #fef2f2; color: #dc2626; }
+.badge.pending { background: #fff7ed; color: #c2410c; }
+.badge.info    { background: #eaf0ff; color: #1d4ed8; }
+
+p { margin-bottom: 10px; max-width: 70ch; }
+code {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 13px;
+  background: #f3f4f6; padding: 1px 6px; border-radius: 4px;
+}
+pre {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px;
+  background: #f3f4f6; color: #000;
+  padding: 14px 16px; border-radius: 8px; overflow-x: auto;
+  margin: 10px 0 14px;
+}
+pre .cmt { color: #6b7280; }
+
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.5px; }
+th {
+  text-align: left; font-weight: 700; font-size: 11px;
+  letter-spacing: .04em; text-transform: uppercase; color: #6b7280;
+  padding: 8px 10px; border-bottom: 2px solid #e5e7eb;
+}
+td { padding: 9px 10px; border-bottom: 1px solid #f0f1f3; }
+tr.highlight td { background: #fef2f2; }
+tr.ok td { background: #f0fdf4; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.mono { font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px; }
+
+.quote {
+  background: #f8fafc; border-radius: 8px;
+  padding: 12px 16px; margin: 12px 0 16px; font-size: 14px; color: #000;
+}
+.quote .src { font-size: 11.5px; color: #9ca3af; margin-top: 6px; font-family: 'SF Mono', Menlo, monospace; }
+
+.decision {
+  background: #f5f8ff; border-radius: 8px;
+  padding: 18px 20px; margin-top: 10px;
+}
+.decision-title { font-weight: 900; font-size: 14px; color: #1d4ed8; margin-bottom: 8px; }
+
+footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <span class="header-eyebrow">Daily Analysis</span>
+    <h1>2026-09-01 — Naked SL, Restart-Attribution Bug, Gold-Only Decision</h1>
+    <div class="header-meta">
+      <span>Bot: T-Bot (cTrader, XAUUSD + EURUSD + XPDUSD + XPTUSD)</span>
+      <span>Prepared after a live-risk incident and a full symbol/strategy performance review</span>
+    </div>
+  </div>
+  <div class="chips">
+    <span class="chip loss">Live position found with no broker-side SL</span>
+    <span class="chip win">4 production fixes shipped</span>
+    <span class="chip info">Decision: gold-only for September</span>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="section">
+    <div class="section-eyebrow">Part 1 — Live risk incident</div>
+    <div class="section-title">XPDUSD SELL opened with a real, valid stop-loss distance — and no stop-loss on the broker</div>
+
+    <p>Flagged live: an open XPDUSD SELL showed a TP in the cTrader app but the SL column was empty — just an info icon. Ask price had already run <strong>past</strong> where the intended SL should have been, with the position still open. Recommended an immediate manual close/SL while investigating.</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">SL/TP sent as a distance from the price at signal time, not the actual fill price</span>
+        <span class="badge fixed">Fixed</span>
+      </div>
+      <p>Confirmed via server logs (<code>slDist:2.021994819548354</code> in the "placing order" line) that the stop distance sent to the broker was only ~$2.02 — smaller than the live spread (~$5.58) at the time. cTrader silently drops a stop that tight rather than erroring the whole order, so the market order filled with no SL attached at all. Root cause: <code>SLPips</code>/<code>SLPrice</code> are computed relative to the price at signal-evaluation time, but the broker applies the distance to the real fill price — if price moves (or spread is wide) between decision and fill, the effective stop shrinks. Compounded here by XPDUSD's M15 ATR still being immature so soon after the symbol's own onboarding.</p>
+    </div>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;">Right after fill, re-anchor to the strategy's own intended absolute SL/TP (already correct in our DB), apply a minimum-distance floor relative to the real fill price, and push it as an explicit <code>AmendPositionSL</code> — the same amend path already proven for break-even adjustments — instead of trusting the market order's relative fields.</p>
+    </div>
+    <p><span class="mono">internal/bot/bot.go</span> (<code>recordOpenFill</code>). PR #51, tag <code>v202608270239</code>.</p>
+    <p style="font-size:13px; color:#6b7280;"><strong>Known limitation:</strong> the pre-existing open position wasn't retroactively protected by this fix — it had to be closed manually.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 2 — Restart-attribution bug</div>
+    <div class="section-title">A strategy explicitly excluded from the shared exit watcher got closed by it anyway — because a restart erased its name</div>
+
+    <p>Checking today's trades, an <code>ema_pullback</code> position closed via <code>regime_against,rsi_against,ema_cross_against</code> — the shared reversal-watcher's exit reason. <code>ema_pullback.UsesTrendWatcher()</code> has returned <code>false</code> since Aug 26 specifically because this watcher's logic doesn't suit counter-trend strategies. That should have been architecturally impossible.</p>
+
+    <div class="quote">
+      "3+ signals confirmed — closing position" — posID 238767407, 03:25:17 EAT, confirmed live in <code>tbot@xpdusd.service</code> journal output, for a position whose strategy is <code>ema_pullback</code>.
+      <div class="src">server log, cross-checked against signals.strategy via the DB</div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Startup reconcile never restored trackedPosition.StrategyName</span>
+        <span class="badge fixed">Fixed</span>
+      </div>
+      <p><code>usesTrendWatcher(strategyName)</code> looks up the strategy by name and defaults to <em>applying</em> the watcher for any name it doesn't recognize — a reasonable-looking safe default. But <code>OpenByProvider</code>, the query startup reconcile uses to reload open positions after a restart, never selected a strategy name at all — every reconciled position got registered with <code>StrategyName: ""</code>, which always falls into that "unknown, apply the watcher" branch. This bot deploys many times a day, so any position open across a restart was silently exposed — regardless of what its own strategy had explicitly opted out of.</p>
+    </div>
+
+    <p>Same mechanism explained a second, independent-looking symptom: <code>dd_oversold_bounce</code>'s live P&amp;L (-$0.38 over 16 trades) looked flat despite a backtested win rate matching its real one closely. Broken down by close reason, <strong>10 of 16 trades (62.5%) closed via this exact watcher path</strong> — every one of them before this fix.</p>
+
+    <table>
+      <tr><th>Bucket</th><th class="num">Trades</th><th class="num">Watcher-driven closes</th></tr>
+      <tr class="highlight"><td>Before fix (08:54 EAT)</td><td class="num">10</td><td class="num">10 (100%)</td></tr>
+      <tr class="ok"><td>After fix</td><td class="num">6</td><td class="num">0 (0%)</td></tr>
+    </table>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;"><code>OpenByProvider</code> now joins <code>orders</code>/<code>signals</code> to recover the real strategy name, so reconcile restores it correctly. Verified live on the next real restart: reconcile log for a genuine open <code>dd_oversold_bounce</code> position now shows <code>"strategy":"dd_oversold_bounce"</code> — that field didn't exist in the log line before this fix at all.</p>
+    </div>
+    <p><span class="mono">internal/position/repository.go</span>, <span class="mono">internal/bot/bot.go</span>. PR #52, tag <code>v202608270854</code>.</p>
+    <p style="font-size:13px; color:#6b7280;"><strong>Also fixed in the same PR:</strong> <code>classifyBrokerClose</code>'s last-resort fallback (for closes the bot didn't initiate itself) was guessing <code>tp_hit</code>/<code>sl_hit</code> from price direction alone, even when price wasn't near either recorded level. Now returns an honest <code>unexplained_close</code> instead.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 3 — Dashboard</div>
+    <div class="section-title">"Today" showed yesterday's trades for the first 3 hours of every EAT day</div>
+
+    <p>Reported directly: <code>tbot.denismgaya.com</code> showing trades from the previous calendar day under "Today." The API's day boundary is <code>Africa/Dar_es_Salaam</code> (UTC+3); the dashboard's <code>isoDate()</code> used <code>Date.toISOString()</code>, which is UTC. Between 00:00–03:00 EAT every day, the UTC calendar date is still yesterday's — exactly the window this was caught in.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;"><code>isoDate()</code> now formats via <code>Intl.DateTimeFormat('en-CA', {timeZone:'Africa/Dar_es_Salaam'})</code> to match the API's own boundary. Single fix point — the only UTC-date usage in the frontend.</p>
+    </div>
+    <p><span class="mono">t-bot-web/src/app/_components/dashboard.tsx</span>. Separate repo, pushed straight to <code>main</code> (Vercel auto-deploys from there, no <code>dev</code> branch in this repo).</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 4 — Symbol/strategy performance review</div>
+    <div class="section-title">Only gold has a real, mechanistically-explicable edge — and it's one strategy, not the symbol</div>
+
+    <p>Prompted by a hunch that XPDUSD/XPTUSD "just pull gold back." Checked properly, 30-day window:</p>
+    <table>
+      <tr><th>Symbol</th><th class="num">Trades</th><th class="num">Win rate</th><th class="num">P&amp;L (30d)</th></tr>
+      <tr class="ok"><td><strong>XAUUSD</strong></td><td class="num">252</td><td class="num">46%</td><td class="num">+$256.36</td></tr>
+      <tr><td>EURUSD</td><td class="num">87</td><td class="num">39%</td><td class="num">-$14.24</td></tr>
+      <tr class="highlight"><td>XPTUSD</td><td class="num">7</td><td class="num">29%</td><td class="num">-$33.89</td></tr>
+      <tr class="highlight"><td>XPDUSD</td><td class="num">17</td><td class="num">12%</td><td class="num">-$105.84</td></tr>
+    </table>
+    <p>EURUSD's full history (212 trades since June 19 — 2.5 months, not a warm-up window) still nets -$39.55. For the metals, a direct measurement explains it cleanly: spread as a percentage of typical M15 ATR.</p>
+    <table>
+      <tr><th>Symbol</th><th class="num">Avg spread</th><th class="num">Avg M15 ATR</th><th class="num">Spread / ATR</th></tr>
+      <tr class="highlight"><td>XPDUSD</td><td class="num">$4.70</td><td class="num">$6.57</td><td class="num">71.6%</td></tr>
+      <tr class="highlight"><td>XPTUSD</td><td class="num">$3.22</td><td class="num">$7.53</td><td class="num">42.8%</td></tr>
+      <tr class="ok"><td>EURUSD</td><td class="num">$0.00001</td><td class="num">$0.00047</td><td class="num">1.1%</td></tr>
+      <tr class="ok"><td>XAUUSD</td><td class="num">$0.12</td><td class="num">$12.09</td><td class="num">1.0%</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">On XPDUSD, spread alone consumes 71.6% of a typical 15-minute price swing — any strategy sizing SL/TP off ATR is fighting a transaction-cost headwind that simply doesn't exist on gold or EUR. Structural, not a signal-quality problem.</p>
+
+    <div class="section-eyebrow" style="margin-top:24px;">But gold's own strategies mostly lose too</div>
+    <p>Full history, strategy vs strategy on XAUUSD vs EURUSD:</p>
+    <table>
+      <tr><th>Strategy</th><th class="num">XAU trades</th><th class="num">XAU P&amp;L</th><th class="num">EUR trades</th><th class="num">EUR P&amp;L</th></tr>
+      <tr class="highlight"><td>sr_bounce</td><td class="num">22</td><td class="num">-$90.07</td><td class="num">36</td><td class="num">-$9.16</td></tr>
+      <tr class="highlight"><td>regime</td><td class="num">9</td><td class="num">-$58.35</td><td class="num">44</td><td class="num">-$15.67</td></tr>
+      <tr class="highlight"><td>breakout</td><td class="num">56</td><td class="num">-$26.12</td><td class="num">21</td><td class="num">-$5.47</td></tr>
+      <tr class="highlight"><td>rsi_reversal</td><td class="num">14</td><td class="num">-$23.22</td><td class="num">10</td><td class="num">+$0.22</td></tr>
+      <tr class="highlight"><td>dd_ranging_breakout</td><td class="num">49</td><td class="num">-$14.52</td><td class="num">33</td><td class="num">-$3.51</td></tr>
+      <tr><td>session_momentum</td><td class="num">12</td><td class="num">-$1.00</td><td class="num">15</td><td class="num">-$3.82</td></tr>
+      <tr class="ok"><td><strong>trend_follow</strong></td><td class="num">130</td><td class="num">+$206.64</td><td class="num">39</td><td class="num">-$1.93</td></tr>
+      <tr class="ok"><td>session_open</td><td class="num">12</td><td class="num">+$15.13</td><td class="num">8</td><td class="num">-$0.52</td></tr>
+    </table>
+    <p>Seven of eight strategies lose money on gold too. Gold's whole reputation rests on <code>trend_follow</code> alone. And that strategy's entire full-history edge is concentrated in one real, mechanistically-verified event: a ~6% sustained gold rally (~4065→~4315) between Aug 3–7, where the strategy correctly rode a sequence of aligned BUY entries with real <code>tp_hit</code>/<code>peak_drawback</code> exits — that single week (+$201.79) is larger than the strategy's entire lifetime total on gold. Outside it, the other six weeks net to roughly +$4.85 — essentially flat, including two clearly losing weeks. <code>trend_follow</code> also received far more dedicated engineering iteration than any other strategy — 7 distinct commits tuning its entry logic — which is real, verifiable, and part of why it's the one that works, not a coincidence.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;"><strong>Gold-only for September.</strong> EURUSD, XPDUSD, XPTUSD stopped on the server. <code>deploy.yml</code>'s <code>TBOT_SYMBOLS</code> narrowed to <code>"xauusd"</code> so future deploys don't silently restart the stopped instances. PR #53, tag <code>v202609012050</code> — verified live: the next deploy touched only <code>tbot@xauusd</code>, left the other three untouched.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 5 — Break-even mechanism</div>
+    <div class="section-title">A trade closed "at breakeven" for -$0.07 — and on gold specifically, that's closer to a coin flip than a guarantee</div>
+
+    <p>Checked the specific flagged trade (gross +$0.01, commission -$0.08, net -$0.07) against the last 12 XAUUSD <code>breakeven_sl</code> closes vs EURUSD's. EURUSD's were <em>all</em> net positive. XAUUSD's: 6 of 12 net negative, three with <em>negative gross</em> — meaning some had closed on the losing side of entry, not just failed to clear commission.</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">classifyBrokerClose's breakeven tolerance was wider than the actual buffer</span>
+        <span class="badge fixed">Fixed</span>
+      </div>
+      <p>The real buffer is 2 pips ($0.20 on gold). The classifier's tolerance for calling something "breakeven" was 5 pips ($0.50) — wide enough to mislabel a real loss (e.g. a BUY that closed $0.21 <em>below</em> open) as a breakeven exit. Replaced with the actual semantic definition: a break-even close can never be worse than the open price. Overshoot in the favorable direction (real slippage on a genuine stop) still counts.</p>
+    </div>
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Gold's tick noise blows through a flat 2-pip buffer before a stop confirms</span>
+        <span class="badge fixed">Fixed</span>
+      </div>
+      <p>Commission alone is ~$0.08/trade on gold. <code>breakEvenBufferPips</code> is now symbol-aware — XAUUSD raised to 5 pips; EURUSD and everything else keep the default that was already working there.</p>
+    </div>
+    <p><span class="mono">internal/bot/watcher.go</span>, <span class="mono">internal/bot/bot.go</span>. PR #54, tag <code>v202609012104</code>.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 6 — dd_ranging_breakout</div>
+    <div class="section-title">A real-looking SL-too-tight pattern that turned out to be mostly bug contamination</div>
+
+    <p>Full history: 44 loser/breakeven/drawback trades, <strong>70% would have hit TP within 4 hours</strong> if not stopped out — pointed at <code>SL=1.0×M5.ATR</code> (vs <code>trend_follow</code>'s <code>SL=1.5×M15.ATR</code> — both a smaller multiplier and a smaller, noisier base measure) being structurally too tight for gold. Re-checked on trades closed only <em>after</em> the Part 1 SL-amend fix, as objected to correctly: only 2 trades exist post-fix. Not enough to confirm or rule out anything — the 70% figure is likely inflated by the same execution bug that produced the naked-SL incident, not proof the multiplier itself is wrong.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — not touched</div>
+      <p style="margin-bottom:0;">No code change. Genuinely open question, not an answered one. Revisit once clean post-fix data accumulates.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 7 — dd_oversold_bounce</div>
+    <div class="section-title">Six confirmation-gate ideas tested against 166 real historical instances — none of them help</div>
+
+    <p>Live observation: two BUY entries today both ran well past their SL before reversing toward where TP would have been — one of them 30+ minutes later. The entry gate (<span class="mono">internal/strategy/dd_oversold_bounce/strategy.go</span>) requires H1/M5 to still be actively trending down, EMA bearish, RSI&lt;50 — every condition just means "still falling," none confirm the fall has stopped. Backtested six candidate confirmation gates against the strategy's own real SL/TP math (1.0×ATR / 1.5×ATR) and real M1 price data, replaying every historical moment the full condition group was met (not just the ones that live-fired):</p>
+
+    <table>
+      <tr><th>Gate</th><th class="num">Found</th><th class="num">Win rate</th><th class="num">P&amp;L</th></tr>
+      <tr class="ok"><td>naive (enter immediately — today's behavior)</td><td class="num">166</td><td class="num">55.0%</td><td class="num">+$382.56</td></tr>
+      <tr><td>RSI uptick (1 bar)</td><td class="num">114</td><td class="num">55.6%</td><td class="num">+$304.64</td></tr>
+      <tr class="highlight"><td>RSI uptick ×2 (consecutive)</td><td class="num">90</td><td class="num">50.6%</td><td class="num">+$191.15</td></tr>
+      <tr class="highlight"><td>M5 bullish candle (close&gt;open)</td><td class="num">2</td><td class="num">0.0%</td><td class="num">-$13.52</td></tr>
+      <tr><td>higher low (low&gt;prev low)</td><td class="num">114</td><td class="num">55.6%</td><td class="num">+$304.03</td></tr>
+      <tr class="highlight"><td>ADX declining (momentum fading)</td><td class="num">121</td><td class="num">45.1%</td><td class="num">+$118.20</td></tr>
+      <tr class="highlight"><td>momentum_direction=Rising</td><td class="num">0</td><td class="num">—</td><td class="num">—</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">The two closest to naive (RSI uptick, higher low — which mostly measure the same thing) are statistically indistinguishable from entering immediately, while giving up 31% of all opportunities. The stronger filters make things worse. Bullish-candle and momentum-flip gates essentially never fire while the entry conditions still hold — not viable gates at all.</p>
+
+    <p>Separately explains the live/backtest P&amp;L gap noted in Part 2: real live trades looked flat (-$0.38 over 16) despite a win rate matching the backtest closely (56% vs 55%) because 10 of those 16 were cut short by the restart-attribution bug, not by the strategy's own logic.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — not touched</div>
+      <p style="margin-bottom:0;">No code change. The live-observed pattern was real but doesn't generalize — six independent, well-motivated confirmation signals all land in the same place. The strategy's own documented win rate (70.6%, n=34) doesn't hold at scale either (55.0%, n=166) — more likely an overfit small-sample backtest than a fixable entry-timing bug. Watch it under the now-fixed attribution logic before concluding anything further.</p>
+    </div>
+  </div>
+
+</div>
+
+<footer>Generated 2026-09-01 · positions/orders/signals/fills/market_states/candles data from tbot_prod · strategy source: internal/strategy/*/strategy.go · analysis scripts: analysis/daily/2026-09-01/queries/</footer>
+
+</body>
+</html>
