@@ -16,7 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: Prod
     env:
-      TBOT_SYMBOLS: "eurusd xauusd xpdusd xptusd" # add a lowercase ticker here to onboard a new tbot@<symbol> instance
+      # Gold-only for September — see analysis. eurusd/xpdusd/xptusd deliberately
+      # stopped on the server; add them back here when re-enabling.
+      TBOT_SYMBOLS: "xauusd"
 
     steps:
       - uses: actions/checkout@v4
