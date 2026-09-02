@@ -1537,6 +1537,7 @@ func (b *Bot) sendTestPosition(ctx context.Context) {
 }
 
 func (b *Bot) classifyBrokerClose(tracked trackedPosition, execPrice float64) string {
+
 	tol := 5 * b.pipSize
 
 	if tracked.BreakEvenActive {
@@ -1546,12 +1547,18 @@ func (b *Bot) classifyBrokerClose(tracked trackedPosition, execPrice float64) st
 		}
 	}
 
-	if tracked.SLPrice > 0 && math.Abs(execPrice-tracked.SLPrice) <= tol {
-		return strat.CloseReasonSLHit
+	if tracked.SLPrice > 0 {
+		if (tracked.Side == config.SignalBuy && execPrice <= tracked.SLPrice+tol) ||
+			(tracked.Side == config.SignalSell && execPrice >= tracked.SLPrice-tol) {
+			return strat.CloseReasonSLHit
+		}
 	}
 
-	if tracked.TPPrice > 0 && math.Abs(execPrice-tracked.TPPrice) <= tol {
-		return strat.CloseReasonTPHit
+	if tracked.TPPrice > 0 {
+		if (tracked.Side == config.SignalBuy && execPrice >= tracked.TPPrice-tol) ||
+			(tracked.Side == config.SignalSell && execPrice <= tracked.TPPrice+tol) {
+			return strat.CloseReasonTPHit
+		}
 	}
 
 	return strat.CloseReasonUnexplained

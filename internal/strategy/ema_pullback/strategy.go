@@ -16,17 +16,6 @@ const (
 	consecutiveFailsToCooldown = 2
 	cooldownDuration           = 60 * time.Minute
 
-	// Backtested 2026-09-02 (analysis/daily/2026-09-02/report.html): entries
-	// where H1 ADX had already declined more than 3pts over the trailing 3h
-	// — trend actively fading, distinct from adxTrendFloor's instantaneous
-	// level check — were categorically worse (89 instances, 16.9% win rate,
-	// net -$184.63) than the rest (227 instances, 30.4% win rate, +$470.60).
-	// Checked against the real live losing trades that motivated this
-	// (2026-09-02 13:35/13:45 EAT): a looser first pick (4h/5pt) looked good
-	// in aggregate but turned out NOT to have blocked those actual trades —
-	// this threshold does, and is also the more robust one (monotonic across
-	// nearby cutoffs at the same lookback; a stricter 4h/3pt scores higher
-	// in isolation but non-monotonically, a sign of overfitting noise).
 	adxDecayLookback   = 3 * time.Hour
 	adxDecayMaxDecline = 3.0
 )
@@ -45,8 +34,6 @@ type EMAPullback struct {
 	lastH1BarTime  int64
 }
 
-// recordH1ADX appends a new H1 ADX sample once per H1 bar and trims history
-// older than the lookback window (plus a small margin).
 func (s *EMAPullback) recordH1ADX(barTime int64, adx float64) {
 	if barTime == s.lastH1BarTime {
 		return
@@ -61,8 +48,6 @@ func (s *EMAPullback) recordH1ADX(barTime int64, adx float64) {
 	s.h1AdxHistory = s.h1AdxHistory[i:]
 }
 
-// adxDecline returns how much H1 ADX has fallen since adxDecayLookback ago.
-// known is false if there isn't enough history yet to tell.
 func (s *EMAPullback) adxDecline(currentBarTime int64, currentADX float64) (decline float64, known bool) {
 	target := currentBarTime - int64(adxDecayLookback.Seconds())
 	var pastADX float64
