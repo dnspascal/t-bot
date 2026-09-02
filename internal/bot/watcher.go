@@ -12,8 +12,13 @@ import (
 	strat "github.com/denismgaya/t-bot/internal/strategy"
 )
 
+// Active — see analysis/daily/2026-09-02/queries/peak_retention_sim.
+const peakRetentionPct = 25.0
+
+// Old two-gate design, superseded by peakRetentionPct above — kept for reference.
 const peakDrawbackThreshold = 60.0
 const peakDrawbackGatePct = 70.0
+
 const neverProfitableTimeout = 30 * time.Minute
 
 const stallTimeout = 60 * time.Minute
@@ -40,15 +45,15 @@ func (b *Bot) breakEvenBufferPips() float64 {
 
 func (b *Bot) decisionParams() map[string]any {
 	return map[string]any{
-		"peak_drawback_gate_pct":            peakDrawbackGatePct,
-		"peak_drawback_threshold_pct_of_tp": peakDrawbackThreshold,
-		"breakeven_trigger_pct":             breakEvenTriggerPct,
-		"breakeven_buffer_pips":             b.breakEvenBufferPips(),
-		"signals_to_close":                  signalsToClose,
-		"signals_to_reduce":                 signalsToReduce,
-		"never_profitable_timeout_min":      int(neverProfitableTimeout / time.Minute),
-		"stall_timeout_min":                 int(stallTimeout / time.Minute),
-		"stall_max_favorable_pct_of_tp":     stallMaxFavPct,
+		"peak_retention_arm_pct":        breakEvenTriggerPct,
+		"peak_retention_pct":            peakRetentionPct,
+		"breakeven_trigger_pct":         breakEvenTriggerPct,
+		"breakeven_buffer_pips":         b.breakEvenBufferPips(),
+		"signals_to_close":              signalsToClose,
+		"signals_to_reduce":             signalsToReduce,
+		"never_profitable_timeout_min":  int(neverProfitableTimeout / time.Minute),
+		"stall_timeout_min":             int(stallTimeout / time.Minute),
+		"stall_max_favorable_pct_of_tp": stallMaxFavPct,
 	}
 }
 
@@ -143,7 +148,7 @@ func (b *Bot) usesTrendWatcher(strategyName string) bool {
 func countReversalSignals(ms indicator.MarketState, pos trackedPosition) (int, []string) {
 	var signals []string
 
-	if pct := peakDrawbackPct(pos, ms.Close); pct >= peakDrawbackThreshold {
+	if pct := peakGivebackPct(pos, ms.Close); pct > 0 {
 		signals = append(signals, fmt.Sprintf(strat.PeakDrawbackPrefix+"%.0f%%", pct))
 	}
 
@@ -168,6 +173,43 @@ func countReversalSignals(ms indicator.MarketState, pos trackedPosition) (int, [
 	}
 
 	return len(signals), signals
+}
+
+func peakGivebackPct(pos trackedPosition, currentPrice float64) float64 {
+	if pos.OpenPrice == 0 {
+		return 0
+	}
+
+	var tpDist float64
+	if pos.Side == config.SignalBuy {
+		tpDist = pos.TPPrice - pos.OpenPrice
+	} else {
+		tpDist = pos.OpenPrice - pos.TPPrice
+	}
+	if tpDist <= 0 {
+		return 0
+	}
+	armGain := tpDist * (breakEvenTriggerPct / 100)
+
+	var peakGain, currentGain float64
+	if pos.Side == config.SignalBuy {
+		peakGain = pos.MaxFavorable - pos.OpenPrice
+		currentGain = currentPrice - pos.OpenPrice
+	} else {
+		peakGain = pos.OpenPrice - pos.MaxFavorable
+		currentGain = pos.OpenPrice - currentPrice
+	}
+
+	if peakGain < armGain || peakGain <= 0 {
+		return 0
+	}
+
+	floor := peakGain * (peakRetentionPct / 100)
+	if currentGain > floor {
+		return 0
+	}
+
+	return ((peakGain - currentGain) / peakGain) * 100
 }
 
 func peakDrawbackPct(pos trackedPosition, currentPrice float64) float64 {
@@ -228,7 +270,7 @@ func (b *Bot) checkPeakDrawback(ctx context.Context, currentPrice float64) {
 
 		b.checkBreakEven(ctx, pos)
 
-		if pct := peakDrawbackPct(pos, currentPrice); pct >= peakDrawbackThreshold {
+		if pct := peakGivebackPct(pos, currentPrice); pct > 0 {
 			reason := fmt.Sprintf(strat.PeakDrawbackPrefix+"%.0f%%", pct)
 			slog.Info("peak drawback — closing position",
 				"posID", pos.ProviderPositionID,
