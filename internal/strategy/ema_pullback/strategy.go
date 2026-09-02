@@ -15,13 +15,68 @@ const (
 	adxTrendFloor              = 25.0
 	consecutiveFailsToCooldown = 2
 	cooldownDuration           = 60 * time.Minute
+
+	// Backtested 2026-09-02 (analysis/daily/2026-09-02/report.html): entries
+	// where H1 ADX had already declined more than 3pts over the trailing 3h
+	// — trend actively fading, distinct from adxTrendFloor's instantaneous
+	// level check — were categorically worse (89 instances, 16.9% win rate,
+	// net -$184.63) than the rest (227 instances, 30.4% win rate, +$470.60).
+	// Checked against the real live losing trades that motivated this
+	// (2026-09-02 13:35/13:45 EAT): a looser first pick (4h/5pt) looked good
+	// in aggregate but turned out NOT to have blocked those actual trades —
+	// this threshold does, and is also the more robust one (monotonic across
+	// nearby cutoffs at the same lookback; a stricter 4h/3pt scores higher
+	// in isolation but non-monotonically, a sign of overfitting noise).
+	adxDecayLookback   = 3 * time.Hour
+	adxDecayMaxDecline = 3.0
 )
+
+type h1AdxSample struct {
+	barTime int64
+	adx     float64
+}
 
 type EMAPullback struct {
 	buyFailStreak  int
 	sellFailStreak int
 	cooldownDir    string
 	cooldownUntil  time.Time
+	h1AdxHistory   []h1AdxSample
+	lastH1BarTime  int64
+}
+
+// recordH1ADX appends a new H1 ADX sample once per H1 bar and trims history
+// older than the lookback window (plus a small margin).
+func (s *EMAPullback) recordH1ADX(barTime int64, adx float64) {
+	if barTime == s.lastH1BarTime {
+		return
+	}
+	s.lastH1BarTime = barTime
+	s.h1AdxHistory = append(s.h1AdxHistory, h1AdxSample{barTime, adx})
+	cutoff := barTime - int64((adxDecayLookback + time.Hour).Seconds())
+	i := 0
+	for i < len(s.h1AdxHistory) && s.h1AdxHistory[i].barTime < cutoff {
+		i++
+	}
+	s.h1AdxHistory = s.h1AdxHistory[i:]
+}
+
+// adxDecline returns how much H1 ADX has fallen since adxDecayLookback ago.
+// known is false if there isn't enough history yet to tell.
+func (s *EMAPullback) adxDecline(currentBarTime int64, currentADX float64) (decline float64, known bool) {
+	target := currentBarTime - int64(adxDecayLookback.Seconds())
+	var pastADX float64
+	found := false
+	for _, sample := range s.h1AdxHistory {
+		if sample.barTime <= target {
+			pastADX = sample.adx
+			found = true
+		}
+	}
+	if !found {
+		return 0, false
+	}
+	return pastADX - currentADX, true
 }
 
 func New() *EMAPullback { return &EMAPullback{} }
@@ -72,8 +127,14 @@ func (s *EMAPullback) Evaluate(states map[string]indicator.MarketState, currentP
 		return hold("H1 not warmed up")
 	}
 
+	s.recordH1ADX(h1.BarTime, h1.ADX)
+
 	if h1.ADX < adxTrendFloor {
 		return hold("H1 ADX too weak — regime label isn't backed by a real trend")
+	}
+
+	if decline, known := s.adxDecline(h1.BarTime, h1.ADX); known && decline > adxDecayMaxDecline {
+		return hold("H1 trend fading — ADX declined too much over the trailing window")
 	}
 
 	var dir string
