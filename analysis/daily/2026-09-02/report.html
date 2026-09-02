@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Analysis — 2026-09-02</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Lato', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #000;
+  background: #fff;
+  padding-bottom: 80px;
+}
+
+/* ── Header ── */
+.header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 28px 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.header-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: #1d4ed8;
+  background: #eaf0ff; padding: 3px 10px; border-radius: 4px;
+  display: inline-block; margin-bottom: 8px;
+}
+.header h1 { font-size: 22px; font-weight: 900; letter-spacing: -.3px; margin-bottom: 6px; }
+.header-meta { font-size: 13px; color: #6b7280; display: flex; gap: 20px; flex-wrap: wrap; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.chip {
+  font-size: 12px; font-weight: 700; padding: 5px 12px;
+  border-radius: 20px; color: #6b7280;
+}
+.chip.loss { color: #dc2626; background: #fef2f2; }
+.chip.win  { color: #16a34a; background: #f0fdf4; }
+.chip.info { color: #1d4ed8; background: #eaf0ff; }
+
+/* ── Page ── */
+.page { max-width: 920px; margin: 0 auto; padding: 40px 24px 0; }
+.section { margin-bottom: 48px; }
+.section-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: #6b7280; margin-bottom: 10px;
+}
+.section-title { font-size: 18px; font-weight: 900; letter-spacing: -.2px; margin-bottom: 16px; }
+hr { border: none; border-top: 1px solid #e5e7eb; margin: 44px 0; }
+
+/* ── Cards ── */
+.finding {
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 20px 22px; margin-bottom: 16px;
+  background: #fff;
+}
+.finding-header {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.finding-title { font-size: 15px; font-weight: 700; flex: 1; }
+.badge {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+  white-space: nowrap; margin-top: 2px;
+}
+.badge.fixed   { background: #f0fdf4; color: #16a34a; }
+.badge.gap     { background: #fef2f2; color: #dc2626; }
+.badge.pending { background: #fff7ed; color: #c2410c; }
+.badge.info    { background: #eaf0ff; color: #1d4ed8; }
+
+p { margin-bottom: 10px; max-width: 70ch; }
+code {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 13px;
+  background: #f3f4f6; padding: 1px 6px; border-radius: 4px;
+}
+pre {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px;
+  background: #f3f4f6; color: #000;
+  padding: 14px 16px; border-radius: 8px; overflow-x: auto;
+  margin: 10px 0 14px;
+}
+pre .cmt { color: #6b7280; }
+
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.5px; }
+th {
+  text-align: left; font-weight: 700; font-size: 11px;
+  letter-spacing: .04em; text-transform: uppercase; color: #6b7280;
+  padding: 8px 10px; border-bottom: 2px solid #e5e7eb;
+}
+td { padding: 9px 10px; border-bottom: 1px solid #f0f1f3; }
+tr.highlight td { background: #fef2f2; }
+tr.ok td { background: #f0fdf4; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.mono { font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px; }
+
+.quote {
+  background: #f8fafc; border-radius: 8px;
+  padding: 12px 16px; margin: 12px 0 16px; font-size: 14px; color: #000;
+}
+.quote .src { font-size: 11.5px; color: #9ca3af; margin-top: 6px; font-family: 'SF Mono', Menlo, monospace; }
+
+.decision {
+  background: #f5f8ff; border-radius: 8px;
+  padding: 18px 20px; margin-top: 10px;
+}
+.decision-title { font-weight: 900; font-size: 14px; color: #1d4ed8; margin-bottom: 8px; }
+
+footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <span class="header-eyebrow">Daily Analysis</span>
+    <h1>2026-09-02 — ADX Decay Gate, SL/TP Overshoot Classification, Peak-Gain Retention</h1>
+    <div class="header-meta">
+      <span>Bot: T-Bot (cTrader, XAUUSD only — gold-only for September)</span>
+      <span>Prepared from live-observed trades, checked and corrected against real data before shipping</span>
+    </div>
+  </div>
+  <div class="chips">
+    <span class="chip win">3 production fixes shipped</span>
+    <span class="chip info">1 first-pass fix caught and corrected before shipping</span>
+    <span class="chip win">$154.55 net paired improvement backtested</span>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="section">
+    <div class="section-eyebrow">Part 1 — ema_pullback entry timing</div>
+    <div class="section-title">Two SELL entries fired into an actively reversing market — H1's trend label doesn't track its own decay</div>
+
+    <p>Live-observed: two <code>ema_pullback</code> SELLs at 13:35/13:45 lost -$7.79 and -$12.89, opening right as the H1 trend was fading (ADX 52.36→47.19 over the preceding 6 hours) into a market already showing a bullish M5 breakout regime with RSI 77. <code>adxTrendFloor</code> only checks ADX's instantaneous level — still comfortably above 25 — never whether it's rising or actively decaying.</p>
+
+    <div class="section-eyebrow" style="margin-top:24px;">Two candidate fixes tested and rejected first</div>
+    <p>Backtested against every historical instance where the full entry condition group was met on XAUUSD (not just the ones that live-fired), replaying the strategy's own real SL/TP math against real M1 price data:</p>
+    <table>
+      <tr><th>Candidate</th><th class="num">Excluded n</th><th class="num">Excluded win rate</th><th class="num">Excluded P&amp;L</th><th>Verdict</th></tr>
+      <tr class="highlight"><td>Require price on correct side of EMA (hard)</td><td class="num">133</td><td class="num">—</td><td class="num">—</td><td>Net negative — kept set's total P&amp;L drops</td></tr>
+      <tr class="highlight"><td>Reject if RSI extreme against trade</td><td class="num">33</td><td class="num">24.2%</td><td class="num">+$87.12</td><td>Excluded group still net positive — rejected</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">Both looked intuitively right from the live example but don't generalize: the entries they'd cut have a lower win rate but are still net profitable on rare big wins — this strategy runs at a 26.6% win rate carried by occasional large payoffs, and cutting "bad-looking" setups cuts real winners along with real losers.</p>
+
+    <div class="section-eyebrow" style="margin-top:24px;">ADX decay — the one that held up</div>
+    <p>Tested whether H1 ADX had <em>declined</em> over a trailing window (distinct from its instantaneous level), across a 13-point threshold grid:</p>
+    <table>
+      <tr><th>Gate</th><th class="num">Kept n</th><th class="num">Win rate</th><th class="num">P&amp;L</th></tr>
+      <tr><td>No gate (current)</td><td class="num">316</td><td class="num">26.6%</td><td class="num">+$285.97</td></tr>
+      <tr class="ok"><td>ADX decline ≤3pt over trailing 3h</td><td class="num">227</td><td class="num">30.4%</td><td class="num">+$470.60</td></tr>
+      <tr class="highlight"><td>&nbsp;&nbsp;[excluded by 3h/3pt]</td><td class="num">89</td><td class="num">16.9%</td><td class="num">-$184.63</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">Robust across all 13 grid points — every threshold beat baseline, and the excluded group at every point was unambiguously worse, not just smaller.</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">First-pass threshold (4h/5pt) looked good in aggregate but didn't actually block the motivating trade</span>
+        <span class="badge fixed">Caught and corrected</span>
+      </div>
+      <p>Hand-verified the chosen threshold directly against today's real H1 ADX series before shipping: 4h/5pt's computed decline (3.92) fell just under its own 5pt cutoff — it would <strong>not</strong> have stopped the trades that motivated this fix. Re-checked every grid point against the real trades specifically (not just aggregate stats) and switched to 3h/3pt, which does block them, and is also the more robust choice — its own column (3pt→5pt→7pt) decreases smoothly as the threshold loosens, while 4h's column is non-monotonic (5pt scores <em>worse</em> than 7pt), a sign of overfitting to sampling noise rather than a real signal.</p>
+    </div>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;"><code>ema_pullback</code> now holds if H1 ADX has declined more than 3pts over the trailing 3 hours, checked via a small in-memory ADX history ring (<code>recordH1ADX</code>/<code>adxDecline</code>), independent of and in addition to the existing instantaneous <code>adxTrendFloor</code> check.</p>
+    </div>
+    <p><span class="mono">internal/strategy/ema_pullback/strategy.go</span>. PR #56, tag <code>v202609022222</code>.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 2 — Close classification</div>
+    <div class="section-title">"I watched them hit SL" — and the DB said unexplained_close</div>
+
+    <p>Directly reported: two <code>ema_pullback</code> XAUUSD SELLs closed $0.70 and $0.86 <em>past</em> their SL — a real stop-out during a fast reversal — but the DB recorded <code>unexplained_close</code>. Same root cause as the <code>breakeven_sl</code> classification bug fixed a few days ago, just not yet applied to <code>sl_hit</code>/<code>tp_hit</code>: a flat 5-pip ($0.50 on gold) symmetric tolerance around the exact level, too narrow to allow for real slippage past the trigger.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;"><code>classifyBrokerClose</code>'s SL/TP checks are now direction-aware, same shape as the earlier breakeven fix: any overshoot in the "hit" direction counts unconditionally; only the near side keeps a small tolerance, for a close that triggers just shy of the exact level.</p>
+    </div>
+    <p>Checked against every historical <code>unexplained_close</code> on XAUUSD (4 trades) before shipping: all four reclassify correctly and consistently with their own <code>net_profit</code> sign — the two winners become <code>tp_hit</code>, the two losers (including the ones reported here) become <code>sl_hit</code>. None land ambiguous.</p>
+    <p><span class="mono">internal/bot/bot.go</span>. PR #57, tag <code>v202609022235</code>.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 3 — Peak-gain protection</div>
+    <div class="section-title">A trade reached $39.40 of a $58.88 target and gave it all back to one cent — because nothing was watching between the two existing gates</div>
+
+    <p>Raised directly: several <code>ema_pullback</code> trades with far-away TPs got deep into profit, then rode all the way back to breakeven, because the existing protection design is two hard percentage-of-TP-distance gates with a dead zone between them:</p>
+    <ul style="margin-left:20px; margin-bottom:14px;">
+      <li style="margin-bottom:6px;"><strong>Breakeven</strong> arms at 50% of TP distance, but only protects the entry price — none of the profit actually achieved.</li>
+      <li style="margin-bottom:6px;"><strong>peak_drawback</strong> requires 70% of TP distance before it protects anything at all. Below that, nothing.</li>
+    </ul>
+    <p>Real trades found matching this exactly, worst case first:</p>
+    <table>
+      <tr><th>TP distance</th><th class="num">Peak gain</th><th class="num">% of TP</th><th>Closed via</th><th class="num">Net</th><th class="num">Given back</th></tr>
+      <tr class="highlight"><td>$58.88</td><td class="num">$39.40</td><td class="num">66.9%</td><td>breakeven_sl</td><td class="num">$0.01</td><td class="num">$39.39</td></tr>
+      <tr class="highlight"><td>$45.55</td><td class="num">$26.23</td><td class="num">57.6%</td><td>breakeven_sl</td><td class="num">$0.24</td><td class="num">$25.99</td></tr>
+      <tr class="highlight"><td>$45.06</td><td class="num">$25.74</td><td class="num">57.1%</td><td>breakeven_sl</td><td class="num">$0.30</td><td class="num">$25.44</td></tr>
+      <tr class="highlight"><td>$25.21</td><td class="num">$17.44</td><td class="num">69.2%</td><td>breakeven_sl</td><td class="num">-$0.07</td><td class="num">$17.51</td></tr>
+      <tr class="highlight"><td>$23.72</td><td class="num">$15.95</td><td class="num">67.2%</td><td>breakeven_sl</td><td class="num">$0.58</td><td class="num">$15.37</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">$123.70 given back to near-zero, across just these 5 trades, one strategy, 30 days. Two of them (69.2%, 67.2%) came within a hair of the 70% gate and got zero benefit from it — a cliff-edge design, not a gradual one.</p>
+
+    <div class="section-eyebrow" style="margin-top:24px;">Redesign: protect a fraction of peak gain, not a fixed finish line</div>
+    <p>Proposed replacing the two-stage cliff with a single continuous rule: once armed (same 50% arm point breakeven already uses), close if current gain falls to <code>retentionPct</code> of the trade's own peak gain — so the floor rises automatically as the trade makes new highs, rather than requiring one large fixed checkpoint regardless of how far the target actually is.</p>
+    <p>Backtested against 361 real XAUUSD trades (every strategy) over 60 days, replaying real M1 price data from each trade's actual open price/time — not just the ones that happened to live-fire this exact scenario:</p>
+    <table>
+      <tr><th>Retention</th><th class="num">n</th><th class="num">TP hits</th><th class="num">Total $</th><th class="num">Avg $/trade</th></tr>
+      <tr class="highlight"><td>None (pure SL/TP)</td><td class="num">328</td><td class="num">106</td><td class="num">-$314.92</td><td class="num">-$0.96</td></tr>
+      <tr><td>Keep 10%</td><td class="num">332</td><td class="num">74</td><td class="num">-$178.96</td><td class="num">-$0.54</td></tr>
+      <tr><td>Keep 20%</td><td class="num">332</td><td class="num">66</td><td class="num">-$162.46</td><td class="num">-$0.49</td></tr>
+      <tr class="ok"><td><strong>Keep 25%</strong></td><td class="num">332</td><td class="num">63</td><td class="num"><strong>-$118.87</strong></td><td class="num"><strong>-$0.36</strong></td></tr>
+      <tr><td>Keep 30%</td><td class="num">332</td><td class="num">54</td><td class="num">-$146.72</td><td class="num">-$0.44</td></tr>
+      <tr><td>Keep 40-70%</td><td class="num">332</td><td class="num">34→4</td><td class="num">-$258 to -$155</td><td class="num">worse</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">25% is the best point in the grid, and sits in a real basin (20/25/30% cluster close together) rather than a single lucky value. Paired trade-by-trade against no protection at all: 56 trades helped, 43 hurt, 229 unaffected (never armed) — net +$154.55, a broad effect. Higher retention performs worse because it closes trades too early relative to genuine TP hits (106→4 as retention rises from 0→70%).</p>
+    <p style="font-size:13px; color:#6b7280;"><strong>Honest limit:</strong> even at 25% retention the 60-day total is still net negative — this reduces give-back on trades that got into real profit, it doesn't fix why most strategies lose more often than they win.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;"><code>peakGivebackPct</code> replaces the old two-gate check as the active logic — closes once current gain falls to 25% of peak gain, armed at the same 50% point breakeven already uses. Breakeven itself is unchanged (still moves the real broker-side stop, a separate protection against the bot going offline). Per explicit instruction, the old <code>peakDrawbackPct</code>/<code>peakDrawbackThreshold</code>/<code>peakDrawbackGatePct</code> are kept in the code, unused, not deleted. <code>decisionParams()</code> updated to record <code>peak_retention_arm_pct</code>/<code>peak_retention_pct</code>.</p>
+    </div>
+    <p><span class="mono">internal/bot/watcher.go</span>. PR #58, tag <code>v202609022300</code>. Verified against the real motivating trade before shipping: old design rode $39.40 down to $0.01; new design closes it around $9.85.</p>
+  </div>
+
+</div>
+
+<footer>Generated 2026-09-02 · positions/orders/signals/fills/market_states/candles data from tbot_prod · strategy source: internal/strategy/*/strategy.go · analysis scripts: analysis/daily/2026-09-02/queries/</footer>
+
+</body>
+</html>
