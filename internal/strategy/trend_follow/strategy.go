@@ -15,7 +15,6 @@ const (
 	consecutiveFailsToCooldown = 2
 	cooldownDuration           = 60 * time.Minute
 
-
 	maxFreshM5RegimeStreak = 2
 )
 
@@ -24,7 +23,6 @@ type TrendFollow struct {
 	sellFailStreak int
 	cooldownDir    string
 	cooldownUntil  time.Time
-
 
 	lastM5Regime      string
 	lastM5BarTime     int64
@@ -85,6 +83,11 @@ func (s *TrendFollow) Evaluate(states map[string]indicator.MarketState, currentP
 		return hold("H1 regime is ranging -- sr_bounce handles this")
 	}
 
+	m5, ok := states[config.PeriodM5]
+	if !ok || !m5.IsWarmedUp {
+		return hold("M5 not warmed up")
+	}
+
 	var dir string
 
 	switch h1.Regime {
@@ -92,13 +95,19 @@ func (s *TrendFollow) Evaluate(states map[string]indicator.MarketState, currentP
 		dir = config.SignalBuy
 	case config.TrendingDown:
 		dir = config.SignalSell
+	case config.Breakout:
+		// Backtested 2026-09-03 (analysis/daily/2026-09-03/queries/trend_follow_breakout_regime_sim):
+		// breakout is a real, usually-directional regime this switch previously
+		// dropped into "unclear" — direction inferred from M5 EMA (the same
+		// field already used below to confirm trending_up/trending_down) beat
+		// the current trending-only baseline on both count and win rate.
+		if m5.EMAFast > m5.EMASlow {
+			dir = config.SignalBuy
+		} else {
+			dir = config.SignalSell
+		}
 	default:
 		return hold("H1 regime unclear")
-	}
-
-	m5, ok := states[config.PeriodM5]
-	if !ok || !m5.IsWarmedUp {
-		return hold("M5 not warmed up")
 	}
 
 	if m5.BarTime != s.lastM5BarTime {
