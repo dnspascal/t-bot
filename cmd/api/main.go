@@ -376,9 +376,26 @@ type Candle struct {
 	Close float64 `json:"close"`
 }
 
+type MarketStateSnapshot struct {
+	Period          string  `json:"period"`
+	BarTime         string  `json:"bar_time"`
+	Regime          string  `json:"regime"`
+	EMAFast         float64 `json:"ema_fast"`
+	EMASlow         float64 `json:"ema_slow"`
+	RSI             float64 `json:"rsi"`
+	ADX             float64 `json:"adx"`
+	ATR             float64 `json:"atr"`
+	Close           float64 `json:"close"`
+	SupportLevel    float64 `json:"support_level"`
+	ResistanceLevel float64 `json:"resistance_level"`
+	BreakoutLevel   float64 `json:"breakout_level"`
+}
+
 type TradeDetail struct {
 	Trade
-	Candles []Candle `json:"candles"`
+	Candles        []Candle                       `json:"candles"`
+	MarketStates   map[string]MarketStateSnapshot `json:"market_states,omitempty"`
+	DecisionParams json.RawMessage                `json:"decision_params,omitempty"`
 }
 
 func (h *handler) trade(w http.ResponseWriter, r *http.Request) {
@@ -386,8 +403,9 @@ func (h *handler) trade(w http.ResponseWriter, r *http.Request) {
 
 	var t Trade
 	var openAt, closeAt time.Time
-	var symbolID string
+	var symbolID, signalID string
 	var pipSize float64
+	var decisionParams []byte
 
 	err := h.db.QueryRow(r.Context(), `
 		SELECT
@@ -410,7 +428,9 @@ func (h *handler) trade(w http.ResponseWriter, r *http.Request) {
 			p.open_timestamp,
 			COALESCE(p.close_timestamp, NOW()),
 			EXTRACT(EPOCH FROM (COALESCE(p.close_timestamp, NOW()) - p.open_timestamp))::int / 60,
-			COALESCE(sc.pip_size, 0)
+			COALESCE(sc.pip_size, 0),
+			sig.id,
+			p.decision_params
 		FROM positions p
 		JOIN orders o ON o.id = p.our_order_id
 		JOIN signals sig ON sig.id = o.signal_id
@@ -424,6 +444,7 @@ func (h *handler) trade(w http.ResponseWriter, r *http.Request) {
 		&t.MaxFavorable, &t.MaxAdverse,
 		&t.GrossProfit, &t.Commission, &t.NetProfit, &t.CloseReason,
 		&openAt, &closeAt, &t.DurationMinutes, &pipSize,
+		&signalID, &decisionParams,
 	)
 	if err != nil {
 		jsonErr(w, "not found", http.StatusNotFound)
@@ -466,7 +487,50 @@ func (h *handler) trade(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	jsonOK(w, TradeDetail{Trade: t, Candles: candles})
+	// Expand checked_market_states (period -> {id}) into the actual indicator
+	// values read at decision time, so the UI can show what ATR/ADX/regime/etc.
+	// the strategy actually saw when it opened this trade.
+	marketStates := make(map[string]MarketStateSnapshot)
+	var checkedRaw []byte
+	if err := h.db.QueryRow(r.Context(), `SELECT checked_market_states FROM signals WHERE id = $1`, signalID).Scan(&checkedRaw); err == nil && len(checkedRaw) > 0 {
+		var checked map[string]struct {
+			ID string `json:"id"`
+		}
+		if err := json.Unmarshal(checkedRaw, &checked); err == nil {
+			ids := make([]string, 0, len(checked))
+			for _, v := range checked {
+				if v.ID != "" {
+					ids = append(ids, v.ID)
+				}
+			}
+			if len(ids) > 0 {
+				msRows, err := h.db.Query(r.Context(), `
+					SELECT period, bar_time, COALESCE(regime,''), COALESCE(ema_fast,0), COALESCE(ema_slow,0),
+					       COALESCE(rsi,0), COALESCE(adx,0), COALESCE(atr,0), COALESCE(close,0),
+					       COALESCE(support_level,0), COALESCE(resistance_level,0), COALESCE(breakout_level,0)
+					FROM market_states WHERE id = ANY($1)`, ids)
+				if err == nil {
+					defer msRows.Close()
+					for msRows.Next() {
+						var s MarketStateSnapshot
+						var bt time.Time
+						if err := msRows.Scan(&s.Period, &bt, &s.Regime, &s.EMAFast, &s.EMASlow,
+							&s.RSI, &s.ADX, &s.ATR, &s.Close, &s.SupportLevel, &s.ResistanceLevel, &s.BreakoutLevel); err == nil {
+							s.BarTime = bt.Format(time.RFC3339)
+							marketStates[s.Period] = s
+						}
+					}
+				}
+			}
+		}
+	}
+
+	jsonOK(w, TradeDetail{
+		Trade:          t,
+		Candles:        candles,
+		MarketStates:   marketStates,
+		DecisionParams: json.RawMessage(decisionParams),
+	})
 }
 
 // ── /live?symbol=XAUUSD&limit=20 ────────────────────────────────────────────
