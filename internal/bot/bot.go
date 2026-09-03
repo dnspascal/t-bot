@@ -482,6 +482,14 @@ func (b *Bot) reconcileOfflineClose(ctx context.Context, p position.Position) {
 	)
 }
 
+// SeedMarketStates hydrates marketStates from the warmed-up processors — call once, after warmup, before streaming starts. See commit message for why.
+func (b *Bot) SeedMarketStates() {
+	if b.marketStates[b.symbolUUID] == nil {
+		b.marketStates[b.symbolUUID] = make(map[string]indicator.MarketState)
+	}
+	maps.Copy(b.marketStates[b.symbolUUID], b.processorMgr.GetAllStates())
+}
+
 func (b *Bot) onCandleReceived(ctx context.Context, c provider.Candle) {
 	dbCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

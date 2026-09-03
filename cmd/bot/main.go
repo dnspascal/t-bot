@@ -206,6 +206,7 @@ func startBotForProvider(
 		slog.Error("warm-up failed — bot will not start", "provider", prov.Name(), "err", err)
 		return
 	}
+	botResult.Bot.SeedMarketStates()
 
 	if err := prov.StartStreaming(); err != nil {
 		slog.Error("start streaming failed", "provider", prov.Name(), "err", err)
