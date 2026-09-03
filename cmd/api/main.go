@@ -632,9 +632,8 @@ func (h *handler) live(w http.ResponseWriter, r *http.Request) {
 
 	var balance float64
 	h.db.QueryRow(r.Context(), `
-		SELECT COALESCE((detail->>'balance')::numeric, 0)
-		FROM bot_events WHERE event_type = 'account_snapshot'
-		ORDER BY created_at DESC LIMIT 1`).Scan(&balance)
+		SELECT COALESCE(balance, 0) FROM account_snapshots
+		ORDER BY snapshotted_at DESC LIMIT 1`).Scan(&balance)
 
 	equity := balance
 	for _, op := range openPositions {
