@@ -487,9 +487,25 @@ type LiveSignal struct {
 	CreatedAt  string `json:"created_at"`
 }
 
+type OpenPosition struct {
+	ID            string  `json:"id"`
+	Symbol        string  `json:"symbol"`
+	Strategy      string  `json:"strategy"`
+	Side          string  `json:"side"`
+	OpenPrice     float64 `json:"open_price"`
+	CurrentPrice  float64 `json:"current_price"`
+	SLPrice       float64 `json:"sl_price"`
+	TPPrice       float64 `json:"tp_price"`
+	UnrealizedPnL float64 `json:"unrealized_pnl"`
+	OpenAt        string  `json:"open_at"`
+}
+
 type LiveResponse struct {
-	Ticks   []LiveTick   `json:"ticks"`
-	Signals []LiveSignal `json:"signals"`
+	Ticks         []LiveTick     `json:"ticks"`
+	Signals       []LiveSignal   `json:"signals"`
+	OpenPositions []OpenPosition `json:"open_positions"`
+	Balance       float64        `json:"balance"`
+	Equity        float64        `json:"equity"`
 }
 
 func (h *handler) live(w http.ResponseWriter, r *http.Request) {
@@ -533,14 +549,22 @@ func (h *handler) live(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Latest signal PER STRATEGY, not the latest N overall — with 10
+	// strategies firing every M5 close, "most recent N signals" would only
+	// ever show whichever strategies happened to land in that small window,
+	// silently dropping the rest even though they evaluated too.
 	signals := make([]LiveSignal, 0)
 	sigRows, err := h.db.Query(r.Context(), `
-		SELECT sym.symbol, sig.strategy, sig.signal, COALESCE(sig.reason, ''), COALESCE(sig.confluence, 0), sig.created_at
-		FROM signals sig
-		JOIN symbols sym ON sym.id = sig.symbol_id
-		WHERE 1=1 `+symbolFilter+`
-		ORDER BY sig.created_at DESC
-		LIMIT `+limitArg, args...)
+		SELECT symbol, strategy, signal, reason, confluence, created_at FROM (
+			SELECT DISTINCT ON (sig.strategy)
+			       sym.symbol, sig.strategy, sig.signal,
+			       COALESCE(sig.reason, '') as reason, COALESCE(sig.confluence, 0) as confluence, sig.created_at
+			FROM signals sig
+			JOIN symbols sym ON sym.id = sig.symbol_id
+			WHERE sig.created_at >= now() - interval '1 hour' `+symbolFilter+`
+			ORDER BY sig.strategy, sig.created_at DESC
+		) latest
+		ORDER BY created_at DESC`, args[:len(args)-1]...)
 	if err != nil {
 		slog.Error("live signals query", "err", err)
 	} else {
@@ -556,7 +580,71 @@ func (h *handler) live(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	jsonOK(w, LiveResponse{Ticks: ticks, Signals: signals})
+	openPositions := make([]OpenPosition, 0)
+	posRows, err := h.db.Query(r.Context(), `
+		SELECT p.id, sym.symbol, COALESCE(sig.strategy, ''), p.side,
+		       COALESCE(p.open_price, 0), COALESCE(p.current_sl, 0), COALESCE(p.current_tp, 0),
+		       p.volume, p.open_timestamp
+		FROM positions p
+		JOIN symbols sym ON sym.id = p.symbol_id
+		LEFT JOIN orders o ON o.id = p.our_order_id
+		LEFT JOIN signals sig ON sig.id = o.signal_id
+		WHERE p.status = 'open' `+symbolFilter+`
+		ORDER BY p.open_timestamp DESC`, args[:len(args)-1]...)
+	if err != nil {
+		slog.Error("live open positions query", "err", err)
+	} else {
+		defer posRows.Close()
+		for posRows.Next() {
+			var op OpenPosition
+			var side string
+			var volume int64
+			var openAt time.Time
+			if err := posRows.Scan(&op.ID, &op.Symbol, &op.Strategy, &side,
+				&op.OpenPrice, &op.SLPrice, &op.TPPrice, &volume, &openAt); err != nil {
+				continue
+			}
+			op.Side = side
+			op.OpenAt = openAt.Format(time.RFC3339Nano)
+
+			// Unrealized P&L needs the live price this position would actually
+			// close at right now — bid for a BUY (what you'd sell into), ask for
+			// a SELL (what you'd buy back at) — not the mid/last-traded price.
+			var bid, ask float64
+			err := h.db.QueryRow(r.Context(), `
+				SELECT pt.bid, pt.ask FROM price_ticks pt
+				JOIN symbols s2 ON s2.id = pt.symbol_id
+				WHERE s2.symbol = $1
+				ORDER BY pt.received_at DESC LIMIT 1`, op.Symbol).Scan(&bid, &ask)
+			if err == nil {
+				volUnits := float64(volume) / 100.0 // cTrader reports volume in 0.01 of a unit
+				if side == "BUY" {
+					op.CurrentPrice = bid
+					op.UnrealizedPnL = (bid - op.OpenPrice) * volUnits
+				} else {
+					op.CurrentPrice = ask
+					op.UnrealizedPnL = (op.OpenPrice - ask) * volUnits
+				}
+			}
+			openPositions = append(openPositions, op)
+		}
+	}
+
+	var balance float64
+	h.db.QueryRow(r.Context(), `
+		SELECT COALESCE((detail->>'balance')::numeric, 0)
+		FROM bot_events WHERE event_type = 'account_snapshot'
+		ORDER BY created_at DESC LIMIT 1`).Scan(&balance)
+
+	equity := balance
+	for _, op := range openPositions {
+		equity += op.UnrealizedPnL
+	}
+
+	jsonOK(w, LiveResponse{
+		Ticks: ticks, Signals: signals,
+		OpenPositions: openPositions, Balance: balance, Equity: equity,
+	})
 }
 
 // ── Middleware ────────────────────────────────────────────────────────────────
