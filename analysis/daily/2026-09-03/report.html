@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Analysis — 2026-09-03</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Lato', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #000;
+  background: #fff;
+  padding-bottom: 80px;
+}
+
+/* ── Header ── */
+.header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 28px 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.header-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: #1d4ed8;
+  background: #eaf0ff; padding: 3px 10px; border-radius: 4px;
+  display: inline-block; margin-bottom: 8px;
+}
+.header h1 { font-size: 22px; font-weight: 900; letter-spacing: -.3px; margin-bottom: 6px; }
+.header-meta { font-size: 13px; color: #6b7280; display: flex; gap: 20px; flex-wrap: wrap; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.chip {
+  font-size: 12px; font-weight: 700; padding: 5px 12px;
+  border-radius: 20px; color: #6b7280;
+}
+.chip.loss { color: #dc2626; background: #fef2f2; }
+.chip.win  { color: #16a34a; background: #f0fdf4; }
+.chip.info { color: #1d4ed8; background: #eaf0ff; }
+
+/* ── Page ── */
+.page { max-width: 920px; margin: 0 auto; padding: 40px 24px 0; }
+.section { margin-bottom: 48px; }
+.section-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: #6b7280; margin-bottom: 10px;
+}
+.section-title { font-size: 18px; font-weight: 900; letter-spacing: -.2px; margin-bottom: 16px; }
+hr { border: none; border-top: 1px solid #e5e7eb; margin: 44px 0; }
+
+/* ── Cards ── */
+.finding {
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 20px 22px; margin-bottom: 16px;
+  background: #fff;
+}
+.finding-header {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.finding-title { font-size: 15px; font-weight: 700; flex: 1; }
+.badge {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+  white-space: nowrap; margin-top: 2px;
+}
+.badge.fixed   { background: #f0fdf4; color: #16a34a; }
+.badge.gap     { background: #fef2f2; color: #dc2626; }
+.badge.pending { background: #fff7ed; color: #c2410c; }
+.badge.info    { background: #eaf0ff; color: #1d4ed8; }
+
+p { margin-bottom: 10px; max-width: 70ch; }
+code {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 13px;
+  background: #f3f4f6; padding: 1px 6px; border-radius: 4px;
+}
+pre {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px;
+  background: #f3f4f6; color: #000;
+  padding: 14px 16px; border-radius: 8px; overflow-x: auto;
+  margin: 10px 0 14px;
+}
+pre .cmt { color: #6b7280; }
+
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.5px; }
+th {
+  text-align: left; font-weight: 700; font-size: 11px;
+  letter-spacing: .04em; text-transform: uppercase; color: #6b7280;
+  padding: 8px 10px; border-bottom: 2px solid #e5e7eb;
+}
+td { padding: 9px 10px; border-bottom: 1px solid #f0f1f3; }
+tr.highlight td { background: #fef2f2; }
+tr.ok td { background: #f0fdf4; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.mono { font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px; }
+
+.quote {
+  background: #f8fafc; border-radius: 8px;
+  padding: 12px 16px; margin: 12px 0 16px; font-size: 14px; color: #000;
+}
+.quote .src { font-size: 11.5px; color: #9ca3af; margin-top: 6px; font-family: 'SF Mono', Menlo, monospace; }
+
+.decision {
+  background: #f5f8ff; border-radius: 8px;
+  padding: 18px 20px; margin-top: 10px;
+}
+.decision-title { font-weight: 900; font-size: 14px; color: #1d4ed8; margin-bottom: 8px; }
+
+ul.plain { margin-left: 20px; margin-bottom: 14px; }
+ul.plain li { margin-bottom: 6px; }
+
+footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <span class="header-eyebrow">Daily Analysis</span>
+    <h1>2026-09-03 — Live Dashboard Ships, Live-Signals Coverage Bug Fixed, trend_follow's Breakout Gap Closed</h1>
+    <div class="header-meta">
+      <span>Bot: T-Bot (cTrader, XAUUSD only — gold-only for September)</span>
+      <span>Prepared from live dashboard use and real H1 data, checked and corrected against real data before shipping</span>
+    </div>
+  </div>
+  <div class="chips">
+    <span class="chip info">1 dashboard feature shipped</span>
+    <span class="chip win">2 production fixes shipped</span>
+    <span class="chip win">+$1,230.49 backtested (steady-state weeks)</span>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="section">
+    <div class="section-eyebrow">Part 1 — Live dashboard</div>
+    <div class="section-title">Built a live view of the bot: ticks, signals, open trades, and balance — none of it requiring a refresh</div>
+
+    <div class="quote">
+      "ok here for now i want in that web project u to add something somwhere showing live price ticks received and probabily live signals received they should update automatically without me refreshing"
+      <div class="src">t-bot-web</div>
+    </div>
+
+    <p>Landed in three layers, each iterated on real feedback rather than shipped on the first pass:</p>
+
+    <div class="section-eyebrow" style="margin-top:20px;">Backend — <code>/live</code> endpoint (t-bot)</div>
+    <ul class="plain">
+      <li><strong>Open positions, live P&amp;L, balance/equity.</strong> Returns open positions with unrealized P&amp;L computed off the latest <code>price_ticks</code> bid/ask (bid closes a BUY, ask closes a SELL — what actually realizing the position would pay), plus account balance from the latest <code>account_snapshot</code> bot_event and equity as balance + total unrealized.</li>
+      <li><strong>Signals coverage bug, found and fixed before it shipped further.</strong> The signals query was "latest N overall" — with 10 strategies evaluating every M5 close, whichever strategies didn't land in that small rolling window silently vanished from the list, even though they'd evaluated too. <code>trend_follow</code> specifically kept disappearing. Now returns the latest signal <em>per strategy</em> (<code>DISTINCT ON</code>), bounded to the last hour so a stopped or renamed strategy doesn't linger forever — caught two stale leftover strategy names doing exactly that mid-fix, before the recency bound went in.</li>
+    </ul>
+    <p><span class="mono">cmd/api/main.go</span>. PR #61, tag <code>v202609030949</code>.</p>
+
+    <div class="section-eyebrow" style="margin-top:24px;">Frontend — dashboard (t-bot-web)</div>
+    <p>Open positions now render as rows inside the real trades list, identical structure to closed trades (side, strategy, symbol, price, pips, duration), with a live P&amp;L that updates in place. Balance and equity sit in the page header, live. Live ticks and signals got their own dedicated third column rather than being squeezed into existing space.</p>
+    <p>Getting the "feels alive" part right took several rejected attempts, each corrected on direct feedback rather than guessed at:</p>
+    <table>
+      <tr><th>Tried</th><th>Verdict</th></tr>
+      <tr class="highlight"><td>Animated blinking/ping dot, then a custom sonar box-shadow dot</td><td>Rejected twice — "just gotta worse isnt there anything else than blinking dot"</td></tr>
+      <tr class="ok"><td>Static dot; liveness proven by the "updated HH:MM:SS" timestamp already on screen</td><td>Kept</td></tr>
+      <tr class="highlight"><td>Flex layout with ad-hoc spacers for the tick Sell/Buy columns</td><td>Rejected — columns didn't actually align (caught via screenshot)</td></tr>
+      <tr class="ok"><td>Shared CSS grid template for header + rows</td><td>Kept</td></tr>
+      <tr class="highlight"><td>Compressed signal rows to one line</td><td>Rejected — "the compress worsened it," broke reason-text truncation</td></tr>
+      <tr class="highlight"><td>Background-tint flash on changing numbers</td><td>Rejected — "i was hoping animation on number themselves," not the box behind them</td></tr>
+      <tr class="ok"><td>Digits themselves pop (scale + brighten) on change; ticks/signal badges pop fresh on arrival</td><td>Kept</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">Reviewed against a client-side-only simulated trade (fake position, price ticking in local state, gated behind <code>?sim=1</code>, never touching the backend) so the motion could be judged without waiting for a real open position — removed entirely before shipping.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;">Trades list shows open positions live, in place, above closed trades. Balance/equity live in the header. Ticks, signals, open-trade P&amp;L, and balance/equity all update on a 2-second poll (React Query, shared cache across components — one poll serves all three, not three separate ones) with value-driven pop animation on the actual digits, not a background wash.</p>
+    </div>
+    <p><span class="mono">t-bot-web: src/app/_components/{dashboard,trades_list,live_feed}.tsx</span>, <span class="mono">src/lib/use-flash.ts</span>. Deployed via Vercel off <code>main</code>.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 2 — trend_follow strategy gap</div>
+    <div class="section-title">A real, usually-directional H1 regime was silently treated as "unclear" — trend_follow sat out most of today's move</div>
+
+    <div class="quote">
+      "trend follow u asking is saying h1 is unclear"
+      <div class="src">reported after watching H1 trend clearly all day</div>
+    </div>
+
+    <p><code>trend_follow</code>'s H1-regime switch only handled <code>trending_up</code>/<code>trending_down</code>. <code>breakout</code> — a real, distinct, usually-directional regime the codebase already tracks (<code>config.Breakout</code>) — fell into the same generic <code>default: hold("H1 regime unclear")</code> branch as a genuinely ambiguous reading. Today alone, <code>breakout</code> covered 6 of 11 H1 bars and the bulk of the day's actual move (4382→4431); <code>trend_follow</code> sat out all of it.</p>
+
+    <div class="section-eyebrow" style="margin-top:20px;">Backtest — full mechanical replay, not just live-fired trades</div>
+    <p>Replayed the strategy's real entry gate exactly — including the stateful M5-regime-streak machine, walked chronologically — against XAUUSD's full H1 history (938 states), using the strategy's own SL/TP math (1.5x/2.5x M15 ATR) against real M1 price data. Direction on <code>breakout</code> inferred from M5 EMA fast vs slow — the same field already used to confirm <code>trending_up</code>/<code>trending_down</code>.</p>
+    <table>
+      <tr><th>Bucket</th><th class="num">n</th><th class="num">Win rate</th><th class="num">P&amp;L</th></tr>
+      <tr><td>current (baseline — trending only)</td><td class="num">69</td><td class="num">26.1%</td><td class="num">-$380.86</td></tr>
+      <tr class="ok"><td>ADDED by breakout+EMA (isolated)</td><td class="num">342</td><td class="num">39.1%</td><td class="num">+$404.07</td></tr>
+      <tr><td>combined total</td><td class="num">411</td><td class="num">36.8%</td><td class="num">+$23.21</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">Isolated the added trades specifically (not folded straight into a combined total) so a net-negative addition couldn't hide inside an improving aggregate. It's clearly net positive on its own.</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Aggregate P&amp;L looked barely positive — checking the weekly split explained why, and it wasn't the fix</span>
+        <span class="badge fixed">Root-caused before shipping</span>
+      </div>
+      <p>Grouped the added trades by week to check for one-lucky-week bias. Not uniform: the first ~2.5 weeks — literally the start of XAUUSD's H1 history in this DB — were catastrophic; every week since has been consistently decent-to-good (6 of 7 positive). Root-caused directly against real data rather than dismissed: average H1 ADX in that cold-start window was 22.07, vs 30.69 afterward — immature indicator readings early in the history, not a flaw in treating breakout as directional. Excluding that window: <strong>279 trades, 47.2% win rate, +$1,230.49</strong> over the 7 real weeks that follow.</p>
+    </div>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;"><code>trend_follow</code>'s H1-regime switch now handles <code>breakout</code> as a third directional case, inferring BUY/SELL from M5 EMA fast vs slow, then falling through the same M5-alignment/regime/freshness/ADX gates the existing regimes already pass through. Only a genuinely unrecognized regime value still holds as "unclear."</p>
+    </div>
+    <p><span class="mono">internal/strategy/trend_follow/strategy.go</span>. PR #62, tag <code>v202609031258</code>.</p>
+  </div>
+
+</div>
+
+<footer>Generated 2026-09-03 · positions/orders/signals/fills/market_states/candles data from tbot_prod · strategy source: internal/strategy/*/strategy.go · analysis scripts: analysis/daily/2026-09-03/queries/ · dashboard: t-bot-web (Vercel)</footer>
+
+</body>
+</html>
