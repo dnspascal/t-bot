@@ -61,6 +61,7 @@ func main() {
 	r.Get("/metrics", h.metrics)
 	r.Get("/trades", h.trades)
 	r.Get("/trades/{id}", h.trade)
+	r.Get("/live", h.live)
 
 	slog.Info("api listening", "port", port, "origin", allowedOrigin)
 	if err := http.ListenAndServe(":"+port, r); err != nil {
@@ -466,6 +467,96 @@ func (h *handler) trade(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonOK(w, TradeDetail{Trade: t, Candles: candles})
+}
+
+// ── /live?symbol=XAUUSD&limit=20 ────────────────────────────────────────────
+
+type LiveTick struct {
+	Symbol     string  `json:"symbol"`
+	Bid        float64 `json:"bid"`
+	Ask        float64 `json:"ask"`
+	ReceivedAt string  `json:"received_at"`
+}
+
+type LiveSignal struct {
+	Symbol     string `json:"symbol"`
+	Strategy   string `json:"strategy"`
+	Signal     string `json:"signal"`
+	Reason     string `json:"reason"`
+	Confluence int    `json:"confluence"`
+	CreatedAt  string `json:"created_at"`
+}
+
+type LiveResponse struct {
+	Ticks   []LiveTick   `json:"ticks"`
+	Signals []LiveSignal `json:"signals"`
+}
+
+func (h *handler) live(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	symbol := q.Get("symbol")
+
+	limit, _ := strconv.Atoi(q.Get("limit"))
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+
+	symbolFilter := ""
+	var args []any
+	if symbol != "" {
+		args = append(args, symbol)
+		symbolFilter = "AND sym.symbol = $1"
+	}
+	args = append(args, limit)
+	limitArg := fmt.Sprintf("$%d", len(args))
+
+	ticks := make([]LiveTick, 0)
+	rows, err := h.db.Query(r.Context(), `
+		SELECT sym.symbol, pt.bid, pt.ask, pt.received_at
+		FROM price_ticks pt
+		JOIN symbols sym ON sym.id = pt.symbol_id
+		WHERE 1=1 `+symbolFilter+`
+		ORDER BY pt.received_at DESC
+		LIMIT `+limitArg, args...)
+	if err != nil {
+		slog.Error("live ticks query", "err", err)
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			var t LiveTick
+			var receivedAt time.Time
+			if err := rows.Scan(&t.Symbol, &t.Bid, &t.Ask, &receivedAt); err != nil {
+				continue
+			}
+			t.ReceivedAt = receivedAt.Format(time.RFC3339Nano)
+			ticks = append(ticks, t)
+		}
+	}
+
+	signals := make([]LiveSignal, 0)
+	sigRows, err := h.db.Query(r.Context(), `
+		SELECT sym.symbol, sig.strategy, sig.signal, COALESCE(sig.reason, ''), COALESCE(sig.confluence, 0), sig.created_at
+		FROM signals sig
+		JOIN symbols sym ON sym.id = sig.symbol_id
+		WHERE 1=1 `+symbolFilter+`
+		ORDER BY sig.created_at DESC
+		LIMIT `+limitArg, args...)
+	if err != nil {
+		slog.Error("live signals query", "err", err)
+	} else {
+		defer sigRows.Close()
+		for sigRows.Next() {
+			var s LiveSignal
+			var createdAt time.Time
+			if err := sigRows.Scan(&s.Symbol, &s.Strategy, &s.Signal, &s.Reason, &s.Confluence, &createdAt); err != nil {
+				continue
+			}
+			s.CreatedAt = createdAt.Format(time.RFC3339Nano)
+			signals = append(signals, s)
+		}
+	}
+
+	jsonOK(w, LiveResponse{Ticks: ticks, Signals: signals})
 }
 
 // ── Middleware ────────────────────────────────────────────────────────────────
