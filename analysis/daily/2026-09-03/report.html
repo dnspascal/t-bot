@@ -125,16 +125,17 @@ footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; f
 <div class="header">
   <div>
     <span class="header-eyebrow">Daily Analysis</span>
-    <h1>2026-09-03 — Live Dashboard Ships, Live-Signals Coverage Bug Fixed, trend_follow's Breakout Gap Closed</h1>
+    <h1>2026-09-03 — Live Dashboard Ships, Balance &amp; Market-State Bugs Fixed, trend_follow's Breakout Regime Stress-Tested</h1>
     <div class="header-meta">
       <span>Bot: T-Bot (cTrader, XAUUSD only — gold-only for September)</span>
-      <span>Prepared from live dashboard use and real H1 data, checked and corrected against real data before shipping</span>
+      <span>Prepared from live dashboard use and real production data, checked and corrected against real data before shipping</span>
     </div>
   </div>
   <div class="chips">
-    <span class="chip info">1 dashboard feature shipped</span>
-    <span class="chip win">2 production fixes shipped</span>
-    <span class="chip win">+$1,230.49 backtested (steady-state weeks)</span>
+    <span class="chip info">2 features shipped</span>
+    <span class="chip win">4 production fixes shipped</span>
+    <span class="chip info">4 candidate strategy fixes tested and rejected</span>
+    <span class="chip win">+$1,230.49 backtested (trend_follow, steady-state weeks)</span>
   </div>
 </div>
 
@@ -216,6 +217,151 @@ footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; f
       <p style="margin-bottom:0;"><code>trend_follow</code>'s H1-regime switch now handles <code>breakout</code> as a third directional case, inferring BUY/SELL from M5 EMA fast vs slow, then falling through the same M5-alignment/regime/freshness/ADX gates the existing regimes already pass through. Only a genuinely unrecognized regime value still holds as "unclear."</p>
     </div>
     <p><span class="mono">internal/strategy/trend_follow/strategy.go</span>. PR #62, tag <code>v202609031258</code>.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 3 — Dashboard balance</div>
+    <div class="section-title">A real loss closed and the balance shown didn't move — it was reading a table that only updates once, at startup</div>
+
+    <div class="quote">
+      "check that the balance was at $230 we lost $8.4 but it didnt go down??? in ctrader app it is not $222"
+      <div class="src">reported minutes after a real SELL loss closed</div>
+    </div>
+
+    <p><code>/live</code>'s balance query read from <code>bot_events</code> (<code>event_type='account_snapshot'</code>) — a row written exactly once per bot process lifetime, at startup only (<code>trigger:"startup"</code>). A separate, correct table, <code>account_snapshots</code>, already gets a fresh row after every trade close too (<code>trigger="post_trade"</code>, via <code>provider.SaveBalanceSnapshot</code>) — the dashboard was reading the wrong one.</p>
+    <table>
+      <tr><th>Source</th><th>Balance</th><th>Trigger</th><th>Timestamp</th></tr>
+      <tr class="highlight"><td><code>bot_events</code> (what <code>/live</code> read)</td><td class="num">$230.50</td><td>startup</td><td>13:00:27 — three hours stale</td></tr>
+      <tr class="ok"><td><code>account_snapshots</code> (correct)</td><td class="num">$222.10</td><td>post_trade</td><td>14:14:58 — the trade's own close instant</td></tr>
+    </table>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;"><code>/live</code> balance now reads <code>account_snapshots ORDER BY snapshotted_at DESC LIMIT 1</code> instead. Verified locally against the tunneled prod DB before shipping — returned <code>"balance":222.1</code>, matching cTrader.</p>
+    </div>
+    <p><span class="mono">cmd/api/main.go</span>. PR #64, tag <code>v202609031523</code>.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 4 — Market-state pipeline</div>
+    <div class="section-title">A SELL fired with zero H1 confirmation, straight into a strong H1 uptrend — because H1 was silently missing from the data every strategy reads</div>
+
+    <p>Investigating the balance report above led to a second, unrelated bug — a real position that should never have opened the way it did:</p>
+    <table>
+      <tr><th>Metric</th><th>Value</th></tr>
+      <tr><td>Side / duration</td><td>SELL, 24 minutes</td></tr>
+      <tr><td>Max favorable excursion</td><td class="num">$0.54 into profit — never got further</td></tr>
+      <tr class="highlight"><td>Net</td><td class="num">-$8.40 (sl_hit)</td></tr>
+      <tr class="highlight"><td>H1 regime at entry</td><td><code>trending_up</code>, ADX 40.36 — directly against the SELL</td></tr>
+    </table>
+
+    <div class="section-eyebrow" style="margin-top:20px;">Root cause — H1 was genuinely absent, not just stale</div>
+    <p>Checked <code>checked_market_states</code> — the exact snapshot recorded per-signal at decision time — across the restart window. The <code>"H1"</code> key was completely missing from every signal between 13:10 and 13:55, reappearing exactly at 14:00, the next real H1 candle close. Traced to the actual mechanism: <code>Warmer.WarmupAllTimeframes</code> correctly seeds each timeframe's indicator calculator from historical candles at startup — but nothing ever copies that into <code>b.marketStates</code>, the live map strategies actually read. That map only gains a period's entry when that period's <em>next live candle closes</em>, so after every restart, H1 (or M30) is invisible to every strategy for up to a full bar's duration (up to 59 minutes for H1) — even though the underlying data was already correct.</p>
+    <p><code>breakout</code>'s H1 gate is written as <em>"if H1 data is available, check it"</em> rather than <em>"require it, hold if missing"</em> — so it fired completely blind to H1, straight against a strong uptrend.</p>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Not a one-off — quantified across every historical occurrence</span>
+        <span class="badge fixed">Root-caused with real data before shipping</span>
+      </div>
+      <table style="margin-top:6px;">
+        <tr><th></th><th class="num">Closed trades</th><th class="num">Win rate</th><th class="num">Net</th></tr>
+        <tr class="ok"><td>H1 present at decision</td><td class="num">51</td><td class="num">54.9%</td><td class="num">+$51.85</td></tr>
+        <tr class="highlight"><td>H1 silently missing (this bug)</td><td class="num">13</td><td class="num">38.5%</td><td class="num">-$36.00</td></tr>
+      </table>
+      <p style="margin-bottom:0;">13 occurrences since 2026-07-27, every one lining up with a restart. Three other strategies — <code>session_momentum</code>, <code>sr_bounce</code>, <code>session_open</code> — share the same soft-fail-open pattern and are exposed the same way.</p>
+    </div>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;"><code>Bot.SeedMarketStates()</code>, called once after warmup and before streaming starts, hydrates the live map immediately from the already-warmed processors — fixes all four affected strategies at the root. Verified live: on the deploy's own restart, H1 was present for all 10 strategies on the very first evaluation cycle (previously took up to 59 minutes).</p>
+    </div>
+    <p><span class="mono">internal/bot/bot.go</span>, <span class="mono">cmd/bot/main.go</span>. PR #65, tag <code>v202609031527</code>.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 5 — Dashboard, trade decisions</div>
+    <div class="section-title">Every trade's page now shows exactly what the strategy saw and decided on</div>
+
+    <div class="quote">
+      "one thing tho i need u to look over ... in web dashboard when i option see trade decisions like those market states that made that trade like what was atr, adx and all of those and decision params if possible where can we put that"
+    </div>
+
+    <p>Two new fields on <code>/trades/{id}</code>: <strong>market_states</strong> — the real ADX/ATR/RSI/EMA/regime/support-resistance values per timeframe at decision time, expanded from the state IDs already stored in <code>signals.checked_market_states</code> (previously only references, not values) — and <strong>decision_params</strong> — the watcher-level exit/risk constants (breakeven trigger, peak retention, stall timeouts) already captured on <code>positions.decision_params</code> at open time.</p>
+    <p style="font-size:13px; color:#6b7280;">Verified against real data before shipping, and it immediately paid for itself: pulled up the trade from Part 4 and its own page correctly shows <code>H1</code> missing from its market states — the bug made visible in the product, on the exact trade that proved it.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — implemented and shipped</div>
+      <p style="margin-bottom:0;">"Market States at Entry" table and "Decision Params" list added to the trade detail page. Missing timeframes are footnoted rather than silently omitted.</p>
+    </div>
+    <p><span class="mono">cmd/api/main.go</span> (PR #66, tag <code>v202609031537</code>) · <span class="mono">t-bot-web: src/app/trades/[id]/page.tsx</span>, <span class="mono">src/types/index.ts</span> (deployed via Vercel off <code>main</code>).</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 6 — trend_follow breakout regime, stress-tested</div>
+    <div class="section-title">Three real losses in one day on the regime just shipped in Part 2 — four different fixes proposed, backtested, and rejected</div>
+
+    <div class="quote">
+      "i think same thing happened on first trade is about to happen again these trades are now in deep losses"
+    </div>
+
+    <p>A live BUY at 16:10 hit SL 34 minutes later (-$19.86), entered right as a fast rally (~$33 in 20 minutes) topped out. The trade's own "Market States at Entry" table (Part 5, put to immediate use) showed the real picture: only M5 said <code>trending_up</code> outright — M15/M30/H1/H4 all said <code>breakout</code>, and critically, H4's own EMA had already crossed bearish (4397.32 &lt; 4411.22) while D1 was explicitly <code>trending_down</code>. M5 and M15 RSI were 76.1 and 79.0 — both overbought. <code>trend_follow</code> reads none of H4, D1, or RSI at all.</p>
+
+    <p>Two more BUYs (18:25, 18:30) fired later the same day, same H1 <code>breakout</code> regime, same pattern — both eventually closed via <code>time_stop=stalled_60m</code> at -$11.18 and -$13.58. Three for three, all from the regime handling shipped that morning.</p>
+
+    <div class="section-eyebrow" style="margin-top:20px;">Four candidates, tested in isolation, all rejected</div>
+    <table>
+      <tr><th>Candidate</th><th>Result</th></tr>
+      <tr class="highlight"><td><strong>RSI-extreme filter</strong> — hold if M5/M15 RSI overbought/oversold against the trade</td><td>Backwards. At every threshold tested, the "exhausted" trades won <em>more</em>, not less (e.g. thr=70: kept 22.4% WR/-$734.64 vs excluded 43.9% WR/+$958.73). Makes sense for a trend-follower: sustained RSI extremes are a strong-trend signature, not exhaustion.</td></tr>
+      <tr class="highlight"><td><strong>H4/D1-opposition filter</strong> — hold if H4 or D1 EMA opposes the direction</td><td>H4 alone: excluded bucket actually did <em>better</em> (43.0% WR, net positive) — would cut winners. D1 alone: aggregate looked mildly positive (kept +$454 vs excluded -$230) but flipped sign repeatedly week to week with no explanation across all 9 weeks — noise, not a real edge.</td></tr>
+      <tr class="highlight"><td><strong>Spike-chase / velocity filter</strong> — hold if price moved &gt;1-3x ATR in the 15-45min before entry</td><td>Also backwards, and just as clean as the RSI result: chasing a big recent move won <em>more</em> at nearly every lookback/threshold (e.g. 45min/1.0xATR: didn't-chase 34.5% WR/-$274.98 vs chased 40.8% WR/+$477.82). Zero candidates found where the "chasing" bucket was net negative.</td></tr>
+      <tr class="highlight"><td><strong>Breakout persistence/smoothing</strong> — only label "breakout" for the first K consecutive bars of a fresh move, fall through to the (already-smoothed) EMA read after that</td><td>Barely moved the aggregate (K=1: 38.8% WR/+$289.07 vs baseline 38.6%/+$270.86; K≥3 converges to 38.3%/+$217.61). More fundamentally, checked against the three real losing trades directly: it wouldn't have stopped <em>any</em> of them — one bar had streak=3 and would reclassify to <code>trending_up</code>, but <code>trend_follow</code> treats <code>trending_up</code> and <code>breakout</code>-with-bullish-EMA identically (both fire BUY), so relabeling changes nothing; the other bar had streak=1, the minimum possible, "fresh" under any grace period.</td></tr>
+    </table>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="finding-title">Regime/ADX/ATR calculations independently verified — not the source of the problem</span>
+        <span class="badge info">Verified, not fixed</span>
+      </div>
+      <p>ATR and ADX are textbook Wilder's-method implementations, checked line by line — correct. <code>trending_up</code>/<code>trending_down</code>/<code>ranging</code> are already meaningfully smoothed (EMA(9)/EMA(21) on H1's own bars ≈ 9-21 hours of memory). <code>breakout</code> is the one exception in the whole regime system — a single-bar check (this bar made a new 20-bar high/low) that overrides the smoother EMA read, which is exactly why it kept re-firing all day during one continuous rally (H1 alternated <code>trending_up</code>/<code>breakout</code> nearly every hour from 01:00 onward — never a fresh signal by 16:10).</p>
+    </div>
+
+    <div class="decision">
+      <div class="decision-title">Decision — no change shipped</div>
+      <p style="margin-bottom:0;">The unmodified, currently-live <code>trend_follow</code> logic nets <strong>+$202.84 to +$224.08</strong> over the same ~9-week backtest window used for every candidate above, at a ~38% win rate — every attempt to beat it failed. Losing 3 in a row at a genuine 39% win rate has roughly a 22.6% chance by pure luck — not statistically alarming on its own, and not sufficient to outweigh a 342-trade backtest. <code>breakout</code> regime handling on <code>trend_follow</code> stays exactly as shipped in Part 2.</p>
+    </div>
+    <p>Scripts (kept for the record, including the rejected ones): <span class="mono">analysis/daily/2026-09-03/queries/{trend_follow_exhaustion_sim,trend_follow_spike_chase_sim,breakout_smoothing_sim}</span>.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-eyebrow">Part 7 — A different idea, tested and rejected</div>
+    <div class="section-title">Grid trading — real 9-week backtest shows why not, on this instrument</div>
+
+    <p>Proposed as an alternative: instead of predicting direction, place a symmetric ladder of buy-the-dip / sell-the-rally orders around a reference price, closing each leg for one grid-spacing of profit. Backtested against this account's real 9-week XAUUSD history (56,054 M1 candles, July 2 – Sept 3) rather than synthetic data.</p>
+    <p>Over that window price rose from $4,111 to over $4,500 — a sustained ~9.5% trend, not a range. A grid's sell side bets price comes back down to close each leg; in a real trend it doesn't, so legs pile up, deeper underwater, indefinitely.</p>
+    <table>
+      <tr><th>Config</th><th class="num">Net (realized)</th><th class="num">Worst mark-to-market DD</th><th class="num">Still open, unrealized</th></tr>
+      <tr class="highlight"><td>Uncapped, $2 spacing</td><td class="num">+$34,038.00</td><td class="num">-$84,823.08</td><td class="num">-$35,252.28</td></tr>
+      <tr class="highlight"><td>Cap 3 legs/side, $2 spacing</td><td class="num">+$851.40</td><td class="num">-$1,738.47</td><td class="num">-$1,117.56</td></tr>
+      <tr class="highlight"><td>Cap 10 legs/side, $10 spacing</td><td class="num">+$2,518.60</td><td class="num">-$5,284.90</td><td class="num">-$3,215.20</td></tr>
+    </table>
+    <p style="font-size:13px; color:#6b7280;">Every single spacing/cap combination tested shows the same shape: worst-case drawdown exceeds the realized gain, and legs are still open and underwater at the end of the window. Against this account's real balance (~$222), even the most conservative config tested would have meant a multi-times-over wipeout at its worst point.</p>
+
+    <div class="decision">
+      <div class="decision-title">Decision — not pursued</div>
+      <p style="margin-bottom:0;">Grid trading's core assumption — mean reversion within a range — doesn't match this instrument's actual behavior over the tested period. Not implemented.</p>
+    </div>
+    <p><span class="mono">analysis/daily/2026-09-03/queries/grid_strategy_sim</span>.</p>
   </div>
 
 </div>
