@@ -50,9 +50,10 @@ const (
 	PeriodM30 = uint32(8)
 	PeriodH1  = uint32(9)
 	PeriodH4  = uint32(10)
-	PeriodD1  = uint32(11)
-	PeriodW1  = uint32(12)
-	PeriodMN1 = uint32(13)
+	PeriodH12 = uint32(11)
+	PeriodD1  = uint32(12)
+	PeriodW1  = uint32(13)
+	PeriodMN1 = uint32(14)
 )
 
 func PeriodToString(period uint32) string {
@@ -77,6 +78,8 @@ func PeriodToString(period uint32) string {
 		return "H1"
 	case PeriodH4:
 		return "H4"
+	case PeriodH12:
+		return "H12"
 	case PeriodD1:
 		return "D1"
 	case PeriodW1:
