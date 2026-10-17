@@ -588,7 +588,7 @@ func (b *Bot) processClosedCandle(ctx context.Context, _ float64) {
 			b.forceTestOrder = false
 		}
 
-		signalID, err := b.signals.Insert(ctx, signal.Signal{
+		sig := signal.Signal{
 			SymbolID:            b.symbolUUID,
 			Provider:            b.provider.Name(),
 			Signal:              result.Signal,
@@ -599,12 +599,28 @@ func (b *Bot) processClosedCandle(ctx context.Context, _ float64) {
 			CheckedMarketStates: snapshots,
 			BarTime:             &barTime,
 			Strategy:            result.StrategyName,
-		})
+		}
+		if result.Signal != config.SignalHold {
+			entry, sl, tp := mid, result.SLPrice, result.TPPrice
+			sig.IntendedEntry, sig.IntendedSL, sig.IntendedTP = &entry, &sl, &tp
+			sig.SkipReason = sessionSkipReason(b.symbol, time.Now())
+		}
+
+		signalID, err := b.signals.Insert(ctx, sig)
 		if err != nil {
 			slog.Error("insert signal failed", "strategy", s.Name(), "err", err)
 		}
 
 		if result.Signal == config.SignalHold {
+			continue
+		}
+
+		if sig.SkipReason != "" {
+			slog.Info("signal recorded but not sent — session block",
+				"strategy", result.StrategyName,
+				"side", result.Signal,
+				"skipReason", sig.SkipReason,
+			)
 			continue
 		}
 

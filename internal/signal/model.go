@@ -20,5 +20,9 @@ type Signal struct {
 	CheckedMarketStates map[string]MarketStateSnapshot // keyed by period: "M5", "H1", etc.
 	BarTime             *time.Time
 	Strategy            string // which strategy produced this signal: "regime", "sr_bounce", etc.
+	SkipReason          string // set when a BUY/SELL was recorded but deliberately not sent, e.g. "london_session"
+	IntendedEntry       *float64
+	IntendedSL          *float64
+	IntendedTP          *float64
 	CreatedAt           time.Time
 }
