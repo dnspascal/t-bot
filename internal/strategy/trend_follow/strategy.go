@@ -15,6 +15,8 @@ const (
 	consecutiveFailsToCooldown = 2
 	cooldownDuration           = 60 * time.Minute
 
+	minH1ADXForTrend = 20
+
 	maxFreshM5RegimeStreak = 2
 )
 
@@ -96,11 +98,6 @@ func (s *TrendFollow) Evaluate(states map[string]indicator.MarketState, currentP
 	case config.TrendingDown:
 		dir = config.SignalSell
 	case config.Breakout:
-		// Backtested 2026-09-03 (analysis/daily/2026-09-03/queries/trend_follow_breakout_regime_sim):
-		// breakout is a real, usually-directional regime this switch previously
-		// dropped into "unclear" — direction inferred from M5 EMA (the same
-		// field already used below to confirm trending_up/trending_down) beat
-		// the current trending-only baseline on both count and win rate.
 		if m5.EMAFast > m5.EMASlow {
 			dir = config.SignalBuy
 		} else {
@@ -121,6 +118,10 @@ func (s *TrendFollow) Evaluate(states map[string]indicator.MarketState, currentP
 		if s.unseenBarsTracked < minTrackedBarsBeforeTrusting {
 			s.unseenBarsTracked++
 		}
+	}
+
+	if h1.EMA50 == 0 {
+		return hold("EMA50 not ready yet")
 	}
 
 	if dir == config.SignalBuy && m5.EMAFast < m5.EMASlow {
@@ -146,7 +147,7 @@ func (s *TrendFollow) Evaluate(states map[string]indicator.MarketState, currentP
 		return hold("M5 regime alignment is stale — already running 3+ bars")
 	}
 
-	if h1.ADX < 20 {
+	if h1.ADX < minH1ADXForTrend {
 		return hold("H1 ADX too low — trend too weak to chase")
 	}
 
@@ -160,6 +161,14 @@ func (s *TrendFollow) Evaluate(states map[string]indicator.MarketState, currentP
 		if now.Before(s.cooldownUntil) {
 			return hold("cooling down after repeated same-direction invalidation")
 		}
+	}
+
+	if dir == config.SignalBuy && h1.EMASlow <= h1.EMA50 {
+		return hold("H1 EMA21 below EMA50 — not aligned with uptrend")
+	}
+
+	if dir == config.SignalSell && h1.EMASlow >= h1.EMA50 {
+		return hold("H1 EMA21 above EMA50 — not aligned with downtrend")
 	}
 
 	atr := m15.ATR
