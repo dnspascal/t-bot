@@ -6,6 +6,12 @@ import (
 )
 
 func TestSessionSkipReason(t *testing.T) {
+	orig := sessionBlocks
+	defer func() { sessionBlocks = orig }()
+	sessionBlocks = map[string][]sessionBlock{
+		"XAUUSD": {{reason: SkipReasonLondonSession, loc: londonLoc, startHour: 8, endHour: 13}},
+	}
+
 	cases := []struct {
 		name   string
 		symbol string
@@ -30,5 +36,12 @@ func TestSessionSkipReason(t *testing.T) {
 		if got := sessionSkipReason(c.symbol, now); got != c.want {
 			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
 		}
+	}
+}
+
+func TestNoActiveSessionBlocks(t *testing.T) {
+	london := time.Date(2026, 11, 4, 10, 0, 0, 0, time.UTC)
+	if got := sessionSkipReason("XAUUSD", london); got != "" {
+		t.Errorf("XAUUSD London should trade, got skip %q", got)
 	}
 }
