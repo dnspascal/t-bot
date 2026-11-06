@@ -48,8 +48,9 @@ func (r *PostgresRepository) Insert(ctx context.Context, state indicator.MarketS
 			open, high, low, close, volume,
 			ema_fast, ema_slow, rsi, adx, atr,
 			support_level, resistance_level, trend_high, trend_low, breakout_level,
-			regime, volatility_trend, momentum_direction, volume_ma
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+			regime, volatility_trend, momentum_direction, volume_ma,
+			ema50, ema200
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
 		ON CONFLICT (symbol_id, provider, period, bar_time)
 		DO UPDATE SET
 			open = EXCLUDED.open,
@@ -71,15 +72,26 @@ func (r *PostgresRepository) Insert(ctx context.Context, state indicator.MarketS
 			regime = EXCLUDED.regime,
 			volatility_trend = EXCLUDED.volatility_trend,
 			momentum_direction = EXCLUDED.momentum_direction,
-			volume_ma = EXCLUDED.volume_ma
+			volume_ma = EXCLUDED.volume_ma,
+			ema50 = EXCLUDED.ema50,
+			ema200 = EXCLUDED.ema200
 		RETURNING id
 	`, state.SymbolID, state.Provider, state.Period, barTime, state.ProcessingUS,
 		state.Open, state.High, state.Low, state.Close, state.Volume,
 		state.EMAFast, state.EMASlow, state.RSI, state.ADX, state.ATR,
 		state.SupportLevel, state.ResistanceLevel, state.TrendHigh, state.TrendLow, state.BreakoutLevel,
-		state.Regime, state.VolatilityTrend, state.MomentumDirection, state.VolumeMA).Scan(&id)
+		state.Regime, state.VolatilityTrend, state.MomentumDirection, state.VolumeMA,
+		nullIfZero(state.EMA50), nullIfZero(state.EMA200)).Scan(&id)
 
 	return id, err
+}
+
+// EMA50/EMA200 read 0 until warmed up; store NULL so 0 is never mistaken for a price.
+func nullIfZero(v float64) *float64 {
+	if v == 0 {
+		return nil
+	}
+	return &v
 }
 
 // Get retrieves a specific market state
