@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Analysis — 2026-11-06</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Lato', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #000;
+  background: #fff;
+  padding-bottom: 80px;
+}
+
+/* ── Header ── */
+.header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 28px 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.header-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: #1d4ed8;
+  background: #eaf0ff; padding: 3px 10px; border-radius: 4px;
+  display: inline-block; margin-bottom: 8px;
+}
+.header h1 { font-size: 22px; font-weight: 900; letter-spacing: -.3px; margin-bottom: 6px; }
+.header-meta { font-size: 13px; color: #6b7280; display: flex; gap: 20px; flex-wrap: wrap; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.chip {
+  font-size: 12px; font-weight: 700; padding: 5px 12px;
+  border-radius: 20px; color: #6b7280;
+}
+.chip.loss { color: #dc2626; background: #fef2f2; }
+.chip.win  { color: #16a34a; background: #f0fdf4; }
+.chip.info { color: #1d4ed8; background: #eaf0ff; }
+
+/* ── Page ── */
+.page { max-width: 920px; margin: 0 auto; padding: 40px 24px 0; }
+.section { margin-bottom: 48px; }
+.section-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: #6b7280; margin-bottom: 10px;
+}
+.section-title { font-size: 18px; font-weight: 900; letter-spacing: -.2px; margin-bottom: 16px; }
+hr { border: none; border-top: 1px solid #e5e7eb; margin: 44px 0; }
+
+/* ── Cards ── */
+.finding {
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 20px 22px; margin-bottom: 16px;
+  background: #fff;
+}
+.finding-header {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.finding-title { font-size: 15px; font-weight: 700; flex: 1; }
+.badge {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+  white-space: nowrap; margin-top: 2px;
+}
+.badge.fixed   { background: #f0fdf4; color: #16a34a; }
+.badge.gap     { background: #fef2f2; color: #dc2626; }
+.badge.pending { background: #fff7ed; color: #c2410c; }
+.badge.info    { background: #eaf0ff; color: #1d4ed8; }
+
+p { margin-bottom: 10px; max-width: 70ch; }
+code {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 13px;
+  background: #f3f4f6; padding: 1px 6px; border-radius: 4px;
+}
+pre {
+  font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px;
+  background: #f3f4f6; color: #000;
+  padding: 14px 16px; border-radius: 8px; overflow-x: auto;
+  margin: 10px 0 14px;
+}
+pre .cmt { color: #6b7280; }
+
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.5px; }
+th {
+  text-align: left; font-weight: 700; font-size: 11px;
+  letter-spacing: .04em; text-transform: uppercase; color: #6b7280;
+  padding: 8px 10px; border-bottom: 2px solid #e5e7eb;
+}
+td { padding: 9px 10px; border-bottom: 1px solid #f0f1f3; }
+tr.highlight td { background: #fef2f2; }
+tr.ok td { background: #f0fdf4; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.mono { font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px; }
+
+.quote {
+  background: #f8fafc; border-radius: 8px;
+  padding: 12px 16px; margin: 12px 0 16px; font-size: 14px; color: #000;
+}
+.quote .src { font-size: 11.5px; color: #9ca3af; margin-top: 6px; font-family: 'SF Mono', Menlo, monospace; }
+
+.decision {
+  background: #f5f8ff; border-radius: 8px;
+  padding: 18px 20px; margin-top: 10px;
+}
+.decision-title { font-weight: 900; font-size: 14px; color: #1d4ed8; margin-bottom: 8px; }
+
+ul.plain { margin-left: 20px; margin-bottom: 14px; }
+ul.plain li { margin-bottom: 6px; }
+
+footer { max-width: 920px; margin: 0 auto; padding: 20px 24px; color: #9ca3af; font-size: 12px; }
+</style>
+<style>
+.pos{color:#16a34a;font-weight:700}.neg{color:#dc2626;font-weight:700}
+.wrap{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="header"><div>
+<span class="header-eyebrow">Strategy &amp; data audit · XAUUSD</span>
+<h1>Daily Analysis — 2026-11-06</h1>
+<div class="header-meta"><span>Gold trades 1 Aug – 6 Nov 2026</span><span>Times in EAT (UTC+3)</span></div>
+</div><div class="chips">
+<span class="chip loss">Candle close bug (since day 1)</span>
+<span class="chip win">trend_follow H1 EMA50 gate</span>
+<span class="chip info">London reopened</span>
+</div></div>
+<div class="page">
+
+<div class="section">
+<div class="section-eyebrow">Summary</div>
+<div class="section-title">What changed</div>
+<ul class="plain">
+<li><b>London reopened for gold</b> (PR #71). The block mechanism is kept but empty; re-add the <code>XAUUSD</code> entry in <code>internal/bot/session.go</code> to block again.</li>
+<li><b>EURUSD stopped for good.</b> <code>tbot@eurusd</code> had only been stopped, not disabled, so it came back after the 18 Oct reboot (28 trades, about −$1.23). Now disabled.</li>
+<li><b>trend_follow only trades with the H1 EMA21/EMA50 trend</b> (PR #72, deployed 4 Nov 15:02).</li>
+<li><b>Found and fixed a candle bug:</b> every live candle has been saved with close = low since the first commit (<code>00c8d96</code> on dev, not yet deployed).</li>
+</ul>
+</div>
+
+<hr>
+
+<div class="section">
+<div class="section-eyebrow">1 · Per-strategy P&amp;L</div>
+<div class="section-title">Gold only, 1 Aug – 3 Nov (618 trades, +248.58)</div>
+<div class="wrap"><table>
+<tr><th>Strategy</th><th class="num">Net $</th><th>Note</th></tr>
+<tr><td>trend_follow</td><td class="num pos">+166.69</td><td>All from August; 3–9 Aug alone +$202</td></tr>
+<tr><td>sr_bounce</td><td class="num pos">+95.80</td><td>Most consistent month to month</td></tr>
+<tr><td>session_open</td><td class="num pos">+29.53</td><td></td></tr>
+<tr><td>ema_pullback</td><td class="num pos">+27.43</td><td></td></tr>
+<tr><td>breakout</td><td class="num pos">+14.57</td><td></td></tr>
+<tr><td>dd_early</td><td class="num neg">−1.83</td><td></td></tr>
+<tr><td>dd_oversold</td><td class="num neg">−6.46</td><td></td></tr>
+<tr><td>session_momentum</td><td class="num neg">−7.68</td><td></td></tr>
+<tr><td>rsi_reversal</td><td class="num neg">−23.22</td><td></td></tr>
+<tr class="highlight"><td>dd_ranging</td><td class="num neg">−45.00</td><td>Worst; already dropped from the "all" set</td></tr>
+</table></div>
+<p style="color:#6b7280;font-size:13px">These figures were calculated on candles with close = low (section 4) and need re-checking once real closes have been collected.</p>
+</div>
+
+<hr>
+
+<div class="section">
+<div class="section-eyebrow">2 · trend_follow</div>
+<div class="section-title">Only trade with the H1 EMA21/EMA50 trend</div>
+<div class="finding">
+<div class="finding-header"><div class="finding-title">What the profitable 3–9 Aug week had in common</div><span class="badge fixed">Shipped</span></div>
+<p>Each winning entry was in the direction of the larger H1 trend: EMA21 above EMA50 for buys and below it for sells. Most of the losses since then came against that trend. Only facts known at entry were used: the rule was designed on Aug–Sep data and tested on Oct–Nov.</p>
+<div class="wrap"><table>
+<tr><th>Rule applied to past trades</th><th class="num">Value</th></tr>
+<tr><td>Trades blocked</td><td class="num">20 (2 winners)</td></tr>
+<tr><td>Net P&amp;L of blocked trades</td><td class="num neg">−114.78</td></tr>
+<tr><td>trend_follow net</td><td class="num">166.69 → <span class="pos">281.47</span></td></tr>
+<tr><td>September</td><td class="num"><span class="neg">−37.94</span> → <span class="pos">+35.35</span></td></tr>
+<tr><td>October</td><td class="num"><span class="neg">−8.66</span> → <span class="pos">+29.62</span></td></tr>
+</table></div>
+<pre><span class="cmt">// internal/strategy/trend_follow/strategy.go</span>
+if dir == config.SignalBuy &amp;&amp; h1.EMASlow &lt;= h1.EMA50 { return hold(...) }
+if dir == config.SignalSell &amp;&amp; h1.EMASlow &gt;= h1.EMA50 { return hold(...) }</pre>
+<p>Also: the H1 ADX minimum became the named constant <code>minH1ADXForTrend = 20</code>, the strategy waits until EMA50 is ready, and <code>TestH1EMA50Gate</code> covers the new rule.</p>
+</div>
+<div class="finding">
+<div class="finding-header"><div class="finding-title">Ideas tested and rejected</div><span class="badge info">No change</span></div>
+<ul class="plain">
+<li>H4 trend alignment: adds nothing once the H1 rule is in place.</li>
+<li>Requiring a rising ADX: made September worse (−33.78).</li>
+<li>Avoiding clusters of trades: clusters were not losing money.</li>
+<li>Efficiency, momentum and high-ADX filters: results changed too much from month to month.</li>
+<li>"Freshness" streak: it counts M5 candles since the last breakout candle, not how old the trend is. Entries on the first candle were profitable every month. Entries on the second candle have been weak since September, but there was not enough data to change it.</li>
+</ul>
+</div>
+</div>
+
+<hr>
+
+<div class="section">
+<div class="section-eyebrow">3 · 5 Nov review</div>
+<div class="section-title">Why trend_follow won five in a row and then lost two</div>
+<ul class="plain">
+<li><b>Morning wins:</b> a real rally from 4062 to 4147, with H1 ADX rising from 47 to 55.</li>
+<li><b>20:05 / 20:10 losses (−30.95):</b> chased a one-hour spike after a sell-off while H1 ADX was falling from 56 to 38. The trend was fading, not starting.</li>
+<li>Replaying the day with real closes gave the same decisions, so the candle bug was <b>not</b> the cause of these two losses.</li>
+<li><b>Since the fix (4 Nov 15:02 → 6 Nov):</b> trend_follow <span class="pos">+25.22</span> (5 of 9 won). All strategies together <span class="neg">−9.52</span> over 16 closed trades. The losses came from dd_oversold_bounce (2 stop-losses, −20.54), ema_pullback (2 time-stops in London, −26.86) and session_momentum (1 stop-loss, −11.72).</li>
+</ul>
+</div>
+
+<hr>
+
+<div class="section">
+<div class="section-eyebrow">4 · Data bug</div>
+<div class="section-title">Live candles were saved with close = low</div>
+<div class="finding">
+<div class="finding-header"><div class="finding-title">The bug</div><span class="badge gap">Since first commit</span></div>
+<p>While a candle is still forming, cTrader sends its updates inside <code>ProtoOASpotEvent</code> with <code>low</code>, <code>deltaOpen</code> and <code>deltaHigh</code>, but <b>no <code>deltaClose</code></b> (field 7). The decoder computed <code>Close = low + deltaClose</code>, and with field 7 missing <code>deltaClose</code> stayed 0, so close = low. When a new candle started, the bot saved the last update of the previous one, so every live candle on every timeframe was saved with close = low. Only the history loaded at startup (<code>GetTrendbarsRes</code>, which includes field 7) was correct. Monthly checks showed close = low on 99–100% of candles since Jun/Jul.</p>
+<div class="wrap"><table>
+<tr><th>5 Nov 04:00 H1</th><th class="num">Open</th><th class="num">High</th><th class="num">Low</th><th class="num">Close</th></tr>
+<tr class="highlight"><td>Saved</td><td class="num">4088.5</td><td class="num">4135.1</td><td class="num">4084.3</td><td class="num">4084.3</td></tr>
+<tr class="ok"><td>Real</td><td class="num">4088.5</td><td class="num">4135.1</td><td class="num">4084.3</td><td class="num">≈4124.6</td></tr>
+</table></div>
+<p>A ~36-point rally hour was saved as a down candle.</p>
+</div>
+<div class="finding">
+<div class="finding-header"><div class="finding-title">Impact by strategy</div><span class="badge pending">Re-check after deploy</span></div>
+<ul class="plain">
+<li><b>Hardly affected:</b> EMA-vs-EMA comparisons (trend_follow, the regime classifier). Both lines shift down by about the same amount.</li>
+<li><b>Affected:</b> price-vs-EMA checks (ema_pullback), RSI levels (dd_oversold_bounce, rsi_reversal), candle colour and momentum (session_momentum), and ATR.</li>
+</ul>
+</div>
+<div class="finding">
+<div class="finding-header"><div class="finding-title">Fix</div><span class="badge fixed">On dev · 00c8d96</span></div>
+<p>When a live candle has no close, the bot uses the bid from the same price update, kept within the candle's low–high range. Candles that do include a close (history loaded at startup) are unchanged.</p>
+<pre><span class="cmt">// internal/provider/ctrader/api/proto.go — decodeLiveTrendbarEvents</span>
+<span style="color:#16a34a">+ if bar.closeMissing &amp;&amp; bid &gt; 0 {</span>
+<span style="color:#16a34a">+     bar.Close = math.Min(math.Max(bid, bar.Low), bar.High)</span>
+<span style="color:#16a34a">+ }</span></pre>
+<p>Tests in <code>proto_test.go</code> use the 5 Nov 04:00 candle. Without the fix they fail with <code>close = 4084.3</code>.</p>
+</div>
+</div>
+
+<hr>
+
+<div class="section">
+<div class="section-eyebrow">Next</div>
+<div class="section-title">To do</div>
+<div class="decision">
+<div class="decision-title">After the candle fix is deployed</div>
+<ul class="plain">
+<li>Check that new rows in <code>candles</code> no longer have close = low.</li>
+<li>Expect slightly different signals from ema_pullback, the RSI strategies and session_momentum.</li>
+<li>Redo the per-strategy P&amp;L after a few days of real closes.</li>
+<li>Look into dd_oversold_bounce and ema_pullback, which caused this week's losses.</li>
+<li>Test the EMA50 rule on breakout and session_momentum.</li>
+<li>Monitor London results now that it's reopened, and count how often trend_follow holds because of the H1 EMA50 rule.</li>
+<li>Find out why the bot restarts several times a night (about 00:30–02:00 EAT).</li>
+</ul>
+</div>
+</div>
+
+</div>
+<footer>Sources: prod DB (read-only via SSH tunnel), analysis/daily/2026-10-05/queries/sql runner · Generated 2026-11-06</footer>
+</body>
+</html>
