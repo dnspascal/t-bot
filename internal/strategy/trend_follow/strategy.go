@@ -18,6 +18,9 @@ const (
 	minH1ADXForTrend = 20
 
 	maxFreshM5RegimeStreak = 2
+
+	minH1EMAGapRatio = 0.6 // H1 EMA9-EMA21 gap vs its peak over indicator.RecentBars
+	maxH1BounceATR   = 0.5 // entry distance below recent H1 high (above low for SELL), in H1 ATR
 )
 
 type TrendFollow struct {
@@ -169,6 +172,20 @@ func (s *TrendFollow) Evaluate(states map[string]indicator.MarketState, currentP
 
 	if dir == config.SignalSell && h1.EMASlow >= h1.EMA50 {
 		return hold("H1 EMA21 above EMA50 — not aligned with downtrend")
+	}
+
+	if h1.ATR <= 0 {
+		return hold("H1 ATR not ready")
+	}
+	gap, peakGap, bounce := h1.EMAFast-h1.EMASlow, h1.RecentEMAGapMax, h1.RecentHigh-currentPrice
+	if dir == config.SignalSell {
+		gap, peakGap, bounce = -gap, -h1.RecentEMAGapMin, currentPrice-h1.RecentLow
+	}
+	if peakGap <= 0 || gap < minH1EMAGapRatio*peakGap {
+		return hold("H1 EMA9/EMA21 gap shrinking — trend fading")
+	}
+	if bounce >= maxH1BounceATR*h1.ATR {
+		return hold("price well off the recent H1 extreme — bounce, not a new high/low")
 	}
 
 	atr := m15.ATR
