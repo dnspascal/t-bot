@@ -19,6 +19,13 @@ type EntryResult struct {
 	ATR          float64
 	StrategyName string
 	Reason       string
+	Rules        map[string]RuleCheck // entry checks as measured, saved to positions.decision_params
+}
+
+type RuleCheck struct {
+	Value float64 `json:"value"`
+	Limit float64 `json:"limit"`
+	Why   string  `json:"why"`
 }
 
 type Strategy interface {

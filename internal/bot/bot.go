@@ -48,6 +48,7 @@ type pendingOrderState struct {
 	tpPrice       float64
 	atr           float64
 	strategyName  string
+	entryRules    map[string]strat.RuleCheck
 	brokerOrderID int64
 }
 
@@ -947,6 +948,7 @@ func (b *Bot) onTradeSignal(ctx context.Context, result strat.EntryResult, price
 			tpPrice:      result.TPPrice,
 			atr:          result.ATR,
 			strategyName: result.StrategyName,
+			entryRules:   result.Rules,
 		}
 	}
 
@@ -1005,7 +1007,11 @@ func (b *Bot) recordOpenFill(ctx context.Context, exec provider.ExecutionEvent, 
 	}
 
 	openTime := deal.ExecTime
-	decisionParamsJSON, err := json.Marshal(b.decisionParams())
+	params := b.decisionParams()
+	if ps.strategyName != "" {
+		params["entry"] = map[string]any{"strategy": ps.strategyName, "rules": ps.entryRules}
+	}
+	decisionParamsJSON, err := json.Marshal(params)
 	if err != nil {
 		slog.Error("marshal decisionParams failed", "err", err)
 	}
