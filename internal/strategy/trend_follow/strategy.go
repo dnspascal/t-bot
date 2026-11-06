@@ -202,6 +202,18 @@ func (s *TrendFollow) Evaluate(states map[string]indicator.MarketState, currentP
 	tpPips := math.Abs(tpPrice-currentPrice) / pipSize
 
 	return strategy.EntryResult{
+		Rules: map[string]strategy.RuleCheck{
+			"m5_regime_streak": {Value: float64(s.m5RegimeStreak), Limit: maxFreshM5RegimeStreak,
+				Why: "M5 bars since the M5 regime turned to the trade direction; must be <= limit (fresh move)"},
+			"h1_adx": {Value: round4(h1.ADX), Limit: minH1ADXForTrend,
+				Why: "H1 ADX must be >= limit: trend strong enough to follow"},
+			"h1_ema21_vs_ema50": {Value: round4(h1.EMASlow), Limit: round4(h1.EMA50),
+				Why: "value=H1 EMA21, limit=H1 EMA50; BUY needs EMA21 above EMA50, SELL below: trade with the bigger trend (added 2026-11-04)"},
+			"h1_ema_gap_ratio": {Value: round4(gap / peakGap), Limit: minH1EMAGapRatio,
+				Why: "H1 EMA9-EMA21 gap now / its biggest gap over the last 6 H1 bars; must be >= limit, lower means the trend is fading (added 2026-11-06)"},
+			"h1_bounce_atr": {Value: round4(bounce / h1.ATR), Limit: maxH1BounceATR,
+				Why: "H1 ATRs the entry is below the highest H1 high of the last 6 bars (above the lowest low for SELL); must be < limit, higher means buying a bounce instead of a new high (added 2026-11-06)"},
+		},
 		Signal:     dir,
 		Confluence: 1,
 		Tier:       config.TierNormal,
@@ -213,3 +225,5 @@ func (s *TrendFollow) Evaluate(states map[string]indicator.MarketState, currentP
 	}
 
 }
+
+func round4(v float64) float64 { return math.Round(v*1e4) / 1e4 }

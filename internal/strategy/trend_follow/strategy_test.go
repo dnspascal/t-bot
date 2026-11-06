@@ -1,10 +1,12 @@
 package trendfollow
 
 import (
+	"math"
 	"testing"
 
 	"github.com/denismgaya/t-bot/internal/config"
 	"github.com/denismgaya/t-bot/internal/indicator"
+	"github.com/denismgaya/t-bot/internal/strategy"
 )
 
 func baseH1() indicator.MarketState {
@@ -25,12 +27,15 @@ func evalBuy(h1 indicator.MarketState, price float64) strategyResult {
 		m5.BarTime, m5.Regime = int64(i+1), reg
 		states := map[string]indicator.MarketState{config.PeriodH1: h1, config.PeriodM5: m5, config.PeriodM15: m15}
 		res := s.Evaluate(states, price, 0.01)
-		r = strategyResult{res.Signal, res.Reason}
+		r = strategyResult{res.Signal, res.Reason, res.Rules}
 	}
 	return r
 }
 
-type strategyResult struct{ signal, reason string }
+type strategyResult struct {
+	signal, reason string
+	rules          map[string]strategy.RuleCheck
+}
 
 func TestBaseSetupBuys(t *testing.T) {
 	if r := evalBuy(baseH1(), 4000); r.signal != config.SignalBuy {
@@ -98,5 +103,29 @@ func TestSellMirrorsBounceAndGap(t *testing.T) {
 	s = New()
 	if got := eval(4010); got != config.SignalHold {
 		t.Errorf("sell 0.75 ATR above recent low: got %s, want HOLD", got)
+	}
+}
+
+func TestEntryRulesRecorded(t *testing.T) {
+	r := evalBuy(baseH1(), 4000)
+	if r.signal != config.SignalBuy {
+		t.Fatalf("got %s (%s), want BUY", r.signal, r.reason)
+	}
+	want := map[string][2]float64{
+		"h1_ema_gap_ratio":  {10.0 / 12, minH1EMAGapRatio},
+		"h1_bounce_atr":     {5.0 / 20, maxH1BounceATR},
+		"h1_adx":            {30, minH1ADXForTrend},
+		"h1_ema21_vs_ema50": {4000, 3990},
+		"m5_regime_streak":  {1, maxFreshM5RegimeStreak},
+	}
+	for name, w := range want {
+		got, ok := r.rules[name]
+		if !ok || got.Why == "" {
+			t.Errorf("%s missing or has no description", name)
+			continue
+		}
+		if math.Abs(got.Value-w[0]) > 1e-3 || got.Limit != w[1] {
+			t.Errorf("%s = %v/%v, want %v/%v", name, got.Value, got.Limit, w[0], w[1])
+		}
 	}
 }
