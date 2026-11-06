@@ -383,7 +383,10 @@ func (c *Client) handleMessage(payloadType uint32, payload []byte) {
 			}
 		}
 
-		for _, bar := range decodeLiveTrendbarEvents(payload) {
+		c.mu.Lock()
+		bidNow := c.lastBid
+		c.mu.Unlock()
+		for _, bar := range decodeLiveTrendbarEvents(payload, bidNow) {
 
 			select {
 			case c.TrendbarCh <- bar:

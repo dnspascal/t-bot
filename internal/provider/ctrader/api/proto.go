@@ -206,6 +206,8 @@ type Trendbar struct {
 	Low      float64
 	Close    float64
 	Volume   int64
+
+	closeMissing bool
 }
 
 func decodeTrendbar(data []byte) (Trendbar, bool) {
@@ -215,6 +217,7 @@ func decodeTrendbar(data []byte) (Trendbar, bool) {
 		deltaOpen  uint64
 		deltaHigh  uint64
 		deltaClose uint64
+		hasClose   bool
 		volume     uint64
 		tsMinutes  uint64
 		period     uint64
@@ -249,6 +252,7 @@ func decodeTrendbar(data []byte) (Trendbar, bool) {
 			v, n2 := decodeVarint(data[i:])
 			i += n2
 			deltaClose = v
+			hasClose = true
 		case field == 8 && wire == 0:
 			v, n2 := decodeVarint(data[i:])
 			i += n2
@@ -273,6 +277,8 @@ func decodeTrendbar(data []byte) (Trendbar, bool) {
 		Low:      lowF,
 		Close:    lowF + float64(deltaClose)/divisor,
 		Volume:   int64(volume),
+
+		closeMissing: !hasClose,
 	}, true
 }
 
@@ -301,7 +307,8 @@ func decodeGetTrendbarsRes(data []byte) []Trendbar {
 	return bars
 }
 
-func decodeLiveTrendbarEvents(data []byte) []Trendbar {
+// Live trendbars omit deltaClose (the bar is still forming); its close is the spot event's bid.
+func decodeLiveTrendbarEvents(data []byte, bid float64) []Trendbar {
 	var bars []Trendbar
 	i := 0
 	for i < len(data) {
@@ -316,6 +323,9 @@ func decodeLiveTrendbarEvents(data []byte) []Trendbar {
 			l, n2 := decodeVarint(data[i:])
 			i += n2
 			if bar, ok := decodeTrendbar(data[i : i+int(l)]); ok {
+				if bar.closeMissing && bid > 0 {
+					bar.Close = math.Min(math.Max(bid, bar.Low), bar.High)
+				}
 				bars = append(bars, bar)
 			}
 			i += int(l)
