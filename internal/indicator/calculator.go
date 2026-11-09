@@ -45,7 +45,7 @@ type MarketState struct {
 	// Volume context
 	VolumeMA int64
 
-	// Session open range (populated during London 07:00-07:30 UTC and NY 13:00-13:30 UTC)
+	// Session open range (populated during the London 08:00 and NY 09:00 local-time open windows)
 	SessionHigh float64
 	SessionLow  float64
 
