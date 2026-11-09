@@ -1570,6 +1570,13 @@ func (b *Bot) classifyBrokerClose(tracked trackedPosition, execPrice float64) st
 
 	tol := 5 * b.pipSize
 
+	if tracked.TPPrice > 0 {
+		if (tracked.Side == config.SignalBuy && execPrice >= tracked.TPPrice-tol) ||
+			(tracked.Side == config.SignalSell && execPrice <= tracked.TPPrice+tol) {
+			return strat.CloseReasonTPHit
+		}
+	}
+
 	if tracked.BreakEvenActive {
 		if (tracked.Side == config.SignalBuy && execPrice >= tracked.OpenPrice) ||
 			(tracked.Side == config.SignalSell && execPrice <= tracked.OpenPrice) {
@@ -1581,13 +1588,6 @@ func (b *Bot) classifyBrokerClose(tracked trackedPosition, execPrice float64) st
 		if (tracked.Side == config.SignalBuy && execPrice <= tracked.SLPrice+tol) ||
 			(tracked.Side == config.SignalSell && execPrice >= tracked.SLPrice-tol) {
 			return strat.CloseReasonSLHit
-		}
-	}
-
-	if tracked.TPPrice > 0 {
-		if (tracked.Side == config.SignalBuy && execPrice >= tracked.TPPrice-tol) ||
-			(tracked.Side == config.SignalSell && execPrice <= tracked.TPPrice+tol) {
-			return strat.CloseReasonTPHit
 		}
 	}
 

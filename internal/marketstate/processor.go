@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/denismgaya/t-bot/internal/config"
 	"github.com/denismgaya/t-bot/internal/indicator"
 )
 
@@ -56,47 +57,45 @@ func (p *Processor) WarmCandle(openTime int64, open, high, low, close float64, v
 	p.accumulateSessionRange(openTime, high, low)
 }
 
-// accumulateSessionRange updates the pre-session high/low accumulators.
-// Called on every candle so the accumulators are ready when session opens.
+// accumulateSessionRange tracks the high/low of the hour before each session open
+// (London 07:00-08:00, NY 08:00-09:00, local time) and resets once the open window ends.
 func (p *Processor) accumulateSessionRange(openTimeMs int64, high, low float64) {
-	barUTC := time.Unix(openTimeMs, 0).UTC()
-	h, m := barUTC.Hour(), barUTC.Minute()
-
-	switch {
-	case h == 6: // pre-London accumulation window
+	t := time.Unix(openTimeMs, 0).UTC()
+	switch config.PreSessionHour(t) {
+	case "london":
 		if p.londonPreHigh == 0 || high > p.londonPreHigh {
 			p.londonPreHigh = high
 		}
 		if p.londonPreLow == 0 || low < p.londonPreLow {
 			p.londonPreLow = low
 		}
-	case h == 7 && m >= 30: // London session window closed — reset for next day
-		p.londonPreHigh = 0
-		p.londonPreLow = 0
-	case h == 12: // pre-NY accumulation window
+	case "ny":
 		if p.nyPreHigh == 0 || high > p.nyPreHigh {
 			p.nyPreHigh = high
 		}
 		if p.nyPreLow == 0 || low < p.nyPreLow {
 			p.nyPreLow = low
 		}
-	case h == 13 && m >= 30: // NY session window closed — reset for next day
-		p.nyPreHigh = 0
-		p.nyPreLow = 0
+	}
+	if l := t.In(config.LondonLoc); l.Hour() == config.LondonOpenHour && l.Minute() >= config.SessionOpenMins {
+		p.londonPreHigh, p.londonPreLow = 0, 0
+	}
+	if n := t.In(config.NewYorkLoc); n.Hour() == config.NewYorkOpenHour && n.Minute() >= config.SessionOpenMins {
+		p.nyPreHigh, p.nyPreLow = 0, 0
 	}
 }
 
 // injectSessionRange sets SessionHigh/Low on the market state if we are inside a session open window.
 func (p *Processor) injectSessionRange(openTimeMs int64, ms *indicator.MarketState) {
-	barUTC := time.Unix(openTimeMs, 0).UTC()
-	h, m := barUTC.Hour(), barUTC.Minute()
-
-	if h == 7 && m < 30 && p.londonPreHigh > 0 {
-		ms.SessionHigh = p.londonPreHigh
-		ms.SessionLow = p.londonPreLow
-	} else if h == 13 && m < 30 && p.nyPreHigh > 0 {
-		ms.SessionHigh = p.nyPreHigh
-		ms.SessionLow = p.nyPreLow
+	switch config.SessionOpen(time.Unix(openTimeMs, 0).UTC()) {
+	case "london":
+		if p.londonPreHigh > 0 {
+			ms.SessionHigh, ms.SessionLow = p.londonPreHigh, p.londonPreLow
+		}
+	case "ny":
+		if p.nyPreHigh > 0 {
+			ms.SessionHigh, ms.SessionLow = p.nyPreHigh, p.nyPreLow
+		}
 	}
 }
 

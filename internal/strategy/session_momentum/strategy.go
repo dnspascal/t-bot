@@ -73,18 +73,11 @@ func (s *SessionMomentum) Evaluate(states map[string]indicator.MarketState, curr
 	}
 
 	barTime := time.Unix(m5.BarTime, 0).UTC()
-	h, min := barTime.Hour(), barTime.Minute()
-	dateStr := barTime.Format("2006-01-02")
-
-	var sessionKey string
-	switch {
-	case h == 7 && min < 30:
-		sessionKey = fmt.Sprintf("london-%s", dateStr)
-	case h == 13 && min < 30:
-		sessionKey = fmt.Sprintf("ny-%s", dateStr)
-	default:
-		return hold("not in session open window (London 07:00-07:30 or NY 13:00-13:30 UTC)")
+	session := config.SessionOpen(barTime)
+	if session == "" {
+		return hold("not in session open window (London 08:00-08:30 or NY 09:00-09:30 local time)")
 	}
+	sessionKey := fmt.Sprintf("%s-%s", session, barTime.Format("2006-01-02"))
 
 	if s.lastTradeSession == sessionKey {
 		return hold("already traded this session window")
