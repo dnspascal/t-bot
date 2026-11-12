@@ -25,6 +25,7 @@ import (
 	ddoversoldbounce "github.com/denismgaya/t-bot/internal/strategy/dd_oversold_bounce"
 	emapullback "github.com/denismgaya/t-bot/internal/strategy/ema_pullback"
 	sessionmomentum "github.com/denismgaya/t-bot/internal/strategy/session_momentum"
+	"github.com/denismgaya/t-bot/internal/strategy/sweep"
 	trendfollow "github.com/denismgaya/t-bot/internal/strategy/trend_follow"
 )
 
@@ -44,6 +45,7 @@ const (
 
 var strategies = map[string]func() strategy.Strategy{
 	"breakout":           func() strategy.Strategy { return breakout.New() },
+	"sweep":              func() strategy.Strategy { return sweep.New() },
 	"dd_oversold_bounce": func() strategy.Strategy { return ddoversoldbounce.New() },
 	"ema_pullback":       func() strategy.Strategy { return emapullback.New() },
 	"session_momentum":   func() strategy.Strategy { return sessionmomentum.New() },
@@ -154,10 +156,15 @@ func run(dir, name string, spread float64) {
 		}
 	}
 
+	lagHigherTF := os.Getenv("BT_LAG") != "" // live: M15/H1 closes can reach strategies one M5 bar late
 	for _, b := range m1 {
 		m5Closed := false
 		for _, p := range ps {
-			for p.next < len(p.bars) && p.bars[p.next].t+p.dur <= b.t {
+			due := p.bars[min(p.next, len(p.bars)-1)].t + p.dur
+			if lagHigherTF && p.name != "M5" && due == b.t {
+				continue
+			}
+			for p.next < len(p.bars) && p.bars[p.next].t+p.dur <= b.t-map[bool]int64{true: 1, false: 0}[lagHigherTF && p.name != "M5"] {
 				states[p.name] = p.feed(p.bars[p.next])
 				p.next++
 				if p.name == "M5" {

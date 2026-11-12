@@ -25,6 +25,7 @@ import (
 	sessionmomentum "github.com/denismgaya/t-bot/internal/strategy/session_momentum"
 	sessionopen "github.com/denismgaya/t-bot/internal/strategy/session_open"
 	srbounce "github.com/denismgaya/t-bot/internal/strategy/sr_bounce"
+	"github.com/denismgaya/t-bot/internal/strategy/sweep"
 	trendfollow "github.com/denismgaya/t-bot/internal/strategy/trend_follow"
 )
 
@@ -110,7 +111,8 @@ func buildStrategies(name, symbol, mlModelDir, mlOnnxLib string) ([]strategy.Str
 	case "", "all":
 		return []strategy.Strategy{
 			newSRBounce(),
-			breakout.New(),
+			sweep.New(),
+			// breakout.New(), // true breaks only; no edge in backtest yet
 			sessionopen.New(),
 			trendfollow.New(),
 			rsireversal.New(),
@@ -128,6 +130,8 @@ func buildStrategies(name, symbol, mlModelDir, mlOnnxLib string) ([]strategy.Str
 		return []strategy.Strategy{trendfollow.New()}, nil
 	case "breakout":
 		return []strategy.Strategy{breakout.New()}, nil
+	case "sweep":
+		return []strategy.Strategy{sweep.New()}, nil
 	case "session_open":
 		return []strategy.Strategy{sessionopen.New()}, nil
 	case "rsi_reversal":
@@ -147,7 +151,7 @@ func buildStrategies(name, symbol, mlModelDir, mlOnnxLib string) ([]strategy.Str
 	case "combined":
 		return []strategy.Strategy{combined.New(trendfollow.New(), newSRBounce())}, nil
 	default:
-		return nil, fmt.Errorf("unknown strategy %q — valid options: all, regime, sr_bounce, trend_follow, breakout, session_open, rsi_reversal, session_momentum, ema_pullback, combined, dd_oversold_bounce, dd_ranging_breakout, dd_early_breakout, dd_all", name)
+		return nil, fmt.Errorf("unknown strategy %q — valid options: all, regime, sr_bounce, trend_follow, breakout, sweep, session_open, rsi_reversal, session_momentum, ema_pullback, combined, dd_oversold_bounce, dd_ranging_breakout, dd_early_breakout, dd_all", name)
 	}
 }
 

@@ -97,8 +97,8 @@ func (s *Breakout) Evaluate(states map[string]indicator.MarketState, currentPric
 		return s.tryEnter(states, m15, currentPrice, pipSize, dir, level)
 	}
 
-	if m15.BreakoutLevel == 0 {
-		return hold("no breakout detected")
+	if m15.RangeHigh == 0 || m15.RangeLow == 0 {
+		return hold("M15 range not ready")
 	}
 
 	if m15.ADX > 35 {
@@ -110,13 +110,14 @@ func (s *Breakout) Evaluate(states map[string]indicator.MarketState, currentPric
 	}
 
 	var dir string
+	var level float64
 	switch {
-	case m15.Close > m15.BreakoutLevel:
-		dir = config.SignalBuy
-	case m15.Close < m15.BreakoutLevel:
-		dir = config.SignalSell
+	case m15.Close > m15.RangeHigh:
+		dir, level = config.SignalBuy, m15.RangeHigh
+	case m15.Close < m15.RangeLow:
+		dir, level = config.SignalSell, m15.RangeLow
 	default:
-		return hold("M15 closed exactly at breakout level")
+		return hold("no close beyond the M15 range — failed breaks are traded by sweep")
 	}
 
 	wick := rejectWick(m15, dir)
@@ -126,7 +127,7 @@ func (s *Breakout) Evaluate(states map[string]indicator.MarketState, currentPric
 
 	s.pendingWick = wick
 	s.pendingDir = dir
-	s.pendingLevel = m15.BreakoutLevel
+	s.pendingLevel = level
 	s.pendingBarTime = m15.BarTime
 	return hold("breakout detected — awaiting next-bar confirmation")
 }
@@ -185,7 +186,7 @@ func (s *Breakout) tryEnter(states map[string]indicator.MarketState, m15 indicat
 				Why: "breakout M15 bar: (high-close)/(high-low) for BUY, (close-low)/(high-low) for SELL; must be < limit, higher means the break was rejected (fakeout) (added 2026-11-12)"},
 			"m15_adx": {Value: math.Round(m15.ADX*1e4) / 1e4, Limit: minM15ADX,
 				Why: "M15 ADX on the confirmation bar; must be >= limit (and <= 35): a breakout needs momentum (added 2026-11-12)"},
-			"breakout_level": {Value: level, Limit: 0, Why: "the 10-bar M15 range high (BUY) or low (SELL) that was broken"},
+			"breakout_level": {Value: level, Limit: 0, Why: "the M15 range high (BUY) or low (SELL) over the previous indicator.RangeBars bars that was broken"},
 		},
 		Signal:  dir,
 		SLPrice: slPrice,

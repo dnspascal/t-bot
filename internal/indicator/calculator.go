@@ -37,6 +37,10 @@ type MarketState struct {
 	RecentEMAGapMax float64 // max of EMAFast-EMASlow
 	RecentEMAGapMin float64 // min of EMAFast-EMASlow
 
+	// High/low of the RangeBars bars before this one (this bar excluded); 0 until enough history
+	RangeHigh float64
+	RangeLow  float64
+
 	// Regime classification
 	Regime            string // trending_up, trending_down, ranging, breakout
 	VolatilityTrend   string // expanding, contracting, stable
@@ -53,7 +57,10 @@ type MarketState struct {
 	IsWarmedUp bool // True when EMA(21) is seeded
 }
 
-const RecentBars = 6
+const (
+	RecentBars = 6
+	RangeBars  = 15
+)
 
 type Calculator struct {
 	ema9      *EMA
@@ -127,6 +134,7 @@ func (c *Calculator) Calculate(
 	ms.BreakoutLevel = CalculateBreakoutLevel(high, low, allOHLC)
 	ms.VolumeMA = CalculateVolumeMA(allVolumes, 20)
 	c.fillRecent(&ms, allOHLC)
+	fillRange(&ms, allOHLC)
 
 	c.lastState = ms
 	return ms
@@ -155,5 +163,18 @@ func (c *Calculator) fillRecent(ms *MarketState, allOHLC []OHLC) {
 	for _, g := range c.emaGaps[1:] {
 		ms.RecentEMAGapMax = max(ms.RecentEMAGapMax, g)
 		ms.RecentEMAGapMin = min(ms.RecentEMAGapMin, g)
+	}
+}
+
+func fillRange(ms *MarketState, allOHLC []OHLC) {
+	prior := allOHLC[:len(allOHLC)-1]
+	if len(prior) < RangeBars {
+		return
+	}
+	prior = prior[len(prior)-RangeBars:]
+	ms.RangeHigh, ms.RangeLow = prior[0].High, prior[0].Low
+	for _, b := range prior[1:] {
+		ms.RangeHigh = max(ms.RangeHigh, b.High)
+		ms.RangeLow = min(ms.RangeLow, b.Low)
 	}
 }

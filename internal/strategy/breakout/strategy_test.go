@@ -24,7 +24,13 @@ func eval(s *Breakout, m15, h1 indicator.MarketState) string {
 
 func TestFakeoutFilters(t *testing.T) {
 	h1 := indicator.MarketState{IsWarmedUp: true, Regime: config.TrendingUp}
-	brk := indicator.MarketState{IsWarmedUp: true, ATR: 5, ADX: 25, BarTime: 900, BreakoutLevel: 100, High: 104, Low: 99, Close: 103.5}
+	brk := indicator.MarketState{IsWarmedUp: true, ATR: 5, ADX: 25, BarTime: 900, RangeHigh: 100, RangeLow: 90, High: 104, Low: 99, Close: 103.5}
+
+	failed := brk
+	failed.Close = 99.5 // poked above 100 but closed back inside: sweep territory
+	if r := eval(New(), failed, h1); r != "no close beyond the M15 range — failed breaks are traded by sweep" {
+		t.Errorf("failed break: got %q", r)
+	}
 
 	rejected := brk
 	rejected.Close = 100.5 // wick (104-100.5)/5 = 0.7
@@ -32,7 +38,7 @@ func TestFakeoutFilters(t *testing.T) {
 		t.Errorf("rejected bar: got %q", r)
 	}
 
-	conf := indicator.MarketState{IsWarmedUp: true, ATR: 5, ADX: 25, BarTime: 1800, High: 105, Low: 103, Close: 104}
+	conf := indicator.MarketState{IsWarmedUp: true, ATR: 5, ADX: 25, BarTime: 1800, RangeHigh: 104, RangeLow: 90, High: 105, Low: 103, Close: 104}
 	s := New()
 	eval(s, brk, h1)
 	if r := s.Evaluate(map[string]indicator.MarketState{config.PeriodM15: conf, config.PeriodH1: h1}, 104, 0.01); r.Signal != config.SignalBuy {
