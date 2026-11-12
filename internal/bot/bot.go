@@ -49,6 +49,7 @@ type pendingOrderState struct {
 	atr           float64
 	strategyName  string
 	entryRules    map[string]strat.RuleCheck
+	h1            indicator.MarketState // H1 at signal time, for entry context
 	brokerOrderID int64
 }
 
@@ -949,6 +950,7 @@ func (b *Bot) onTradeSignal(ctx context.Context, result strat.EntryResult, price
 			atr:          result.ATR,
 			strategyName: result.StrategyName,
 			entryRules:   result.Rules,
+			h1:           b.marketStates[b.symbolUUID][config.PeriodH1],
 		}
 	}
 
@@ -1009,7 +1011,8 @@ func (b *Bot) recordOpenFill(ctx context.Context, exec provider.ExecutionEvent, 
 	openTime := deal.ExecTime
 	params := b.decisionParams()
 	if ps.strategyName != "" {
-		params["entry"] = map[string]any{"strategy": ps.strategyName, "rules": ps.entryRules}
+		params["entry"] = map[string]any{"strategy": ps.strategyName, "rules": ps.entryRules,
+			"context": entryContext(ps.side, deal.ExecutionPrice, ps.h1)}
 	}
 	decisionParamsJSON, err := json.Marshal(params)
 	if err != nil {
@@ -1748,5 +1751,24 @@ func (b *Bot) botWatchDog(ctx context.Context) {
 			}
 
 		}
+	}
+}
+
+// entryContext records where the fill sat against the previous UTC day's range, for every strategy.
+func entryContext(side string, fill float64, h1 indicator.MarketState) map[string]any {
+	if h1.PrevDayHigh == 0 || h1.ATR <= 0 {
+		return nil
+	}
+	beyond := (h1.PrevDayLow - fill) / h1.ATR
+	if side == config.SignalBuy {
+		beyond = (fill - h1.PrevDayHigh) / h1.ATR
+	}
+	return map[string]any{
+		"prev_day_high":       h1.PrevDayHigh,
+		"prev_day_low":        h1.PrevDayLow,
+		"h1_atr":              math.Round(h1.ATR*1e4) / 1e4,
+		"beyond_prev_day_atr": math.Round(beyond*1e4) / 1e4,
+		"why": "beyond_prev_day_atr = H1 ATRs the fill is past yesterday's high (BUY) or low (SELL); > 0.3 broke through, within ±0.3 at the level, < -0.3 not reached. " +
+			"Backtest: flushes that broke through continued first 63%, flushes stalling at the level snapped back first 62% (added 2026-11-12)",
 	}
 }

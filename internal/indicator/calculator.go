@@ -41,6 +41,10 @@ type MarketState struct {
 	RangeHigh float64
 	RangeLow  float64
 
+	// Previous UTC day's high/low as seen by this timeframe; 0 until a full day has passed
+	PrevDayHigh float64
+	PrevDayLow  float64
+
 	// Regime classification
 	Regime            string // trending_up, trending_down, ranging, breakout
 	VolatilityTrend   string // expanding, contracting, stable
@@ -71,6 +75,7 @@ type Calculator struct {
 	atr       *ATR
 	adx       *ADX
 	emaGaps   []float64
+	day       dayRange
 	lastState MarketState
 }
 
@@ -135,6 +140,7 @@ func (c *Calculator) Calculate(
 	ms.VolumeMA = CalculateVolumeMA(allVolumes, 20)
 	c.fillRecent(&ms, allOHLC)
 	fillRange(&ms, allOHLC)
+	ms.PrevDayHigh, ms.PrevDayLow = c.day.update(barTime, high, low)
 
 	c.lastState = ms
 	return ms
@@ -177,4 +183,31 @@ func fillRange(ms *MarketState, allOHLC []OHLC) {
 		ms.RangeHigh = max(ms.RangeHigh, b.High)
 		ms.RangeLow = min(ms.RangeLow, b.Low)
 	}
+}
+
+type dayRange struct {
+	day                      int64
+	high, low                float64
+	prevHigh, prevLow        float64
+	sawDayStart, havePrevDay bool
+}
+
+// update folds one bar into the current UTC day and returns the previous complete day's high/low.
+func (d *dayRange) update(barTime int64, high, low float64) (float64, float64) {
+	day := barTime / 86400
+	switch {
+	case d.day == 0:
+		d.day, d.high, d.low = day, high, low
+	case day != d.day:
+		if d.sawDayStart {
+			d.prevHigh, d.prevLow, d.havePrevDay = d.high, d.low, true
+		}
+		d.day, d.high, d.low, d.sawDayStart = day, high, low, true
+	default:
+		d.high, d.low = max(d.high, high), min(d.low, low)
+	}
+	if !d.havePrevDay {
+		return 0, 0
+	}
+	return d.prevHigh, d.prevLow
 }
