@@ -15,6 +15,9 @@ const (
 
 	consecutiveFailsToCooldown = 2
 	cooldownDuration           = 30 * time.Minute
+
+	maxBreakoutRejectWick = 0.4 // share of the breakout bar's range given back against the break
+	minM15ADX             = 20.0
 )
 
 type Breakout struct {
@@ -23,6 +26,7 @@ type Breakout struct {
 	pendingLevel   float64
 	pendingDir     string
 	pendingBarTime int64
+	pendingWick    float64
 
 	buyFailStreak  int
 	sellFailStreak int
@@ -93,8 +97,8 @@ func (s *Breakout) Evaluate(states map[string]indicator.MarketState, currentPric
 		return s.tryEnter(states, m15, currentPrice, pipSize, dir, level)
 	}
 
-	if m15.BreakoutLevel == 0 {
-		return hold("no breakout detected")
+	if m15.RangeHigh == 0 || m15.RangeLow == 0 {
+		return hold("M15 range not ready")
 	}
 
 	if m15.ADX > 35 {
@@ -106,17 +110,24 @@ func (s *Breakout) Evaluate(states map[string]indicator.MarketState, currentPric
 	}
 
 	var dir string
+	var level float64
 	switch {
-	case m15.Close > m15.BreakoutLevel:
-		dir = config.SignalBuy
-	case m15.Close < m15.BreakoutLevel:
-		dir = config.SignalSell
+	case m15.Close > m15.RangeHigh:
+		dir, level = config.SignalBuy, m15.RangeHigh
+	case m15.Close < m15.RangeLow:
+		dir, level = config.SignalSell, m15.RangeLow
 	default:
-		return hold("M15 closed exactly at breakout level")
+		return hold("no close beyond the M15 range — failed breaks are traded by sweep")
 	}
 
+	wick := rejectWick(m15, dir)
+	if wick >= maxBreakoutRejectWick {
+		return hold("breakout bar rejected — closed well back from its extreme")
+	}
+
+	s.pendingWick = wick
 	s.pendingDir = dir
-	s.pendingLevel = m15.BreakoutLevel
+	s.pendingLevel = level
 	s.pendingBarTime = m15.BarTime
 	return hold("breakout detected — awaiting next-bar confirmation")
 }
@@ -135,6 +146,9 @@ func (s *Breakout) tryEnter(states map[string]indicator.MarketState, m15 indicat
 
 	if m15.ADX > 35 {
 		return hold("ADX too high — market already trending, not a range breakout")
+	}
+	if m15.ADX < minM15ADX {
+		return hold("M15 ADX too low — breakout has no momentum behind it")
 	}
 
 	if h1, ok := states[config.PeriodH1]; ok && h1.IsWarmedUp {
@@ -167,6 +181,13 @@ func (s *Breakout) tryEnter(states map[string]indicator.MarketState, m15 indicat
 	s.lastBreakoutBarTime = m15.BarTime
 
 	return strategy.EntryResult{
+		Rules: map[string]strategy.RuleCheck{
+			"m15_breakout_reject_wick": {Value: math.Round(s.pendingWick*1e4) / 1e4, Limit: maxBreakoutRejectWick,
+				Why: "breakout M15 bar: (high-close)/(high-low) for BUY, (close-low)/(high-low) for SELL; must be < limit, higher means the break was rejected (fakeout) (added 2026-11-12)"},
+			"m15_adx": {Value: math.Round(m15.ADX*1e4) / 1e4, Limit: minM15ADX,
+				Why: "M15 ADX on the confirmation bar; must be >= limit (and <= 35): a breakout needs momentum (added 2026-11-12)"},
+			"breakout_level": {Value: level, Limit: 0, Why: "the M15 range high (BUY) or low (SELL) over the previous indicator.RangeBars bars that was broken"},
+		},
 		Signal:  dir,
 		SLPrice: slPrice,
 		TPPrice: tpPrice,
@@ -175,4 +196,15 @@ func (s *Breakout) tryEnter(states map[string]indicator.MarketState, m15 indicat
 		ATR:     atr,
 		Tier:    config.TierNormal,
 	}
+}
+
+func rejectWick(b indicator.MarketState, dir string) float64 {
+	rng := b.High - b.Low
+	if rng <= 0 {
+		return 0
+	}
+	if dir == config.SignalBuy {
+		return (b.High - b.Close) / rng
+	}
+	return (b.Close - b.Low) / rng
 }

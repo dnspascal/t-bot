@@ -29,3 +29,31 @@ func TestRecentWindow(t *testing.T) {
 		t.Errorf("gap range [%v,%v] must include current gap %v over %d bars", ms.RecentEMAGapMin, ms.RecentEMAGapMax, gap, len(c.emaGaps))
 	}
 }
+
+func TestRangeExcludesCurrentBar(t *testing.T) {
+	c := NewCalculator()
+	var hist []OHLC
+	var ms MarketState
+	for i := 0; i < 30; i++ {
+		hi, lo := 101.0, 99.0
+		if i == 10 {
+			hi = 150 // older than the 15-bar window at the end
+		}
+		if i == 20 {
+			lo = 90 // inside the window
+		}
+		if i == 29 {
+			hi, lo = 200, 50 // the current bar must not count
+		}
+		ms = c.Calculate("s", "p", "M15", int64(i), 100, hi, lo, 100, 1, nil, nil, hist)
+		hist = append(hist, OHLC{Open: 100, High: hi, Low: lo, Close: 100})
+	}
+	if ms.RangeHigh != 101 || ms.RangeLow != 90 {
+		t.Errorf("range = %v/%v, want 101/90", ms.RangeHigh, ms.RangeLow)
+	}
+
+	c2 := NewCalculator()
+	if ms := c2.Calculate("s", "p", "M15", 0, 100, 101, 99, 100, 1, nil, nil, nil); ms.RangeHigh != 0 {
+		t.Errorf("range should be 0 without 15 bars of history, got %v", ms.RangeHigh)
+	}
+}

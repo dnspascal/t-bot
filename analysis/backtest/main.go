@@ -8,6 +8,7 @@ package main
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -20,9 +21,11 @@ import (
 	"github.com/denismgaya/t-bot/internal/config"
 	"github.com/denismgaya/t-bot/internal/indicator"
 	"github.com/denismgaya/t-bot/internal/strategy"
+	"github.com/denismgaya/t-bot/internal/strategy/breakout"
 	ddoversoldbounce "github.com/denismgaya/t-bot/internal/strategy/dd_oversold_bounce"
 	emapullback "github.com/denismgaya/t-bot/internal/strategy/ema_pullback"
 	sessionmomentum "github.com/denismgaya/t-bot/internal/strategy/session_momentum"
+	"github.com/denismgaya/t-bot/internal/strategy/sweep"
 	trendfollow "github.com/denismgaya/t-bot/internal/strategy/trend_follow"
 )
 
@@ -41,6 +44,8 @@ const (
 )
 
 var strategies = map[string]func() strategy.Strategy{
+	"breakout":           func() strategy.Strategy { return breakout.New() },
+	"sweep":              func() strategy.Strategy { return sweep.New() },
 	"dd_oversold_bounce": func() strategy.Strategy { return ddoversoldbounce.New() },
 	"ema_pullback":       func() strategy.Strategy { return emapullback.New() },
 	"session_momentum":   func() strategy.Strategy { return sessionmomentum.New() },
@@ -102,6 +107,8 @@ type position struct {
 	opened              int64
 	peak                float64 // most favourable price seen
 	beMoved             bool
+	sl0                 float64 // SL at entry; sl moves to breakeven
+	snap                string
 }
 
 type trade struct {
@@ -109,6 +116,8 @@ type trade struct {
 	opened, closed int64
 	pnl, r, mfeR   float64
 	reason         string
+	entry, sl, tp  float64
+	snap           string // H1/M15 states at entry, JSON
 }
 
 func run(dir, name string, spread float64) {
@@ -141,16 +150,21 @@ func run(dir, name string, spread float64) {
 		if p.side == config.SignalSell {
 			mfe = -mfe
 		}
-		trades = append(trades, trade{p.side, p.opened, at, pnl, pnl / p.risk, mfe / p.risk, reason})
+		trades = append(trades, trade{p.side, p.opened, at, pnl, pnl / p.risk, mfe / p.risk, reason, p.entry, p.sl0, p.tp, p.snap})
 		if aware != nil {
 			aware.OnClosed(p.side, reason, time.Unix(at, 0))
 		}
 	}
 
+	lagHigherTF := os.Getenv("BT_LAG") != "" // live: M15/H1 closes can reach strategies one M5 bar late
 	for _, b := range m1 {
 		m5Closed := false
 		for _, p := range ps {
-			for p.next < len(p.bars) && p.bars[p.next].t+p.dur <= b.t {
+			due := p.bars[min(p.next, len(p.bars)-1)].t + p.dur
+			if lagHigherTF && p.name != "M5" && due == b.t {
+				continue
+			}
+			for p.next < len(p.bars) && p.bars[p.next].t+p.dur <= b.t-map[bool]int64{true: 1, false: 0}[lagHigherTF && p.name != "M5"] {
 				states[p.name] = p.feed(p.bars[p.next])
 				p.next++
 				if p.name == "M5" {
@@ -176,7 +190,7 @@ func run(dir, name string, spread float64) {
 					entry += spread // buy at ask; exits are on bid
 				}
 				open = append(open, &position{side: r.Signal, entry: entry, sl: r.SLPrice, tp: r.TPPrice,
-					risk: math.Abs(entry - r.SLPrice), opened: b.t, peak: entry})
+					risk: math.Abs(entry - r.SLPrice), opened: b.t, peak: entry, sl0: r.SLPrice, snap: snapshot(states)})
 			}
 		}
 
@@ -332,7 +346,7 @@ func report(name string, ts []trade) {
 		f, _ := os.Create(filepath.Join(os.Getenv("BT_TRADES"), name+"_trades.csv"))
 		w := csv.NewWriter(f)
 		for _, t := range ts {
-			w.Write([]string{t.side, strconv.FormatInt(t.opened, 10), strconv.FormatInt(t.closed, 10), ff(t.pnl), ff(t.r), ff(t.mfeR), t.reason})
+			w.Write([]string{t.side, strconv.FormatInt(t.opened, 10), strconv.FormatInt(t.closed, 10), ff(t.pnl), ff(t.r), ff(t.mfeR), t.reason, ff(t.entry), ff(t.sl), ff(t.tp), t.snap})
 		}
 		w.Flush()
 		f.Close()
@@ -363,4 +377,13 @@ func must(err error) {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+func snapshot(states map[string]indicator.MarketState) string {
+	out := map[string]indicator.MarketState{}
+	for _, k := range []string{"H1", "M15", "M5"} {
+		out[k] = states[k]
+	}
+	b, _ := json.Marshal(out)
+	return string(b)
 }
