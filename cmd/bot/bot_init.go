@@ -116,7 +116,7 @@ func buildStrategies(name, symbol, mlModelDir, mlOnnxLib string) ([]strategy.Str
 			rsireversal.New(),
 			sessionmomentum.New(),
 			emapullback.New(),
-			ddoversoldbounce.New(),
+			// ddoversoldbounce.New(),
 			// ddrangingbreakout.New(),
 			ddearlybreakout.New(),
 		}, nil
