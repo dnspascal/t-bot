@@ -57,3 +57,42 @@ func TestRangeExcludesCurrentBar(t *testing.T) {
 		t.Errorf("range should be 0 without 15 bars of history, got %v", ms.RangeHigh)
 	}
 }
+
+func TestPrevDayRange(t *testing.T) {
+	c := NewCalculator()
+	var hist []OHLC
+	feed := func(ts int64, hi, lo float64) MarketState {
+		ms := c.Calculate("s", "p", "H1", ts, 100, hi, lo, 100, 1, nil, nil, hist)
+		hist = append(hist, OHLC{Open: 100, High: hi, Low: lo, Close: 100})
+		return ms
+	}
+	const day = 86400
+	start := int64(20000 * day)
+	// Partial first day (bot started at 18:00): must not count as a previous day.
+	for h := int64(18); h < 24; h++ {
+		if ms := feed(start+h*3600, 200, 50); ms.PrevDayHigh != 0 {
+			t.Fatalf("partial day reported as previous day")
+		}
+	}
+	// Full day: high 120, low 80.
+	for h := int64(0); h < 24; h++ {
+		hi, lo := 105.0, 95.0
+		if h == 10 {
+			hi = 120
+		}
+		if h == 15 {
+			lo = 80
+		}
+		if ms := feed(start+day+h*3600, hi, lo); ms.PrevDayHigh != 0 {
+			t.Fatalf("hour %d: previous day must still be unknown (first day was partial)", h)
+		}
+	}
+	ms := feed(start+2*day, 101, 99)
+	if ms.PrevDayHigh != 120 || ms.PrevDayLow != 80 {
+		t.Errorf("prev day = %v/%v, want 120/80", ms.PrevDayHigh, ms.PrevDayLow)
+	}
+	ms = feed(start+2*day+3600, 300, 10) // today's extremes must not leak into "previous day"
+	if ms.PrevDayHigh != 120 || ms.PrevDayLow != 80 {
+		t.Errorf("prev day changed intraday: %v/%v", ms.PrevDayHigh, ms.PrevDayLow)
+	}
+}
