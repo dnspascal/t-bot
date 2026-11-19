@@ -32,6 +32,9 @@ type trackedPosition struct {
 	BreakEvenPending   bool // true while an amendment has been sent but not yet confirmed or timed out
 	BreakEvenAttempts  int  // number of amend attempts sent, so we can give up after breakEvenMaxAttempts
 	BreakEvenGaveUp    bool // true once we've stopped retrying an unconfirmed amendment
+	LockStage          int  // highest profit-lock step the broker has confirmed (0 = none)
+	AttemptStage       int  // profit-lock step BreakEvenAttempts counts for
+	GaveUpStage        int  // profit-lock step that was given up on; a higher step is still tried
 	PeakDrawbackShadow bool // true once the disabled peak drawback would have closed this position
 }
 
@@ -95,13 +98,15 @@ func (r *PositionRegistry) Register(pos trackedPosition) {
 	r.positions[pos.ProviderPositionID] = &pos
 }
 
-// SetBreakEven marks a break-even amendment as CONFIRMED by the broker.
-func (r *PositionRegistry) SetBreakEven(id string) {
+// SetLockConfirmed marks a profit-lock step as CONFIRMED by the broker and records the new SL.
+func (r *PositionRegistry) SetLockConfirmed(id string, stage int, sl float64) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if p, ok := r.positions[id]; ok {
 		p.BreakEvenActive = true
 		p.BreakEvenPending = false
+		p.LockStage = max(p.LockStage, stage)
+		p.SLPrice = sl
 	}
 }
 
@@ -115,23 +120,27 @@ func (r *PositionRegistry) SetBreakEvenPending(id string, pending bool) {
 	}
 }
 
-// IncrementBreakEvenAttempts records another amend attempt and returns the new count.
-func (r *PositionRegistry) IncrementBreakEvenAttempts(id string) int {
+// IncrementBreakEvenAttempts records another amend attempt for a profit-lock step and returns its count.
+func (r *PositionRegistry) IncrementBreakEvenAttempts(id string, stage int) int {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if p, ok := r.positions[id]; ok {
+		if p.AttemptStage != stage {
+			p.AttemptStage, p.BreakEvenAttempts = stage, 0
+		}
 		p.BreakEvenAttempts++
 		return p.BreakEvenAttempts
 	}
 	return 0
 }
 
-// SetBreakEvenGaveUp stops further amend retries for this position.
-func (r *PositionRegistry) SetBreakEvenGaveUp(id string) {
+// SetBreakEvenGaveUp stops amend retries for this profit-lock step; a higher step is still tried.
+func (r *PositionRegistry) SetBreakEvenGaveUp(id string, stage int) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if p, ok := r.positions[id]; ok {
 		p.BreakEvenGaveUp = true
+		p.GaveUpStage = max(p.GaveUpStage, stage)
 		p.BreakEvenPending = false
 	}
 }
