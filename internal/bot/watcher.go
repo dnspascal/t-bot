@@ -52,6 +52,7 @@ func (b *Bot) decisionParams() map[string]any {
 		"peak_retention_pct":            peakRetentionPct,
 		"peak_drawback_enabled":         peakDrawbackEnabled,
 		"breakeven_trigger_pct":         breakEvenTriggerPct,
+		"profit_lock_steps":             profitLockStepsParam(),
 		"breakeven_buffer_pips":         b.breakEvenBufferPips(),
 		"signals_to_close":              signalsToClose,
 		"signals_to_reduce":             signalsToReduce,
@@ -321,49 +322,63 @@ func (b *Bot) recordPeakDrawbackShadow(ctx context.Context, pos trackedPosition,
 	}
 }
 
+// Once price has covered reachPct of the way to TP, the SL moves to lock lockPct of the TP distance.
+var profitLockSteps = []struct{ reachPct, lockPct float64 }{{50, 10}, {75, 60}, {90, 70}}
+
+func profitLockStepsParam() [][2]float64 {
+	out := make([][2]float64, len(profitLockSteps))
+	for i, st := range profitLockSteps {
+		out[i] = [2]float64{st.reachPct, st.lockPct}
+	}
+	return out
+}
+
+// profitLockTarget returns the highest step reached (1-based, 0 = none) and the SL price it locks.
+func profitLockTarget(pos trackedPosition, minLock float64) (int, float64) {
+	tpDist, peakGain := pos.TPPrice-pos.OpenPrice, pos.MaxFavorable-pos.OpenPrice
+	dir := 1.0
+	if pos.Side == config.SignalSell {
+		tpDist, peakGain, dir = -tpDist, -peakGain, -1
+	}
+	if tpDist <= 0 {
+		return 0, 0
+	}
+	stage, lock := 0, 0.0
+	for i, st := range profitLockSteps {
+		if peakGain >= tpDist*st.reachPct/100 {
+			stage, lock = i+1, max(tpDist*st.lockPct/100, minLock)
+		}
+	}
+	if stage == 0 {
+		return 0, 0
+	}
+	return stage, pos.OpenPrice + dir*lock
+}
+
 const breakEvenConfirmTimeout = 5 * time.Second
 const breakEvenMaxAttempts = 3
 
 func (b *Bot) checkBreakEven(ctx context.Context, pos trackedPosition) {
-	if pos.BreakEvenActive || pos.BreakEvenPending || pos.BreakEvenGaveUp {
+	if pos.BreakEvenPending {
 		return
 	}
-
-	tpDist := pos.TPPrice - pos.OpenPrice
-	if pos.Side == config.SignalSell {
-		tpDist = pos.OpenPrice - pos.TPPrice
-	}
-	if tpDist <= 0 {
+	stage, newSL := profitLockTarget(pos, b.breakEvenBufferPips()*b.pipSize)
+	if stage <= pos.LockStage || pos.BreakEvenGaveUp && stage <= pos.GaveUpStage {
 		return
 	}
-
-	var peakGain float64
-	if pos.Side == config.SignalBuy {
-		peakGain = pos.MaxFavorable - pos.OpenPrice
-	} else {
-		peakGain = pos.OpenPrice - pos.MaxFavorable
-	}
-
-	if peakGain < (breakEvenTriggerPct/100)*tpDist {
+	if pos.SLPrice > 0 && (pos.Side == config.SignalBuy && pos.SLPrice >= newSL || pos.Side == config.SignalSell && pos.SLPrice <= newSL) {
+		b.registry.SetLockConfirmed(pos.ProviderPositionID, stage, pos.SLPrice) // already there, e.g. after a restart
 		return
-	}
-
-	bufferPips := b.breakEvenBufferPips()
-	var newSL float64
-	if pos.Side == config.SignalBuy {
-		newSL = pos.OpenPrice + bufferPips*b.pipSize
-	} else {
-		newSL = pos.OpenPrice - bufferPips*b.pipSize
 	}
 
 	if err := b.provider.AmendPositionSL(ctx, pos.ProviderPositionID, newSL, pos.TPPrice); err != nil {
-		slog.Error("break-even amend SEND FAILED — network/write error, not retried until next tick",
-			"posID", pos.ProviderPositionID, "newSL", newSL, "err", err,
+		slog.Error("profit lock amend SEND FAILED — network/write error, not retried until next tick",
+			"posID", pos.ProviderPositionID, "stage", stage, "newSL", newSL, "err", err,
 		)
 		return
 	}
 
-	attempt := b.registry.IncrementBreakEvenAttempts(pos.ProviderPositionID)
+	attempt := b.registry.IncrementBreakEvenAttempts(pos.ProviderPositionID, stage)
 	b.registry.SetBreakEvenPending(pos.ProviderPositionID, true)
 
 	confirmCh := make(chan struct{})
@@ -371,22 +386,22 @@ func (b *Bot) checkBreakEven(ctx context.Context, pos trackedPosition) {
 	b.pendingBreakEven[pos.ProviderPositionID] = confirmCh
 	b.pendingBreakEvenMu.Unlock()
 
-	slog.Info("break-even amend SENT — awaiting broker confirmation",
+	slog.Info("profit lock amend SENT — awaiting broker confirmation",
 		"posID", pos.ProviderPositionID,
 		"side", pos.Side,
+		"stage", stage,
 		"openPrice", pos.OpenPrice,
 		"oldSL", pos.SLPrice,
 		"newSL", newSL,
-		"peakGain", peakGain,
-		"tpDist", tpDist,
+		"maxFavorable", pos.MaxFavorable,
 		"attempt", attempt,
 		"maxAttempts", breakEvenMaxAttempts,
 	)
 
-	go b.awaitBreakEvenConfirmation(ctx, pos, newSL, attempt, confirmCh)
+	go b.awaitBreakEvenConfirmation(ctx, pos, stage, newSL, attempt, confirmCh)
 }
 
-func (b *Bot) awaitBreakEvenConfirmation(ctx context.Context, pos trackedPosition, newSL float64, attempt int, confirmCh chan struct{}) {
+func (b *Bot) awaitBreakEvenConfirmation(ctx context.Context, pos trackedPosition, stage int, newSL float64, attempt int, confirmCh chan struct{}) {
 	select {
 	case <-ctx.Done():
 		b.pendingBreakEvenMu.Lock()
@@ -395,11 +410,11 @@ func (b *Bot) awaitBreakEvenConfirmation(ctx context.Context, pos trackedPositio
 		return
 
 	case <-confirmCh:
-		slog.Info("break-even CONFIRMED by broker — position now protected",
-			"posID", pos.ProviderPositionID, "newSL", newSL, "attempt", attempt,
+		slog.Info("profit lock CONFIRMED by broker",
+			"posID", pos.ProviderPositionID, "stage", stage, "newSL", newSL, "attempt", attempt,
 		)
-		b.registry.SetBreakEven(pos.ProviderPositionID)
-		b.recordBreakEvenAdjustment(ctx, pos, newSL)
+		b.registry.SetLockConfirmed(pos.ProviderPositionID, stage, newSL)
+		b.recordBreakEvenAdjustment(ctx, pos, newSL, fmt.Sprintf("profit_lock_%d", stage))
 
 	case <-time.After(breakEvenConfirmTimeout):
 		b.pendingBreakEvenMu.Lock()
@@ -407,7 +422,7 @@ func (b *Bot) awaitBreakEvenConfirmation(ctx context.Context, pos trackedPositio
 		b.pendingBreakEvenMu.Unlock()
 
 		if attempt >= breakEvenMaxAttempts {
-			b.registry.SetBreakEvenGaveUp(pos.ProviderPositionID)
+			b.registry.SetBreakEvenGaveUp(pos.ProviderPositionID, stage)
 			slog.Error("break-even UNCONFIRMED after max attempts — GIVING UP, position is running on its ORIGINAL stop, not newSL",
 				"posID", pos.ProviderPositionID, "attemptedNewSL", newSL, "originalSL", pos.SLPrice, "attempts", attempt,
 			)
@@ -496,7 +511,7 @@ func (b *Bot) signalBreakEvenConfirmed(providerPositionID string) {
 	}
 }
 
-func (b *Bot) recordBreakEvenAdjustment(ctx context.Context, pos trackedPosition, newSL float64) {
+func (b *Bot) recordBreakEvenAdjustment(ctx context.Context, pos trackedPosition, newSL float64, reason string) {
 	posUUID, err := b.positions.IDByProviderPositionID(ctx, b.provider.Name(), pos.ProviderPositionID)
 	if err != nil {
 		slog.Warn("recordBreakEvenAdjustment: could not resolve position UUID for adjustment record",
@@ -507,7 +522,7 @@ func (b *Bot) recordBreakEvenAdjustment(ctx context.Context, pos trackedPosition
 	if _, err := b.db.Exec(ctx,
 		`INSERT INTO position_adjustments (position_id, old_sl, new_sl, reason)
 		 VALUES ($1, $2, $3, $4)`,
-		posUUID, pos.SLPrice, newSL, "break_even",
+		posUUID, pos.SLPrice, newSL, reason,
 	); err != nil {
 		slog.Warn("recordBreakEvenAdjustment: failed to record adjustment in DB",
 			"posUUID", posUUID, "err", err,
