@@ -15,6 +15,9 @@ import (
 // Active — see analysis/daily/2026-09-02/queries/peak_retention_sim.
 const peakRetentionPct = 25.0
 
+// Off: the first time peak drawback would close a position is recorded as a peak_drawback_shadow event instead.
+const peakDrawbackEnabled = false
+
 // Old two-gate design, superseded by peakRetentionPct above — kept for reference.
 const peakDrawbackThreshold = 60.0
 const peakDrawbackGatePct = 70.0
@@ -47,6 +50,7 @@ func (b *Bot) decisionParams() map[string]any {
 	return map[string]any{
 		"peak_retention_arm_pct":        breakEvenTriggerPct,
 		"peak_retention_pct":            peakRetentionPct,
+		"peak_drawback_enabled":         peakDrawbackEnabled,
 		"breakeven_trigger_pct":         breakEvenTriggerPct,
 		"breakeven_buffer_pips":         b.breakEvenBufferPips(),
 		"signals_to_close":              signalsToClose,
@@ -148,7 +152,7 @@ func (b *Bot) usesTrendWatcher(strategyName string) bool {
 func countReversalSignals(ms indicator.MarketState, pos trackedPosition) (int, []string) {
 	var signals []string
 
-	if pct := peakGivebackPct(pos, ms.Close); pct > 0 {
+	if pct := peakGivebackPct(pos, ms.Close); peakDrawbackEnabled && pct > 0 {
 		signals = append(signals, fmt.Sprintf(strat.PeakDrawbackPrefix+"%.0f%%", pct))
 	}
 
@@ -271,6 +275,10 @@ func (b *Bot) checkPeakDrawback(ctx context.Context, currentPrice float64) {
 		b.checkBreakEven(ctx, pos)
 
 		if pct := peakGivebackPct(pos, currentPrice); pct > 0 {
+			if !peakDrawbackEnabled {
+				b.recordPeakDrawbackShadow(ctx, pos, currentPrice, pct)
+				continue
+			}
 			reason := fmt.Sprintf(strat.PeakDrawbackPrefix+"%.0f%%", pct)
 			slog.Info("peak drawback — closing position",
 				"posID", pos.ProviderPositionID,
@@ -279,6 +287,37 @@ func (b *Bot) checkPeakDrawback(ctx context.Context, currentPrice float64) {
 			)
 			b.closeTrackedPosition(ctx, pos, reason)
 		}
+	}
+}
+
+// recordPeakDrawbackShadow logs, once per position, the price and gain at which peak drawback would have closed it.
+func (b *Bot) recordPeakDrawbackShadow(ctx context.Context, pos trackedPosition, price, pct float64) {
+	if !b.registry.MarkPeakDrawbackShadow(pos.ProviderPositionID) {
+		return
+	}
+	gain, peak := price-pos.OpenPrice, pos.MaxFavorable-pos.OpenPrice
+	if pos.Side == config.SignalSell {
+		gain, peak = -gain, -peak
+	}
+	slog.Info("peak drawback would have closed — disabled, keeping position",
+		"posID", pos.ProviderPositionID, "side", pos.Side, "drawback", fmt.Sprintf("%.0f%%", pct),
+		"price", price, "gain", gain, "peakGain", peak,
+	)
+	if b.events == nil {
+		return
+	}
+	if err := b.events.Insert(ctx, "peak_drawback_shadow", map[string]any{
+		"positionID": pos.ProviderPositionID,
+		"strategy":   pos.StrategyName,
+		"side":       pos.Side,
+		"openPrice":  pos.OpenPrice,
+		"price":      price,
+		"gain":       gain,
+		"peakGain":   peak,
+		"drawback":   pct,
+		"volume":     pos.Volume,
+	}, 0); err != nil {
+		slog.Error("peak drawback shadow event insert failed", "posID", pos.ProviderPositionID, "err", err)
 	}
 }
 

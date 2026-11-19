@@ -32,6 +32,7 @@ type trackedPosition struct {
 	BreakEvenPending   bool // true while an amendment has been sent but not yet confirmed or timed out
 	BreakEvenAttempts  int  // number of amend attempts sent, so we can give up after breakEvenMaxAttempts
 	BreakEvenGaveUp    bool // true once we've stopped retrying an unconfirmed amendment
+	PeakDrawbackShadow bool // true once the disabled peak drawback would have closed this position
 }
 
 type PositionRegistry struct {
@@ -133,6 +134,18 @@ func (r *PositionRegistry) SetBreakEvenGaveUp(id string) {
 		p.BreakEvenGaveUp = true
 		p.BreakEvenPending = false
 	}
+}
+
+// MarkPeakDrawbackShadow flags the position and reports whether this is the first time.
+func (r *PositionRegistry) MarkPeakDrawbackShadow(id string) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	p, ok := r.positions[id]
+	if !ok || p.PeakDrawbackShadow {
+		return false
+	}
+	p.PeakDrawbackShadow = true
+	return true
 }
 
 func (r *PositionRegistry) Remove(id string) {
