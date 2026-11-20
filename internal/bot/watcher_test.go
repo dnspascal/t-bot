@@ -82,3 +82,15 @@ func TestCheckBreakEvenSkipsAmendWhenSLAlreadyLocked(t *testing.T) {
 		t.Fatalf("got LockStage %d, want 2", pos.LockStage)
 	}
 }
+
+func TestReversalSignalsIgnoreRegime(t *testing.T) {
+	pos := trackedPosition{Side: config.SignalSell, OpenPrice: 3700, TPPrice: 3680}
+	flat := indicator.MarketState{Regime: config.Ranging, RSI: 45, EMAFast: 1, EMASlow: 2, MomentumDirection: config.MomentumStable}
+	if n, sigs := countReversalSignals(flat, pos); n != 0 {
+		t.Fatalf("ranging regime alone should not vote: got %d %v", n, sigs)
+	}
+	turned := indicator.MarketState{Regime: config.TrendingUp, RSI: 55, EMAFast: 2, EMASlow: 1, MomentumDirection: config.MomentumStable}
+	if n, sigs := countReversalSignals(turned, pos); n != signalsToClose {
+		t.Fatalf("EMA cross + RSI against a SELL should reach the close threshold: got %d %v", n, sigs)
+	}
+}
