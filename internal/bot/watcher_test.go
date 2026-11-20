@@ -8,6 +8,7 @@ import (
 
 	"github.com/denismgaya/t-bot/internal/config"
 	"github.com/denismgaya/t-bot/internal/indicator"
+	strat "github.com/denismgaya/t-bot/internal/strategy"
 )
 
 func TestPeakDrawbackDisabledKeepsPositionAndMarksShadowOnce(t *testing.T) {
@@ -34,10 +35,10 @@ func TestPeakDrawbackDisabledKeepsPositionAndMarksShadowOnce(t *testing.T) {
 	}
 }
 
-func TestReversalSignalsIgnorePeakDrawbackWhileDisabled(t *testing.T) {
+func TestInvalidationSignalsIgnorePeakDrawbackWhileDisabled(t *testing.T) {
 	pos := trackedPosition{Side: config.SignalSell, OpenPrice: 3746.54, TPPrice: 3720.79, MaxFavorable: 3728.35}
 	ms := indicator.MarketState{Close: 3742.20, Regime: config.Breakout, RSI: 50, EMAFast: 1, EMASlow: 1, MomentumDirection: config.MomentumStable}
-	if n, sigs := countReversalSignals(ms, pos); n != 0 {
+	if n, sigs := countInvalidationSignals(ms, pos); n != 0 {
 		t.Fatalf("got %d signals %v, want 0", n, sigs)
 	}
 }
@@ -83,14 +84,24 @@ func TestCheckBreakEvenSkipsAmendWhenSLAlreadyLocked(t *testing.T) {
 	}
 }
 
-func TestReversalSignalsIgnoreRegime(t *testing.T) {
+func TestInvalidationSignalsIgnoreRegime(t *testing.T) {
 	pos := trackedPosition{Side: config.SignalSell, OpenPrice: 3700, TPPrice: 3680}
 	flat := indicator.MarketState{Regime: config.Ranging, RSI: 45, EMAFast: 1, EMASlow: 2, MomentumDirection: config.MomentumStable}
-	if n, sigs := countReversalSignals(flat, pos); n != 0 {
+	if n, sigs := countInvalidationSignals(flat, pos); n != 0 {
 		t.Fatalf("ranging regime alone should not vote: got %d %v", n, sigs)
 	}
 	turned := indicator.MarketState{Regime: config.TrendingUp, RSI: 55, EMAFast: 2, EMASlow: 1, MomentumDirection: config.MomentumStable}
-	if n, sigs := countReversalSignals(turned, pos); n != signalsToClose {
+	if n, sigs := countInvalidationSignals(turned, pos); n != signalsToClose {
 		t.Fatalf("EMA cross + RSI against a SELL should reach the close threshold: got %d %v", n, sigs)
+	}
+}
+
+func TestInvalidationCloseReasonStillClassifiesAsInvalidated(t *testing.T) {
+	reason := strat.InvalidationPrefix + strat.InvalidationRSIAgainst + "," + strat.InvalidationEMACrossAgainst
+	if strat.ClassifyCloseReason(reason) != strat.CloseInvalidated {
+		t.Fatalf("%q should classify as invalidated", reason)
+	}
+	if strat.ClassifyCloseReason("regime_against,rsi_against,ema_cross_against") != strat.CloseInvalidated {
+		t.Fatal("older unprefixed reasons should still classify as invalidated")
 	}
 }

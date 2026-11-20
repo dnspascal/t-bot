@@ -11,14 +11,15 @@ const (
 
 	PeakDrawbackPrefix = "peak_drawback="
 	TimeStopPrefix     = "time_stop="
+	InvalidationPrefix = "invalidation=" // followed by the signals that fired, e.g. invalidation=rsi_against,ema_cross_against
 
 	CloseReasonTimeStopNeverProfitable30m = TimeStopPrefix + "never_profitable_30m"
 	CloseReasonTimeStopStalled60m         = TimeStopPrefix + "stalled_60m"
 
-	ReversalRegimeAgainst   = "regime_against"
-	ReversalRSIAgainst      = "rsi_against"
-	ReversalEMACrossAgainst = "ema_cross_against"
-	ReversalMomentumAgainst = "momentum_against"
+	InvalidationRegimeAgainst   = "regime_against" // no longer voted; kept to classify older closes
+	InvalidationRSIAgainst      = "rsi_against"
+	InvalidationEMACrossAgainst = "ema_cross_against"
+	InvalidationMomentumAgainst = "momentum_against"
 )
 
 type CloseOutcome int
@@ -42,7 +43,7 @@ func ClassifyCloseReason(reason string) CloseOutcome {
 		strings.HasPrefix(reason, PeakDrawbackPrefix):
 		return CloseValidated
 	}
-	for _, tok := range []string{ReversalRegimeAgainst, ReversalRSIAgainst, ReversalEMACrossAgainst, ReversalMomentumAgainst} {
+	for _, tok := range []string{InvalidationRegimeAgainst, InvalidationRSIAgainst, InvalidationEMACrossAgainst, InvalidationMomentumAgainst} {
 		if strings.Contains(reason, tok) {
 			return CloseInvalidated
 		}

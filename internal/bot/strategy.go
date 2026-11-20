@@ -1,6 +1,6 @@
 package bot
 
-// rsiMidline is used by watcher.go to evaluate reversal signals on open positions.
+// rsiMidline is used by watcher.go to evaluate invalidation signals on open positions.
 // It is intentionally a universal constant, not strategy-specific.
 const rsiMidline = 50.0
 
