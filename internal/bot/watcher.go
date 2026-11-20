@@ -27,9 +27,8 @@ const neverProfitableTimeout = 30 * time.Minute
 const stallTimeout = 60 * time.Minute
 const stallMaxFavPct = 15.0
 
-const signalsToClose = 3
-
-const signalsToReduce = 2
+// Invalidation votes: EMA 9/21 cross, RSI vs 50, momentum. Regime was dropped: it is built from the same EMAs.
+const signalsToClose = 2
 
 // Raised from 25.0 — see analysis/daily/2026-08-26/report.html Part 8.
 const breakEvenTriggerPct = 50.0
@@ -55,7 +54,7 @@ func (b *Bot) decisionParams() map[string]any {
 		"profit_lock_steps":             profitLockStepsParam(),
 		"breakeven_buffer_pips":         b.breakEvenBufferPips(),
 		"signals_to_close":              signalsToClose,
-		"signals_to_reduce":             signalsToReduce,
+		"reversal_signals":              []string{strat.ReversalEMACrossAgainst, strat.ReversalRSIAgainst, strat.ReversalMomentumAgainst},
 		"never_profitable_timeout_min":  int(neverProfitableTimeout / time.Minute),
 		"stall_timeout_min":             int(stallTimeout / time.Minute),
 		"stall_max_favorable_pct_of_tp": stallMaxFavPct,
@@ -126,14 +125,8 @@ func (b *Bot) watchPositions(ctx context.Context, ms indicator.MarketState) {
 			reason := strings.Join(signals, ",")
 			switch {
 			case n >= signalsToClose:
-				slog.Info("3+ signals confirmed — closing position",
-					"posID", pos.ProviderPositionID, "n", n,
-				)
-				b.closeTrackedPosition(ctx, pos, reason)
-
-			case n >= signalsToReduce && pos.Tier >= config.TierStronger:
-				slog.Info("2 signals — reducing high-tier position",
-					"posID", pos.ProviderPositionID, "tier", pos.Tier,
+				slog.Info("reversal signals confirmed — closing position",
+					"posID", pos.ProviderPositionID, "n", n, "signals", reason,
 				)
 				b.closeTrackedPosition(ctx, pos, reason)
 			}
@@ -155,11 +148,6 @@ func countReversalSignals(ms indicator.MarketState, pos trackedPosition) (int, [
 
 	if pct := peakGivebackPct(pos, ms.Close); peakDrawbackEnabled && pct > 0 {
 		signals = append(signals, fmt.Sprintf(strat.PeakDrawbackPrefix+"%.0f%%", pct))
-	}
-
-	if (pos.Side == config.SignalBuy && (ms.Regime == config.TrendingDown || ms.Regime == config.Ranging)) ||
-		(pos.Side == config.SignalSell && (ms.Regime == config.TrendingUp || ms.Regime == config.Ranging)) {
-		signals = append(signals, strat.ReversalRegimeAgainst)
 	}
 
 	if (pos.Side == config.SignalBuy && ms.RSI < rsiMidline) ||

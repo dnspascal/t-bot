@@ -31,7 +31,7 @@ import (
 
 // Mirrors internal/bot (watcher.go, registry.go, bot.go) for XAUUSD.
 const (
-	pipSize                = 0.01
+	pipSize                = 0.10 // symbol_configs XAUUSD pip_size, what live passes to strategies and the watcher
 	breakEvenTriggerPct    = 50.0
 	breakEvenBufferPips    = 5.0
 	peakRetentionPct       = 25.0
@@ -109,6 +109,8 @@ type position struct {
 	beMoved             bool
 	sl0                 float64 // SL at entry; sl moves to breakeven
 	snap                string
+	reentry             bool // research: second attempt after a snap-back stop-out
+	tier                int
 }
 
 type trade struct {
@@ -156,7 +158,10 @@ func run(dir, name string, spread float64) {
 		}
 	}
 
+	var pendingEntries []*pendingEntry
 	lagHigherTF := os.Getenv("BT_LAG") != "" // live: M15/H1 closes can reach strategies one M5 bar late
+	watch := invalMode != "" && s.UsesTrendWatcher()
+	lv := &m5Live{}
 	for _, b := range m1 {
 		m5Closed := false
 		for _, p := range ps {
@@ -166,10 +171,11 @@ func run(dir, name string, spread float64) {
 			}
 			for p.next < len(p.bars) && p.bars[p.next].t+p.dur <= b.t-map[bool]int64{true: 1, false: 0}[lagHigherTF && p.name != "M5"] {
 				states[p.name] = p.feed(p.bars[p.next])
-				p.next++
 				if p.name == "M5" {
 					m5Closed = true
+					lv.closed(states["M5"], p.bars[p.next])
 				}
+				p.next++
 			}
 		}
 		now := time.Unix(b.t, 0).UTC()
@@ -189,20 +195,83 @@ func run(dir, name string, spread float64) {
 				if r.Signal == config.SignalBuy {
 					entry += spread // buy at ask; exits are on bid
 				}
-				open = append(open, &position{side: r.Signal, entry: entry, sl: r.SLPrice, tp: r.TPPrice,
-					risk: math.Abs(entry - r.SLPrice), opened: b.t, peak: entry, sl0: r.SLPrice, snap: snapshot(states)})
+				if k, err := strconv.ParseFloat(os.Getenv("BT_SL_MULT"), 64); err == nil && r.ATR > 0 {
+					r.SLPrice = entry - k*r.ATR // research: override the stop distance, TP unchanged
+					if r.Signal == config.SignalSell {
+						r.SLPrice = entry + k*r.ATR
+					}
+				}
+				if k, err := strconv.ParseFloat(os.Getenv("BT_SL_ADD"), 64); err == nil && r.ATR > 0 {
+					r.SLPrice -= k * r.ATR // research: keep the strategy's stop anchor, push it k ATR further out
+					if r.Signal == config.SignalSell {
+						r.SLPrice += 2 * k * r.ATR
+					}
+				}
+				if limitATR > 0 && r.ATR > 0 {
+					off := limitATR * r.ATR // research: wait for a counter-move and enter that much better
+					if r.Signal == config.SignalBuy {
+						off = -off
+					}
+					shift := off
+					if os.Getenv("BT_LIMIT_KEEP") != "" {
+						shift = 0 // research: keep the signal's SL/TP, so the better fill means less risk and more reward
+					}
+					pendingEntries = append(pendingEntries, &pendingEntry{side: r.Signal, limit: entry + off,
+						sl: r.SLPrice + shift, tp: r.TPPrice + shift, expires: b.t + limitWait, snap: snapshot(states)})
+				} else {
+					open = append(open, &position{side: r.Signal, entry: entry, sl: r.SLPrice, tp: r.TPPrice,
+						risk: math.Abs(entry - r.SLPrice), opened: b.t, peak: entry, sl0: r.SLPrice, snap: snapshot(states), tier: r.Tier})
+				}
 			}
 		}
 
+		live := pendingEntries[:0]
+		for _, pe := range pendingEntries {
+			filled := pe.side == config.SignalSell && b.high >= pe.limit || pe.side == config.SignalBuy && b.low+spread <= pe.limit
+			switch {
+			case filled && canOpen(open, pe.side, pe.limit):
+				open = append(open, &position{side: pe.side, entry: pe.limit, sl: pe.sl, tp: pe.tp,
+					risk: math.Abs(pe.limit - pe.sl), opened: b.t, peak: pe.limit, sl0: pe.sl, snap: pe.snap})
+			case filled, b.t >= pe.expires:
+			default:
+				live = append(live, pe)
+			}
+		}
+		pendingEntries = live
+
+		var ms *indicator.MarketState
+		if watch && !eod && states["M5"].IsWarmedUp {
+			switch {
+			case m5Closed:
+				m := states["M5"]
+				ms = &m
+			case invalMode == "m5min":
+				m := lv.provisional(b.open)
+				ms = &m
+			}
+		}
 		kept := open[:0]
+		var reentries []*position
 		for _, p := range open {
+			if ms != nil && b.t > p.opened && invalidated(*ms, p) {
+				px := b.open
+				if p.side == config.SignalSell {
+					px += spread
+				}
+				closePos(p, b.t, px, "invalidation")
+				continue
+			}
 			if reason, px, done := step(p, b, spread); done {
 				closePos(p, b.t+60, px, reason)
+				if k := reentryMult; k > 0 && reason == strategy.CloseReasonSLHit && !p.reentry {
+					reentries = append(reentries, reenter(p, px, k, b.t+60, spread))
+				}
 				continue
 			}
 			kept = append(kept, p)
 		}
-		open = kept
+		open = append(kept, reentries...)
+		lv.minute(b)
 	}
 	report(name, trades)
 }
@@ -386,4 +455,32 @@ func snapshot(states map[string]indicator.MarketState) string {
 	}
 	b, _ := json.Marshal(out)
 	return string(b)
+}
+
+// research (BT_REENTRY=k): after an SL hit, re-enter once at the stop price, same TP,
+// new stop k x the original risk further out.
+var reentryMult, _ = strconv.ParseFloat(os.Getenv("BT_REENTRY"), 64)
+
+func reenter(p *position, stopPx, k float64, at int64, spread float64) *position {
+	risk := math.Abs(p.entry - p.sl0)
+	entry, sl := stopPx-spread, stopPx+k*risk // SELL stop filled at ask; re-sell at bid
+	if p.side == config.SignalBuy {
+		entry, sl = stopPx+spread, stopPx-k*risk
+	}
+	return &position{side: p.side, entry: entry, sl: sl, tp: p.tp, risk: k * risk, opened: at,
+		peak: entry, sl0: sl, snap: p.snap, reentry: true}
+}
+
+// research (BT_LIMIT_ATR=x, BT_LIMIT_MIN=m): instead of entering at the signal, wait up to
+// m minutes for price to move x ATR against the signal and enter there; SL/TP move with it.
+var (
+	limitATR, _ = strconv.ParseFloat(os.Getenv("BT_LIMIT_ATR"), 64)
+	limitWait   = func() int64 { m, _ := strconv.ParseInt(os.Getenv("BT_LIMIT_MIN"), 10, 64); return m * 60 }()
+)
+
+type pendingEntry struct {
+	side          string
+	limit, sl, tp float64
+	expires       int64
+	snap          string
 }
