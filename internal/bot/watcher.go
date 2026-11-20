@@ -54,7 +54,7 @@ func (b *Bot) decisionParams() map[string]any {
 		"profit_lock_steps":             profitLockStepsParam(),
 		"breakeven_buffer_pips":         b.breakEvenBufferPips(),
 		"signals_to_close":              signalsToClose,
-		"reversal_signals":              []string{strat.ReversalEMACrossAgainst, strat.ReversalRSIAgainst, strat.ReversalMomentumAgainst},
+		"invalidation_signals":          []string{strat.InvalidationEMACrossAgainst, strat.InvalidationRSIAgainst, strat.InvalidationMomentumAgainst},
 		"never_profitable_timeout_min":  int(neverProfitableTimeout / time.Minute),
 		"stall_timeout_min":             int(stallTimeout / time.Minute),
 		"stall_max_favorable_pct_of_tp": stallMaxFavPct,
@@ -115,17 +115,17 @@ func (b *Bot) watchPositions(ctx context.Context, ms indicator.MarketState) {
 		}
 
 		if b.usesTrendWatcher(pos.StrategyName) {
-			n, signals := countReversalSignals(ms, pos)
+			n, signals := countInvalidationSignals(ms, pos)
 			if n == 0 {
 				continue
 			}
 
-			slog.Debug("reversal signals detected")
+			slog.Debug("invalidation signals detected")
 
-			reason := strings.Join(signals, ",")
+			reason := strat.InvalidationPrefix + strings.Join(signals, ",")
 			switch {
 			case n >= signalsToClose:
-				slog.Info("reversal signals confirmed — closing position",
+				slog.Info("invalidation confirmed — closing position",
 					"posID", pos.ProviderPositionID, "n", n, "signals", reason,
 				)
 				b.closeTrackedPosition(ctx, pos, reason)
@@ -143,7 +143,7 @@ func (b *Bot) usesTrendWatcher(strategyName string) bool {
 	return true // unknown strategy — safe default is to apply watcher
 }
 
-func countReversalSignals(ms indicator.MarketState, pos trackedPosition) (int, []string) {
+func countInvalidationSignals(ms indicator.MarketState, pos trackedPosition) (int, []string) {
 	var signals []string
 
 	if pct := peakGivebackPct(pos, ms.Close); peakDrawbackEnabled && pct > 0 {
@@ -152,17 +152,17 @@ func countReversalSignals(ms indicator.MarketState, pos trackedPosition) (int, [
 
 	if (pos.Side == config.SignalBuy && ms.RSI < rsiMidline) ||
 		(pos.Side == config.SignalSell && ms.RSI > rsiMidline) {
-		signals = append(signals, strat.ReversalRSIAgainst)
+		signals = append(signals, strat.InvalidationRSIAgainst)
 	}
 
 	if (pos.Side == config.SignalBuy && ms.EMAFast < ms.EMASlow) ||
 		(pos.Side == config.SignalSell && ms.EMAFast > ms.EMASlow) {
-		signals = append(signals, strat.ReversalEMACrossAgainst)
+		signals = append(signals, strat.InvalidationEMACrossAgainst)
 	}
 
 	if (pos.Side == config.SignalBuy && ms.MomentumDirection == config.MomentumFalling) ||
 		(pos.Side == config.SignalSell && ms.MomentumDirection == config.MomentumRising) {
-		signals = append(signals, strat.ReversalMomentumAgainst)
+		signals = append(signals, strat.InvalidationMomentumAgainst)
 	}
 
 	return len(signals), signals

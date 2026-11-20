@@ -190,7 +190,7 @@ func run(dir, name string, spread float64) {
 
 		if m5Closed && !eod && b.t >= warmFrom {
 			r := s.Evaluate(states, b.open, pipSize)
-			if (r.Signal == config.SignalBuy || r.Signal == config.SignalSell) && canOpen(open, r.Signal, b.open) {
+			if (r.Signal == config.SignalBuy || r.Signal == config.SignalSell) && canOpen(open, r.Signal, b.open) && !entryBlocked(states["M5"], r.Signal) {
 				entry := b.open
 				if r.Signal == config.SignalBuy {
 					entry += spread // buy at ask; exits are on bid
@@ -325,7 +325,14 @@ func step(p *position, b bar, spread float64) (string, float64, bool) {
 		return "", 0, false
 	}
 	armed := peakGain >= tpDist*breakEvenTriggerPct/100
-	if armed && !p.beMoved {
+	if lock := profitLock(peakGain, tpDist); lock > 0 {
+		p.beMoved = true
+		if buy {
+			p.sl = max(p.sl, p.entry+lock)
+		} else {
+			p.sl = min(p.sl, p.entry-lock)
+		}
+	} else if armed && !p.beMoved && len(lockSteps) == 0 {
 		p.beMoved = true
 		if buy {
 			p.sl = p.entry + breakEvenBufferPips*pipSize
@@ -333,7 +340,7 @@ func step(p *position, b bar, spread float64) (string, float64, bool) {
 			p.sl = p.entry - breakEvenBufferPips*pipSize
 		}
 	}
-	if armed && peakGain > 0 && gain <= peakGain*peakRetentionPct/100 {
+	if !peakDrawbackOff && armed && peakGain > 0 && gain <= peakGain*peakRetentionPct/100 {
 		return strategy.PeakDrawbackPrefix + "sim", cl, true
 	}
 
