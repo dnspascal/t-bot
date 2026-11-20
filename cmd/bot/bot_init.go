@@ -111,12 +111,12 @@ func buildStrategies(name, symbol, mlModelDir, mlOnnxLib string) ([]strategy.Str
 	case "", "all":
 		return []strategy.Strategy{
 			newSRBounce(),
-			sweep.New(),
+			// sweep.New(), // no edge in 6-year backtest; entries fight the M5 invalidation watcher
 			// breakout.New(), // true breaks only; no edge in backtest yet
 			sessionopen.New(),
 			trendfollow.New(),
 			rsireversal.New(),
-			sessionmomentum.New(),
+			// sessionmomentum.New(), // one-candle entry, no edge in any 6-year variant
 			emapullback.New(),
 			// ddoversoldbounce.New(),
 			// ddrangingbreakout.New(),
