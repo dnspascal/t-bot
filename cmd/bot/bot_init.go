@@ -108,18 +108,18 @@ func buildStrategies(name, symbol, mlModelDir, mlOnnxLib string) ([]strategy.Str
 		return buildSRBounce(symbol, mlModelDir, mlOnnxLib)
 	}
 	switch name {
-	case "", "all":
+	case "", "all": // live vs shadow is decided by liveStrategies in internal/bot/shadow.go
 		return []strategy.Strategy{
 			newSRBounce(),
-			// sweep.New(), // no edge in 6-year backtest; entries fight the M5 invalidation watcher
-			// breakout.New(), // true breaks only; no edge in backtest yet
+			sweep.New(),
+			breakout.New(),
 			sessionopen.New(),
 			trendfollow.New(),
 			rsireversal.New(),
-			// sessionmomentum.New(), // one-candle entry, no edge in any 6-year variant
+			sessionmomentum.New(),
 			emapullback.New(),
-			// ddoversoldbounce.New(),
-			// ddrangingbreakout.New(),
+			ddoversoldbounce.New(),
+			ddrangingbreakout.New(),
 			ddearlybreakout.New(),
 		}, nil
 	case "regime":
