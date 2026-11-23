@@ -98,6 +98,9 @@ type Bot struct {
 	tickCh            chan tick.Tick
 	lastTickSaved     time.Time
 	lastDrawbackCheck time.Time
+	lastShadowCheck   time.Time
+
+	shadowTrades []*shadowTrade
 
 	testCloseMode    atomic.Bool
 	testCloseTrigger chan struct{}
@@ -183,6 +186,7 @@ func New(
 
 func (b *Bot) Run(ctx context.Context, startedAt time.Time) {
 	b.reconcileOpenPositions(ctx)
+	b.loadShadowTrades(ctx)
 
 	b.refresherOnce.Do(func() { go b.tokenRefresher(ctx) })
 	b.watchDogOnce.Do(func() { go b.botWatchDog(ctx) })
@@ -558,6 +562,7 @@ func (b *Bot) processClosedCandle(ctx context.Context, _ float64) {
 	b.logUnrealizedPnL(mid)
 
 	b.watchPositions(ctx, m5)
+	b.watchShadowTrades(ctx, m5)
 
 	barTime := time.Unix(m5.BarTime, 0).UTC()
 	snapshots := buildMarketStateSnapshots(states)
@@ -606,6 +611,9 @@ func (b *Bot) processClosedCandle(ctx context.Context, _ float64) {
 			entry, sl, tp := mid, result.SLPrice, result.TPPrice
 			sig.IntendedEntry, sig.IntendedSL, sig.IntendedTP = &entry, &sl, &tp
 			sig.SkipReason = sessionSkipReason(b.symbol, time.Now())
+			if sig.SkipReason == "" && !isLiveStrategy(result.StrategyName) {
+				sig.SkipReason = SkipReasonShadow
+			}
 		}
 
 		signalID, err := b.signals.Insert(ctx, sig)
@@ -614,6 +622,11 @@ func (b *Bot) processClosedCandle(ctx context.Context, _ float64) {
 		}
 
 		if result.Signal == config.SignalHold {
+			continue
+		}
+
+		if sig.SkipReason == SkipReasonShadow {
+			b.openShadowTrade(ctx, result, signalID)
 			continue
 		}
 
@@ -1369,6 +1382,10 @@ func (b *Bot) onTick(ctx context.Context, price provider.PriceEvent) {
 			mid = (price.Bid + price.Ask) / 2
 		}
 		b.checkPeakDrawback(ctx, mid)
+	}
+	if len(b.shadowTrades) > 0 && time.Since(b.lastShadowCheck) >= time.Second {
+		b.lastShadowCheck = time.Now()
+		b.checkShadowTrades(ctx, price.Mid)
 	}
 
 	if time.Since(b.lastTickSaved) < time.Second {
