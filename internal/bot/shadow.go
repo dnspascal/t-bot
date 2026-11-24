@@ -20,6 +20,7 @@ var liveStrategies = map[string]bool{
 	"trend_pullback":       true,
 	"trend_pullback_nogap": true,
 	"reopen_hour":          true,
+	"month_start":          true,
 }
 
 func isLiveStrategy(name string) bool { return liveStrategies[name] }
