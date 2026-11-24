@@ -24,6 +24,7 @@ import (
 	"github.com/denismgaya/t-bot/internal/strategy/breakout"
 	ddoversoldbounce "github.com/denismgaya/t-bot/internal/strategy/dd_oversold_bounce"
 	emapullback "github.com/denismgaya/t-bot/internal/strategy/ema_pullback"
+	reopenhour "github.com/denismgaya/t-bot/internal/strategy/reopen_hour"
 	sessionmomentum "github.com/denismgaya/t-bot/internal/strategy/session_momentum"
 	"github.com/denismgaya/t-bot/internal/strategy/sweep"
 	trendfollow "github.com/denismgaya/t-bot/internal/strategy/trend_follow"
@@ -158,6 +159,10 @@ func run(dir, name string, spread float64) {
 	}
 	s := mk()
 	aware, _ := s.(strategy.OutcomeAware)
+	curMaxHold = 0
+	if mh, ok := s.(strategy.MaxHolder); ok {
+		curMaxHold = mh.MaxHold()
+	}
 
 	ps := []*period{{name: "H1", dur: 3600}, {name: "M15", dur: 900}, {name: "M5", dur: 300}}
 	for _, p := range ps {
@@ -383,6 +388,12 @@ func step(p *position, b bar, spread float64) (string, float64, bool) {
 	}
 
 	age := time.Duration(b.t+60-p.opened) * time.Second
+	if curMaxHold > 0 {
+		if age >= curMaxHold {
+			return strategy.CloseReasonTimeStopMaxHold, cl, true
+		}
+		return "", 0, false
+	}
 	if noTimeStops {
 		return "", 0, false
 	}
@@ -551,3 +562,16 @@ var stallTimeout, stallMaxFavPct = func() (time.Duration, float64) {
 
 // BT_NO_TIMESTOP=1 turns off the never-profitable and stall stops (research: strategies that need room).
 var noTimeStops = os.Getenv("BT_NO_TIMESTOP") != ""
+
+// curMaxHold mirrors strategy.MaxHolder: those positions close after it instead of the 30/60-minute time stops.
+var curMaxHold time.Duration
+
+func init() {
+	strategies["reopen_hour"] = func() strategy.Strategy { return reopenhour.New() }
+	for _, k := range []float64{0.5, 1, 1.5, 2} {
+		for _, wk := range []bool{false, true} {
+			k, wk := k, wk
+			strategies[fmt.Sprintf("reopen_k%.1f_wk%v", k, wk)] = func() strategy.Strategy { return reopenhour.NewVariant(k, wk) }
+		}
+	}
+}

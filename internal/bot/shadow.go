@@ -19,6 +19,7 @@ var liveStrategies = map[string]bool{
 	"session_open":         true,
 	"trend_pullback":       true,
 	"trend_pullback_nogap": true,
+	"reopen_hour":          true,
 }
 
 func isLiveStrategy(name string) bool { return liveStrategies[name] }
@@ -28,6 +29,7 @@ type shadowTrade struct {
 	signalID string
 	pos      trackedPosition
 	sl0      float64
+	maxHold  time.Duration // set for strat.MaxHolder strategies; replaces the 30/60-minute time stops
 }
 
 // shadowExit applies one price to a shadow trade (BUY exits on bid, SELL on ask) and reports a live exit once one fires.
@@ -64,6 +66,12 @@ func shadowExit(t *shadowTrade, bid, ask float64, now time.Time, pipSize, minLoc
 	}
 
 	age := now.Sub(p.OpenTime)
+	if t.maxHold > 0 {
+		if age >= t.maxHold {
+			return strat.CloseReasonTimeStopMaxHold, px, slMoved
+		}
+		return "", 0, slMoved
+	}
 	if age >= neverProfitableTimeout &&
 		(buy && p.MaxFavorable <= p.OpenPrice+pipSize || !buy && p.MaxFavorable >= p.OpenPrice-pipSize) {
 		return strat.CloseReasonTimeStopNeverProfitable30m, px, slMoved
@@ -112,7 +120,7 @@ func (b *Bot) openShadowTrade(ctx context.Context, result strat.EntryResult, sig
 		Side: result.Signal, Tier: result.Tier, Volume: b.lotUnit, OpenPrice: entry, SLPrice: result.SLPrice,
 		TPPrice: result.TPPrice, ATR: result.ATR, OpenTime: now, MaxFavorable: entry, MaxAdverse: entry,
 		StrategyName: result.StrategyName,
-	}}
+	}, maxHold: b.maxHoldFor(result.StrategyName)}
 	var sigID any
 	if signalID != "" {
 		sigID = signalID
@@ -220,6 +228,7 @@ func (b *Bot) loadShadowTrades(ctx context.Context) {
 			slog.Error("shadow trade scan failed", "err", err)
 			continue
 		}
+		t.maxHold = b.maxHoldFor(p.StrategyName)
 		p.MaxFavorable, p.MaxAdverse = p.OpenPrice, p.OpenPrice
 		if fav, adv := b.recoverPeaks(ctx, b.symbolUUID, p.Side, p.OpenPrice, p.OpenTime); fav != 0 {
 			p.MaxFavorable, p.MaxAdverse = fav, adv

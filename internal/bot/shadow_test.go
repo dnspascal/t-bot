@@ -105,3 +105,18 @@ func TestMaxOpenPerStrategy(t *testing.T) {
 		t.Error("trend_pullback and trend_pullback_nogap must both be live")
 	}
 }
+
+func TestShadowMaxHold(t *testing.T) {
+	open := time.Now().Add(-59 * time.Minute)
+	tr := &shadowTrade{pos: trackedPosition{Side: config.SignalBuy, OpenPrice: 100, SLPrice: 90, TPPrice: 130,
+		OpenTime: open, MaxFavorable: 100, MaxAdverse: 100}, maxHold: time.Hour}
+	if r, _, _ := shadowExit(tr, 99.9, 100.0, open.Add(59*time.Minute), 0.1, 0.5); r != "" {
+		t.Errorf("59m, never profitable: got %q, want no exit (max hold replaces the 30m time stop)", r)
+	}
+	if r, exit, _ := shadowExit(tr, 100.4, 100.5, open.Add(time.Hour), 0.1, 0.5); r != strat.CloseReasonTimeStopMaxHold || exit != 100.4 {
+		t.Errorf("60m: got %q at %v, want max hold at the bid 100.4", r, exit)
+	}
+	if !isLiveStrategy("reopen_hour") {
+		t.Error("reopen_hour must be live")
+	}
+}

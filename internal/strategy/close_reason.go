@@ -14,6 +14,7 @@ const (
 	InvalidationPrefix = "invalidation=" // followed by the signals that fired, e.g. invalidation=rsi_against,ema_cross_against
 
 	CloseReasonTimeStopNeverProfitable30m = TimeStopPrefix + "never_profitable_30m"
+	CloseReasonTimeStopMaxHold            = TimeStopPrefix + "max_hold"
 	CloseReasonTimeStopStalled60m         = TimeStopPrefix + "stalled_60m"
 
 	InvalidationRegimeAgainst   = "regime_against" // no longer voted; kept to classify older closes

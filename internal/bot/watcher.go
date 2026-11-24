@@ -518,9 +518,28 @@ func (b *Bot) recordBreakEvenAdjustment(ctx context.Context, pos trackedPosition
 	}
 }
 
+// maxHoldFor returns the fixed holding time of a strat.MaxHolder strategy, or 0.
+func (b *Bot) maxHoldFor(strategyName string) time.Duration {
+	for _, s := range b.strategies {
+		if mh, ok := s.(strat.MaxHolder); ok && s.Name() == strategyName {
+			return mh.MaxHold()
+		}
+	}
+	return 0
+}
+
 func (b *Bot) checkTimeStop(ctx context.Context, _ float64) {
 	for _, pos := range b.registry.All() {
 		if _, pending := b.pendingCloseReasons[pos.ProviderPositionID]; pending {
+			continue
+		}
+
+		if mh := b.maxHoldFor(pos.StrategyName); mh > 0 {
+			if time.Since(pos.OpenTime) >= mh {
+				slog.Info("time stop — max hold reached, closing",
+					"posID", pos.ProviderPositionID, "strategy", pos.StrategyName, "held", time.Since(pos.OpenTime).Round(time.Second))
+				b.closeTrackedPosition(ctx, pos, strat.CloseReasonTimeStopMaxHold)
+			}
 			continue
 		}
 

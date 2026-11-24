@@ -36,6 +36,11 @@ type Strategy interface {
 	UsesTrendWatcher() bool
 }
 
+// MaxHolder strategies have their positions closed after MaxHold, instead of the generic 30/60-minute time stops.
+type MaxHolder interface {
+	MaxHold() time.Duration
+}
+
 type OutcomeAware interface {
 	OnClosed(side, closeReason string, closeTime time.Time)
 }
