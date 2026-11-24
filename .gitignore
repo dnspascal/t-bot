@@ -27,3 +27,7 @@ ml/*.csv
 ml/*.png
 /api
 /seed
+
+# research: data and built tools never committed (public repo)
+/research/data/
+/research/bin/

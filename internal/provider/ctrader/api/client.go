@@ -58,6 +58,7 @@ type Client struct {
 	accountListCh   chan []CtidAccount
 	dealListResCh   chan []DealInfo
 	symbolByIdResCh chan []LightSymbol
+	symbolListCh    chan []LightSymbol
 	accountAuthedCh chan struct{}
 	pendingCloses   atomic.Int32
 }
@@ -81,6 +82,7 @@ func NewClient(demo bool, accountID, symbolID int64, priceDivisor, pipSize float
 		accountListCh:   make(chan []CtidAccount, 1),
 		dealListResCh:   make(chan []DealInfo, 1),
 		symbolByIdResCh: make(chan []LightSymbol, 1),
+		symbolListCh:    make(chan []LightSymbol, 1),
 		accountAuthedCh: make(chan struct{}),
 	}
 	c.conn = NewConnection(demo, c.handleMessage)
@@ -237,6 +239,19 @@ func (c *Client) GetSymbolsByIds(ids []int64) ([]LightSymbol, error) {
 		return syms, nil
 	case <-time.After(15 * time.Second):
 		return nil, fmt.Errorf("GetSymbolsByIds: timeout waiting for response")
+	}
+}
+
+// ListSymbols returns every symbol the account can trade (id, name, enabled).
+func (c *Client) ListSymbols() ([]LightSymbol, error) {
+	if err := c.conn.SendRaw(symbolCatalogReq, encodeSymbolCatalogReq(c.accountID)); err != nil {
+		return nil, fmt.Errorf("ListSymbols send: %w", err)
+	}
+	select {
+	case syms := <-c.symbolListCh:
+		return syms, nil
+	case <-time.After(30 * time.Second):
+		return nil, fmt.Errorf("ListSymbols: timeout waiting for response")
 	}
 }
 
@@ -471,6 +486,12 @@ func (c *Client) handleMessage(payloadType uint32, payload []byte) {
 		deals := decodeDealListRes(payload)
 		select {
 		case c.dealListResCh <- deals:
+		default:
+		}
+
+	case symbolCatalogRes:
+		select {
+		case c.symbolListCh <- decodeSymbolCatalog(payload):
 		default:
 		}
 
