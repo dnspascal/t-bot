@@ -15,8 +15,9 @@ const SkipReasonShadow = "shadow"
 
 // Only these strategies trade real money; the rest open virtual trades in shadow_trades through the same exits.
 var liveStrategies = map[string]bool{
-	"trend_follow": true,
-	"session_open": true,
+	"trend_follow":   true,
+	"session_open":   true,
+	"trend_pullback": true,
 }
 
 func isLiveStrategy(name string) bool { return liveStrategies[name] }
@@ -94,7 +95,7 @@ func (b *Bot) shadowCanOpen(strategyName, side string, price float64) bool {
 		}
 		n++
 	}
-	return n < maxPerStrategy
+	return n < maxOpenFor(strategyName)
 }
 
 func (b *Bot) openShadowTrade(ctx context.Context, result strat.EntryResult, signalID string) {
