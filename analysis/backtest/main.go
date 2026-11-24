@@ -24,32 +24,48 @@ import (
 	"github.com/denismgaya/t-bot/internal/strategy/breakout"
 	ddoversoldbounce "github.com/denismgaya/t-bot/internal/strategy/dd_oversold_bounce"
 	emapullback "github.com/denismgaya/t-bot/internal/strategy/ema_pullback"
+	reopenhour "github.com/denismgaya/t-bot/internal/strategy/reopen_hour"
 	sessionmomentum "github.com/denismgaya/t-bot/internal/strategy/session_momentum"
 	"github.com/denismgaya/t-bot/internal/strategy/sweep"
 	trendfollow "github.com/denismgaya/t-bot/internal/strategy/trend_follow"
+	trendpullback "github.com/denismgaya/t-bot/internal/strategy/trend_pullback"
 )
 
 // Mirrors internal/bot (watcher.go, registry.go, bot.go) for XAUUSD.
+// pipSize is symbol_configs XAUUSD pip_size (what live passes to strategies and the watcher); BT_PIP overrides it.
+// maxPerStrategy mirrors internal/bot maxPerStrategy (2); BT_MAX_OPEN overrides it.
+var maxPerStrategy = func() int {
+	if v, err := strconv.Atoi(os.Getenv("BT_MAX_OPEN")); err == nil && v > 0 {
+		return v
+	}
+	return 2
+}()
+
+var pipSize = func() float64 {
+	if v, err := strconv.ParseFloat(os.Getenv("BT_PIP"), 64); err == nil && v > 0 {
+		return v
+	}
+	return 0.10
+}()
+
 const (
-	pipSize                = 0.10 // symbol_configs XAUUSD pip_size, what live passes to strategies and the watcher
 	breakEvenTriggerPct    = 50.0
 	breakEvenBufferPips    = 5.0
 	peakRetentionPct       = 25.0
 	neverProfitableTimeout = 30 * time.Minute
-	stallTimeout           = 60 * time.Minute
-	stallMaxFavPct         = 15.0
-	maxPerStrategy         = 2
 	minScaleInPips         = 2
 	bufferSize             = 100
 )
 
 var strategies = map[string]func() strategy.Strategy{
-	"breakout":           func() strategy.Strategy { return breakout.New() },
-	"sweep":              func() strategy.Strategy { return sweep.New() },
-	"dd_oversold_bounce": func() strategy.Strategy { return ddoversoldbounce.New() },
-	"ema_pullback":       func() strategy.Strategy { return emapullback.New() },
-	"session_momentum":   func() strategy.Strategy { return sessionmomentum.New() },
-	"trend_follow":       func() strategy.Strategy { return trendfollow.New() },
+	"breakout":             func() strategy.Strategy { return breakout.New() },
+	"sweep":                func() strategy.Strategy { return sweep.New() },
+	"dd_oversold_bounce":   func() strategy.Strategy { return ddoversoldbounce.New() },
+	"ema_pullback":         func() strategy.Strategy { return emapullback.New() },
+	"session_momentum":     func() strategy.Strategy { return sessionmomentum.New() },
+	"trend_follow":         func() strategy.Strategy { return trendfollow.New() },
+	"trend_pullback":       func() strategy.Strategy { return trendpullback.New() },
+	"trend_pullback_nogap": func() strategy.Strategy { return trendpullback.NewNoGap() },
 }
 
 type bar struct {
@@ -60,7 +76,7 @@ type bar struct {
 
 func main() {
 	if len(os.Args) < 3 {
-		fmt.Fprintln(os.Stderr, "usage: backtest fetch <dir> <from> | run <dir> <strategy,...> [spread]")
+		fmt.Fprintln(os.Stderr, "usage: backtest fetch <dir> <from> | symbols <name part> | run <dir> <strategy,...> [spread]")
 		os.Exit(1)
 	}
 	switch os.Args[1] {
@@ -68,6 +84,17 @@ func main() {
 		from, err := time.Parse(time.DateOnly, os.Args[3])
 		must(err)
 		must(fetch(os.Args[2], from))
+	case "symbols":
+		must(listSymbols(os.Args[2]))
+	case "list":
+		names := make([]string, 0, len(strategies))
+		for n := range strategies {
+			if strings.HasPrefix(n, os.Args[2]) || os.Args[2] == "all" {
+				names = append(names, n)
+			}
+		}
+		sort.Strings(names)
+		fmt.Println(strings.Join(names, "\n"))
 	case "run":
 		spread := 0.30
 		if len(os.Args) > 4 {
@@ -88,10 +115,12 @@ type period struct {
 	hist  []indicator.OHLC
 	close []float64
 	vols  []int64
+	sess  sessionRange
 }
 
 func (p *period) feed(b bar) indicator.MarketState {
 	ms := p.calc.Calculate("XAUUSD", "ctrader", p.name, b.t, b.open, b.high, b.low, b.close, b.vol, p.close, p.vols, p.hist)
+	p.sess.apply(b.t, b.high, b.low, &ms)
 	p.hist = append(p.hist, indicator.OHLC{Open: b.open, High: b.high, Low: b.low, Close: b.close})
 	p.close = append(p.close, b.close)
 	p.vols = append(p.vols, b.vol)
@@ -130,6 +159,10 @@ func run(dir, name string, spread float64) {
 	}
 	s := mk()
 	aware, _ := s.(strategy.OutcomeAware)
+	curMaxHold = 0
+	if mh, ok := s.(strategy.MaxHolder); ok {
+		curMaxHold = mh.MaxHold()
+	}
 
 	ps := []*period{{name: "H1", dur: 3600}, {name: "M15", dur: 900}, {name: "M5", dur: 300}}
 	for _, p := range ps {
@@ -187,10 +220,20 @@ func run(dir, name string, spread float64) {
 			}
 			open = nil
 		}
+		if newsStarts(b.t) {
+			for _, p := range open {
+				px := b.open
+				if p.side == config.SignalSell {
+					px += spread
+				}
+				closePos(p, b.t, px, "news_close")
+			}
+			open = nil
+		}
 
 		if m5Closed && !eod && b.t >= warmFrom {
 			r := s.Evaluate(states, b.open, pipSize)
-			if (r.Signal == config.SignalBuy || r.Signal == config.SignalSell) && canOpen(open, r.Signal, b.open) && !entryBlocked(states["M5"], r.Signal) {
+			if (r.Signal == config.SignalBuy || r.Signal == config.SignalSell) && canOpen(open, r.Signal, b.open) && !entryBlocked(states["M5"], r.Signal) && !inNews(b.t) {
 				entry := b.open
 				if r.Signal == config.SignalBuy {
 					entry += spread // buy at ask; exits are on bid
@@ -345,6 +388,15 @@ func step(p *position, b bar, spread float64) (string, float64, bool) {
 	}
 
 	age := time.Duration(b.t+60-p.opened) * time.Second
+	if curMaxHold > 0 {
+		if age >= curMaxHold {
+			return strategy.CloseReasonTimeStopMaxHold, cl, true
+		}
+		return "", 0, false
+	}
+	if noTimeStops {
+		return "", 0, false
+	}
 	if age >= neverProfitableTimeout && peakGain <= pipSize {
 		return strategy.CloseReasonTimeStopNeverProfitable30m, cl, true
 	}
@@ -421,8 +473,13 @@ func report(name string, ts []trade) {
 	if os.Getenv("BT_TRADES") != "" {
 		f, _ := os.Create(filepath.Join(os.Getenv("BT_TRADES"), name+"_trades.csv"))
 		w := csv.NewWriter(f)
+		noSnap := os.Getenv("BT_NOSNAP") != "" // the indicator snapshot is ~95% of the file
 		for _, t := range ts {
-			w.Write([]string{t.side, strconv.FormatInt(t.opened, 10), strconv.FormatInt(t.closed, 10), ff(t.pnl), ff(t.r), ff(t.mfeR), t.reason, ff(t.entry), ff(t.sl), ff(t.tp), t.snap})
+			snap := t.snap
+			if noSnap {
+				snap = ""
+			}
+			w.Write([]string{t.side, strconv.FormatInt(t.opened, 10), strconv.FormatInt(t.closed, 10), ff(t.pnl), ff(t.r), ff(t.mfeR), t.reason, ff(t.entry), ff(t.sl), ff(t.tp), snap})
 		}
 		w.Flush()
 		f.Close()
@@ -490,4 +547,31 @@ type pendingEntry struct {
 	limit, sl, tp float64
 	expires       int64
 	snap          string
+}
+
+// BT_STALL="45:30" sets the stall stop to close after 45 min if the trade never reached 30% of the TP distance (live: 60:15).
+var stallTimeout, stallMaxFavPct = func() (time.Duration, float64) {
+	m, p, ok := strings.Cut(os.Getenv("BT_STALL"), ":")
+	if !ok {
+		return 60 * time.Minute, 15
+	}
+	mins, _ := strconv.Atoi(m)
+	pct, _ := strconv.ParseFloat(p, 64)
+	return time.Duration(mins) * time.Minute, pct
+}()
+
+// BT_NO_TIMESTOP=1 turns off the never-profitable and stall stops (research: strategies that need room).
+var noTimeStops = os.Getenv("BT_NO_TIMESTOP") != ""
+
+// curMaxHold mirrors strategy.MaxHolder: those positions close after it instead of the 30/60-minute time stops.
+var curMaxHold time.Duration
+
+func init() {
+	strategies["reopen_hour"] = func() strategy.Strategy { return reopenhour.New() }
+	for _, k := range []float64{0.5, 1, 1.5, 2} {
+		for _, wk := range []bool{false, true} {
+			k, wk := k, wk
+			strategies[fmt.Sprintf("reopen_k%.1f_wk%v", k, wk)] = func() strategy.Strategy { return reopenhour.NewVariant(k, wk) }
+		}
+	}
 }

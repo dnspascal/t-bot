@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/denismgaya/t-bot/internal/provider/ctrader/api"
@@ -14,28 +15,26 @@ import (
 
 var periodCodes = map[string]uint32{"M1": api.PeriodM1, "M5": api.PeriodM5, "M15": api.PeriodM15, "H1": api.PeriodH1}
 
-// fetch downloads closed bars (real closes, GetTrendbars) for each period from `from` until now into dir/<period>.csv.
-// Read-only market data; uses the access token as-is and never refreshes it.
-func fetch(dir string, from time.Time) error {
+func connect() (*api.Client, error) {
 	clientID, secret, token := os.Getenv("CTRADER_CLIENT_ID"), os.Getenv("CTRADER_CLIENT_SECRET"), os.Getenv("CTRADER_ACCESS_TOKEN")
 	demo := os.Getenv("CTRADER_DEMO") == "true"
 	symbolID, _ := strconv.ParseInt(os.Getenv("CTRADER_SYMBOL_ID"), 10, 64)
-	if clientID == "" || token == "" || symbolID == 0 {
-		return fmt.Errorf("need CTRADER_CLIENT_ID, CTRADER_CLIENT_SECRET, CTRADER_ACCESS_TOKEN, CTRADER_SYMBOL_ID")
+	if clientID == "" || token == "" {
+		return nil, fmt.Errorf("need CTRADER_CLIENT_ID, CTRADER_CLIENT_SECRET, CTRADER_ACCESS_TOKEN")
 	}
-
 	c := api.NewClient(demo, 0, symbolID, 100000, 0.01)
 	if err := c.Connect(); err != nil {
-		return err
+		return nil, err
 	}
-	defer c.Close()
 	if err := c.AuthApp(clientID, secret); err != nil {
-		return err
+		c.Close()
+		return nil, err
 	}
 	time.Sleep(2 * time.Second)
 	accounts, err := c.GetAccountList(token)
 	if err != nil {
-		return err
+		c.Close()
+		return nil, err
 	}
 	for _, a := range accounts {
 		if a.IsLive == !demo {
@@ -43,8 +42,42 @@ func fetch(dir string, from time.Time) error {
 		}
 	}
 	if err := c.AuthAccount(token); err != nil {
+		c.Close()
+		return nil, err
+	}
+	return c, nil
+}
+
+// listSymbols prints id, name and enabled for every symbol whose name contains match (case-insensitive).
+func listSymbols(match string) error {
+	c, err := connect()
+	if err != nil {
 		return err
 	}
+	defer c.Close()
+	syms, err := c.ListSymbols()
+	if err != nil {
+		return err
+	}
+	for _, s := range syms {
+		if strings.Contains(strings.ToUpper(s.SymbolName), strings.ToUpper(match)) {
+			fmt.Printf("%d\t%s\tenabled=%v\n", s.SymbolID, s.SymbolName, s.Enabled)
+		}
+	}
+	return nil
+}
+
+// fetch downloads closed bars (real closes, GetTrendbars) for each period from `from` until now into dir/<period>.csv.
+// Read-only market data for CTRADER_SYMBOL_ID; uses the access token as-is and never refreshes it.
+func fetch(dir string, from time.Time) error {
+	if sid, _ := strconv.ParseInt(os.Getenv("CTRADER_SYMBOL_ID"), 10, 64); sid == 0 {
+		return fmt.Errorf("need CTRADER_SYMBOL_ID")
+	}
+	c, err := connect()
+	if err != nil {
+		return err
+	}
+	defer c.Close()
 
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err

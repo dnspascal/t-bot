@@ -21,6 +21,7 @@ import (
 	ddrangingbreakout "github.com/denismgaya/t-bot/internal/strategy/dd_ranging_breakout"
 	emapullback "github.com/denismgaya/t-bot/internal/strategy/ema_pullback"
 	"github.com/denismgaya/t-bot/internal/strategy/regime"
+	reopenhour "github.com/denismgaya/t-bot/internal/strategy/reopen_hour"
 	rsireversal "github.com/denismgaya/t-bot/internal/strategy/rsi_reversal"
 	sessionmomentum "github.com/denismgaya/t-bot/internal/strategy/session_momentum"
 	sessionopen "github.com/denismgaya/t-bot/internal/strategy/session_open"
@@ -124,6 +125,7 @@ func buildStrategies(name, symbol, mlModelDir, mlOnnxLib string) ([]strategy.Str
 			ddearlybreakout.New(),
 			trendpullback.New(),
 			trendpullback.NewNoGap(),
+			reopenhour.New(),
 		}, nil
 	case "regime":
 		return []strategy.Strategy{regime.New()}, nil
@@ -133,6 +135,8 @@ func buildStrategies(name, symbol, mlModelDir, mlOnnxLib string) ([]strategy.Str
 		return []strategy.Strategy{trendfollow.New()}, nil
 	case "trend_pullback":
 		return []strategy.Strategy{trendpullback.New()}, nil
+	case "reopen_hour":
+		return []strategy.Strategy{reopenhour.New()}, nil
 	case "breakout":
 		return []strategy.Strategy{breakout.New()}, nil
 	case "sweep":

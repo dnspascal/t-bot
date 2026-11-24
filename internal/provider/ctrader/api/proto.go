@@ -1257,3 +1257,67 @@ func payloadOf(data []byte) []byte {
 	}
 	return nil
 }
+
+// Open API ProtoOASymbolsListReq/Res (2114/2115): the full symbol catalog as light symbols.
+const (
+	symbolCatalogReq = uint32(2114)
+	symbolCatalogRes = uint32(2115)
+)
+
+func encodeSymbolCatalogReq(accountID int64) []byte {
+	var b []byte
+	b = appendUint32(b, 1, symbolCatalogReq)
+	b = appendInt64(b, 2, accountID)
+	return b
+}
+
+func decodeSymbolCatalog(data []byte) []LightSymbol {
+	var out []LightSymbol
+	for i := 0; i < len(data); {
+		tag, n := decodeVarint(data[i:])
+		if n == 0 {
+			break
+		}
+		i += n
+		field, wire := tag>>3, tag&0x7
+		if field != 3 || wire != 2 {
+			i = skipField(data, i, wire)
+			continue
+		}
+		l, n2 := decodeVarint(data[i:])
+		i += n2
+		out = append(out, decodeLightSymbol(data[i:i+int(l)]))
+		i += int(l)
+	}
+	return out
+}
+
+func decodeLightSymbol(data []byte) LightSymbol {
+	var s LightSymbol
+	for i := 0; i < len(data); {
+		tag, n := decodeVarint(data[i:])
+		if n == 0 {
+			break
+		}
+		i += n
+		field, wire := tag>>3, tag&0x7
+		switch {
+		case field == 1 && wire == 0:
+			v, n2 := decodeVarint(data[i:])
+			i += n2
+			s.SymbolID = int64(v)
+		case field == 2 && wire == 2:
+			l, n2 := decodeVarint(data[i:])
+			i += n2
+			s.SymbolName = string(data[i : i+int(l)])
+			i += int(l)
+		case field == 3 && wire == 0:
+			v, n2 := decodeVarint(data[i:])
+			i += n2
+			s.Enabled = v != 0
+		default:
+			i = skipField(data, i, wire)
+		}
+	}
+	return s
+}
