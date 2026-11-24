@@ -101,7 +101,7 @@ func TestMaxOpenPerStrategy(t *testing.T) {
 	if ok, why := r.CanOpen(config.TierNormal, config.SignalBuy, "trend_follow", 4010, 0.1); !ok {
 		t.Errorf("second trend_follow: refused (%s), want allowed up to %d", why, maxPerStrategy)
 	}
-	if !isLiveStrategy("trend_pullback") || isLiveStrategy("trend_pullback_nogap") {
-		t.Error("trend_pullback must be live and trend_pullback_nogap shadow")
+	if !isLiveStrategy("trend_pullback") || !isLiveStrategy("trend_pullback_nogap") {
+		t.Error("trend_pullback and trend_pullback_nogap must both be live")
 	}
 }
