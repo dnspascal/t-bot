@@ -24,6 +24,7 @@ import (
 	"github.com/denismgaya/t-bot/internal/strategy/breakout"
 	ddoversoldbounce "github.com/denismgaya/t-bot/internal/strategy/dd_oversold_bounce"
 	emapullback "github.com/denismgaya/t-bot/internal/strategy/ema_pullback"
+	monthstart "github.com/denismgaya/t-bot/internal/strategy/month_start"
 	reopenhour "github.com/denismgaya/t-bot/internal/strategy/reopen_hour"
 	sessionmomentum "github.com/denismgaya/t-bot/internal/strategy/session_momentum"
 	"github.com/denismgaya/t-bot/internal/strategy/sweep"
@@ -180,6 +181,9 @@ func run(dir, name string, spread float64) {
 		pnl := price - p.entry
 		if p.side == config.SignalSell {
 			pnl = -pnl
+		}
+		if swapOn && p.side == config.SignalBuy {
+			pnl -= longSwapPerNight * p.entry * float64(rollovers(p.opened, at))
 		}
 		mfe := p.peak - p.entry
 		if p.side == config.SignalSell {
@@ -346,10 +350,20 @@ func step(p *position, b bar, spread float64) (string, float64, bool) {
 		hi, lo, cl = hi+spread, lo+spread, cl+spread
 	}
 	if buy && lo <= p.sl || !buy && hi >= p.sl {
-		if p.beMoved {
-			return strategy.CloseReasonBreakevenSL, p.sl, true
+		fill := p.sl
+		if gapFill { // a bar that opens beyond the stop fills at its open, not at the stop
+			op := b.open
+			if !buy {
+				op += spread
+			}
+			if buy && op < p.sl || !buy && op > p.sl {
+				fill = op
+			}
 		}
-		return strategy.CloseReasonSLHit, p.sl, true
+		if p.beMoved {
+			return strategy.CloseReasonBreakevenSL, fill, true
+		}
+		return strategy.CloseReasonSLHit, fill, true
 	}
 	if buy && hi >= p.tp || !buy && lo <= p.tp {
 		return strategy.CloseReasonTPHit, p.tp, true
@@ -563,11 +577,39 @@ var stallTimeout, stallMaxFavPct = func() (time.Duration, float64) {
 // BT_NO_TIMESTOP=1 turns off the never-profitable and stall stops (research: strategies that need room).
 var noTimeStops = os.Getenv("BT_NO_TIMESTOP") != ""
 
+// BT_GAPFILL: stops gapped through fill at the bar open. BT_SWAP: buys pay swap per New York 17:00 rollover
+// (0.019% of price per night from prod fills, Wednesday x3); sells get no credit (conservative).
+var (
+	gapFill          = os.Getenv("BT_GAPFILL") != ""
+	swapOn           = os.Getenv("BT_SWAP") != ""
+	longSwapPerNight = 0.80 / 4200
+)
+
+func rollovers(from, to int64) int {
+	n := 0
+	d := time.Unix(from, 0).In(newYork)
+	r := time.Date(d.Year(), d.Month(), d.Day(), 17, 0, 0, 0, newYork)
+	if !r.After(d) {
+		r = r.AddDate(0, 0, 1)
+	}
+	for ; r.Unix() <= to; r = r.AddDate(0, 0, 1) {
+		switch r.Weekday() {
+		case time.Saturday, time.Sunday:
+		case time.Wednesday:
+			n += 3
+		default:
+			n++
+		}
+	}
+	return n
+}
+
 // curMaxHold mirrors strategy.MaxHolder: those positions close after it instead of the 30/60-minute time stops.
 var curMaxHold time.Duration
 
 func init() {
 	strategies["reopen_hour"] = func() strategy.Strategy { return reopenhour.New() }
+	strategies["month_start"] = func() strategy.Strategy { return monthstart.New() }
 	for _, k := range []float64{0.5, 1, 1.5, 2} {
 		for _, wk := range []bool{false, true} {
 			k, wk := k, wk

@@ -73,15 +73,28 @@ func downloadOil10y(root string, p *progress) error {
 	return downloadSymbol(root, job{"oil_10y", oilSymbol, id, day("2016-01-01"), ""}, p)
 }
 
+// byName downloads 10 years of a symbol looked up by its broker name.
+func byName(key, name string) func(string, *progress) error {
+	return func(root string, p *progress) error {
+		p.set(key, "looking up %s", name)
+		id, err := symbolID(name)
+		if err != nil {
+			return err
+		}
+		return downloadSymbol(root, job{key, name, id, day("2016-01-01"), ""}, p)
+	}
+}
+
 func downloadAll(root string, only []string) error {
-	funcs := map[string]func(string, *progress) error{"gold_6y": downloadGold6y, "gold_10y": downloadGold10y, "oil_10y": downloadOil10y}
+	funcs := map[string]func(string, *progress) error{"gold_6y": downloadGold6y, "gold_10y": downloadGold10y, "oil_10y": downloadOil10y,
+		"eurusd_10y": byName("eurusd_10y", "EURUSD"), "xagusd_10y": byName("xagusd_10y", "XAGUSD")}
 	order := []string{"gold_6y", "gold_10y", "oil_10y"}
 	if len(only) > 0 {
 		order = only
 	}
 	for _, k := range order {
 		if funcs[k] == nil {
-			return fmt.Errorf("unknown download %q (have gold_6y, gold_10y, oil_10y)", k)
+			return fmt.Errorf("unknown download %q (have gold_6y, gold_10y, oil_10y, eurusd_10y, xagusd_10y)", k)
 		}
 	}
 	p := &progress{order: order, lines: map[string]string{}}
@@ -220,14 +233,14 @@ func symbolID(name string) (int64, error) {
 		if strings.EqualFold(s.SymbolName, name) {
 			return s.SymbolID, nil
 		}
-		for _, w := range []string{"OIL", "CRUDE", "WTI", "BRENT"} {
+		for _, w := range []string{"OIL", "CRUDE", "WTI", "BRENT", "XAG", "SILVER", "EUR"} {
 			if strings.Contains(strings.ToUpper(s.SymbolName), w) {
 				similar = append(similar, fmt.Sprintf("%s=%d", s.SymbolName, s.SymbolID))
 				break
 			}
 		}
 	}
-	return 0, fmt.Errorf("no symbol %q; oil-like: %s (set oilSymbol in download.go)", name, strings.Join(similar, " "))
+	return 0, fmt.Errorf("no symbol %q; similar: %s", name, strings.Join(similar, " "))
 }
 
 type fileInfo struct {
