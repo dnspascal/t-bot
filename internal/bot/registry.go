@@ -15,6 +15,16 @@ const (
 
 var maxPerTier = [4]int{4, 3, 2, 1}
 
+// strategyMaxOpen overrides maxPerStrategy for strategies that must not stack positions.
+var strategyMaxOpen = map[string]int{"trend_pullback": 1, "trend_pullback_nogap": 1}
+
+func maxOpenFor(strategyName string) int {
+	if n, ok := strategyMaxOpen[strategyName]; ok {
+		return n
+	}
+	return maxPerStrategy
+}
+
 type trackedPosition struct {
 	ProviderPositionID string
 	Side               string
@@ -79,7 +89,7 @@ func (r *PositionRegistry) CanOpen(tier int, side, strategyName string, currentP
 	if count >= maxPerTier[tier] {
 		return false, "max positions for tier reached"
 	}
-	if strategyCount >= maxPerStrategy {
+	if strategyCount >= maxOpenFor(strategyName) {
 		return false, "max positions for this strategy reached"
 	}
 	return true, ""

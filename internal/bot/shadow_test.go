@@ -90,3 +90,18 @@ func TestLiveStrategies(t *testing.T) {
 		}
 	}
 }
+
+func TestMaxOpenPerStrategy(t *testing.T) {
+	r := newPositionRegistry()
+	r.Register(trackedPosition{ProviderPositionID: "1", Side: config.SignalBuy, Tier: config.TierNormal, OpenPrice: 4000, StrategyName: "trend_pullback"})
+	if ok, why := r.CanOpen(config.TierNormal, config.SignalBuy, "trend_pullback", 4010, 0.1); ok || why != "max positions for this strategy reached" {
+		t.Errorf("second trend_pullback: ok=%v (%s), want refused at 1 open", ok, why)
+	}
+	r.Register(trackedPosition{ProviderPositionID: "2", Side: config.SignalBuy, Tier: config.TierNormal, OpenPrice: 4000, StrategyName: "trend_follow"})
+	if ok, why := r.CanOpen(config.TierNormal, config.SignalBuy, "trend_follow", 4010, 0.1); !ok {
+		t.Errorf("second trend_follow: refused (%s), want allowed up to %d", why, maxPerStrategy)
+	}
+	if !isLiveStrategy("trend_pullback") || !isLiveStrategy("trend_pullback_nogap") {
+		t.Error("trend_pullback and trend_pullback_nogap must both be live")
+	}
+}

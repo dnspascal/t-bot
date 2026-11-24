@@ -27,6 +27,7 @@ import (
 	srbounce "github.com/denismgaya/t-bot/internal/strategy/sr_bounce"
 	"github.com/denismgaya/t-bot/internal/strategy/sweep"
 	trendfollow "github.com/denismgaya/t-bot/internal/strategy/trend_follow"
+	trendpullback "github.com/denismgaya/t-bot/internal/strategy/trend_pullback"
 )
 
 type BotInitResult struct {
@@ -121,6 +122,8 @@ func buildStrategies(name, symbol, mlModelDir, mlOnnxLib string) ([]strategy.Str
 			ddoversoldbounce.New(),
 			ddrangingbreakout.New(),
 			ddearlybreakout.New(),
+			trendpullback.New(),
+			trendpullback.NewNoGap(),
 		}, nil
 	case "regime":
 		return []strategy.Strategy{regime.New()}, nil
@@ -128,6 +131,8 @@ func buildStrategies(name, symbol, mlModelDir, mlOnnxLib string) ([]strategy.Str
 		return []strategy.Strategy{newSRBounce()}, nil
 	case "trend_follow":
 		return []strategy.Strategy{trendfollow.New()}, nil
+	case "trend_pullback":
+		return []strategy.Strategy{trendpullback.New()}, nil
 	case "breakout":
 		return []strategy.Strategy{breakout.New()}, nil
 	case "sweep":
