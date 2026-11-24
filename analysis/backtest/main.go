@@ -24,6 +24,7 @@ import (
 	"github.com/denismgaya/t-bot/internal/strategy/breakout"
 	ddoversoldbounce "github.com/denismgaya/t-bot/internal/strategy/dd_oversold_bounce"
 	emapullback "github.com/denismgaya/t-bot/internal/strategy/ema_pullback"
+	monthstart "github.com/denismgaya/t-bot/internal/strategy/month_start"
 	reopenhour "github.com/denismgaya/t-bot/internal/strategy/reopen_hour"
 	sessionmomentum "github.com/denismgaya/t-bot/internal/strategy/session_momentum"
 	"github.com/denismgaya/t-bot/internal/strategy/sweep"
@@ -608,6 +609,7 @@ var curMaxHold time.Duration
 
 func init() {
 	strategies["reopen_hour"] = func() strategy.Strategy { return reopenhour.New() }
+	strategies["month_start"] = func() strategy.Strategy { return monthstart.New() }
 	for _, k := range []float64{0.5, 1, 1.5, 2} {
 		for _, wk := range []bool{false, true} {
 			k, wk := k, wk
