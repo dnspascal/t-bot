@@ -29,6 +29,7 @@ import (
 	srbounce "github.com/denismgaya/t-bot/internal/strategy/sr_bounce"
 	"github.com/denismgaya/t-bot/internal/strategy/sweep"
 	trendfollow "github.com/denismgaya/t-bot/internal/strategy/trend_follow"
+	trendfollowbigday "github.com/denismgaya/t-bot/internal/strategy/trend_follow_bigday"
 	trendpullback "github.com/denismgaya/t-bot/internal/strategy/trend_pullback"
 )
 
@@ -117,6 +118,7 @@ func buildStrategies(name, symbol, mlModelDir, mlOnnxLib string) ([]strategy.Str
 			sweep.New(),
 			breakout.New(),
 			sessionopen.New(),
+			trendfollowbigday.New(), // before trend_follow: same entries on big days, this one takes them
 			trendfollow.New(),
 			rsireversal.New(),
 			sessionmomentum.New(),
@@ -135,6 +137,8 @@ func buildStrategies(name, symbol, mlModelDir, mlOnnxLib string) ([]strategy.Str
 		return []strategy.Strategy{newSRBounce()}, nil
 	case "trend_follow":
 		return []strategy.Strategy{trendfollow.New()}, nil
+	case "trend_follow_bigday":
+		return []strategy.Strategy{trendfollowbigday.New()}, nil
 	case "trend_pullback":
 		return []strategy.Strategy{trendpullback.New()}, nil
 	case "month_start":

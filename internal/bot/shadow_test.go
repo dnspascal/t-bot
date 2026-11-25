@@ -116,7 +116,7 @@ func TestShadowMaxHold(t *testing.T) {
 	if r, exit, _ := shadowExit(tr, 100.4, 100.5, open.Add(time.Hour), 0.1, 0.5); r != strat.CloseReasonTimeStopMaxHold || exit != 100.4 {
 		t.Errorf("60m: got %q at %v, want max hold at the bid 100.4", r, exit)
 	}
-	if !isLiveStrategy("reopen_hour") || !isLiveStrategy("month_start") {
-		t.Error("reopen_hour and month_start must be live")
+	if !isLiveStrategy("reopen_hour") || !isLiveStrategy("month_start") || !isLiveStrategy("trend_follow_bigday") {
+		t.Error("reopen_hour, month_start and trend_follow_bigday must be live")
 	}
 }

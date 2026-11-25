@@ -1,0 +1,14 @@
+today's two losing sells (18:25, 18:30 EAT): H1 RSI 29.2/29.2, M5 RSI 28.8/27.8, EMA50 distance -3.9/-3.9 ATR
+
+trend_follow 2016-2026: 3129 trades, -40.1R without any filter
+
+filter (block the entry when present) stops 18:25 stops 18:30  blocked  their R   avg R R with filter better yrs
+stretched 3 ATR in 24h                    no          no     1288     -3.4  -0.003         -36.7       6/11
+RSI divergence                            no          no      526    +10.9  +0.021         -51.0       6/11
+volume >= 2x                              no          no      696    -11.0  -0.016         -29.1       6/11
+rejection wick >= 50%                    yes         yes      299     +9.7  +0.032         -49.8       5/11
+day range >= 1.5x ADR                     no          no      558    +49.1  +0.088         -89.2       3/11
+H1 RSI >= 80 (sell <= 20)                 no          no      366     -7.7  -0.021         -32.4       5/11
+M5 RSI >= 85 (sell <= 15)                 no          no       74     +1.0  +0.013         -41.1       6/11
+5+ H1 candles in a row                    no          no      337    -13.7  -0.041         -26.4       8/11
+>= 4 ATR beyond EMA50                     no          no     1298     +0.1  +0.000         -40.2       8/11

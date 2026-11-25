@@ -29,6 +29,7 @@ import (
 	sessionmomentum "github.com/denismgaya/t-bot/internal/strategy/session_momentum"
 	"github.com/denismgaya/t-bot/internal/strategy/sweep"
 	trendfollow "github.com/denismgaya/t-bot/internal/strategy/trend_follow"
+	trendfollowbigday "github.com/denismgaya/t-bot/internal/strategy/trend_follow_bigday"
 	trendpullback "github.com/denismgaya/t-bot/internal/strategy/trend_pullback"
 )
 
@@ -610,6 +611,7 @@ var curMaxHold time.Duration
 func init() {
 	strategies["reopen_hour"] = func() strategy.Strategy { return reopenhour.New() }
 	strategies["month_start"] = func() strategy.Strategy { return monthstart.New() }
+	strategies["trend_follow_bigday"] = func() strategy.Strategy { return trendfollowbigday.New() }
 	for _, k := range []float64{0.5, 1, 1.5, 2} {
 		for _, wk := range []bool{false, true} {
 			k, wk := k, wk

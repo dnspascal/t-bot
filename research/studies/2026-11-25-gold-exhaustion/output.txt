@@ -1,0 +1,50 @@
+2855 stretched-move events; reversal (1.5 ATR back) came first in 40%, continuation (1 ATR further) in 60%   [2016-21: 42%, 2022-26: 38%]
+break-even for a counter-trend trade risking 1 ATR to make 1.5 ATR is 40% reversal-first.
+
+side:
+   down       n= 1147  reversal first  43%   (16-21  45%, 22-26  41%)   years above base 7/11
+   up         n= 1708  reversal first  39%   (16-21  41%, 22-26  36%)   years above base 5/11
+divergence:
+   no         n= 2548  reversal first  40%   (16-21  42%, 22-26  38%)   years above base 4/11
+   yes        n=  307  reversal first  42%   (16-21  43%, 22-26  40%)   years above base 7/11
+volume:
+   1.3-2x     n=  631  reversal first  40%   (16-21  41%, 22-26  40%)   years above base 6/11
+   <1.3x      n= 1873  reversal first  41%   (16-21  44%, 22-26  38%)   years above base 4/11
+   >=2x       n=  351  reversal first  39%   (16-21  40%, 22-26  36%)   years above base 4/10
+wick:
+   25-50%     n=  308  reversal first  44%   (16-21  47%, 22-26  42%)   years above base 8/11
+   <25%       n= 2524  reversal first  40%   (16-21  42%, 22-26  38%)   years above base 5/11
+   >=50%      n=   23  reversal first  22%   (16-21  33%, 22-26  14%)   years above base 3/9
+day_range:
+   1.5-2x     n=  152  reversal first  35%   (16-21  36%, 22-26  34%)   years above base 4/11
+   <1.5x      n= 2619  reversal first  41%   (16-21  43%, 22-26  39%)   years above base 7/11
+   >=2x ADR   n=   84  reversal first  37%   (16-21  40%, 22-26  35%)   years above base 3/11
+speed:
+   7-14h      n=  643  reversal first  41%   (16-21  45%, 22-26  36%)   years above base 7/11
+   <=6h       n=  171  reversal first  40%   (16-21  48%, 22-26  30%)   years above base 6/11
+   >14h       n= 2041  reversal first  40%   (16-21  41%, 22-26  40%)   years above base 5/11
+h1_rsi:
+   70-80      n=  931  reversal first  40%   (16-21  40%, 22-26  39%)   years above base 5/11
+   <70        n= 1794  reversal first  41%   (16-21  44%, 22-26  38%)   years above base 6/11
+   >=80       n=  130  reversal first  32%   (16-21  33%, 22-26  31%)   years above base 1/11
+m5_rsi:
+   70-85      n= 1143  reversal first  40%   (16-21  40%, 22-26  39%)   years above base 3/11
+   <70        n= 1664  reversal first  41%   (16-21  45%, 22-26  37%)   years above base 6/11
+   >=85       n=   48  reversal first  31%   (16-21  23%, 22-26  41%)   years above base 3/11
+run:
+   3-4        n=  885  reversal first  42%   (16-21  42%, 22-26  42%)   years above base 5/11
+   <3         n= 1629  reversal first  40%   (16-21  43%, 22-26  36%)   years above base 5/11
+   >=5        n=  341  reversal first  40%   (16-21  41%, 22-26  38%)   years above base 5/11
+hour_utc:
+   00-04      n=  448  reversal first  42%   (16-21  45%, 22-26  38%)   years above base 6/11
+   04-08      n=  428  reversal first  37%   (16-21  42%, 22-26  32%)   years above base 5/11
+   08-12      n=  488  reversal first  40%   (16-21  42%, 22-26  39%)   years above base 5/11
+   12-16      n=  611  reversal first  39%   (16-21  38%, 22-26  41%)   years above base 5/11
+   16-20      n=  547  reversal first  42%   (16-21  45%, 22-26  40%)   years above base 7/11
+   20-24      n=  333  reversal first  42%   (16-21  45%, 22-26  38%)   years above base 5/11
+
+number of exhaustion signs present (divergence, volume >=2x, wick >=50%, day range >=1.5x ADR, H1 RSI >=80, M5 RSI >=85, run >=5):
+   0 signs  n= 1737  reversal first  41%   (16-21  43%, 22-26  40%)
+   1 signs  n=  859  reversal first  40%   (16-21  43%, 22-26  36%)
+   2 signs  n=  205  reversal first  36%   (16-21  38%, 22-26  34%)
+   3 signs  n=   50  reversal first  38%   (16-21  28%, 22-26  52%)

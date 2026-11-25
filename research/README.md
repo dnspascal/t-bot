@@ -39,3 +39,13 @@ SELECT * FROM downloads;
 SELECT ts_eat, o, h, l, c FROM candles WHERE symbol='XAUUSD' AND tf='H1' AND download='2026-11-17_from2021' LIMIT 10;
 research/scripts/compare.sh XAUUSD 2026-11-17_from2021 2026-11-24_from2021_copy2
 ```
+
+## Weekly report
+
+```
+research/scripts/weekly_report.sh [days]
+```
+
+Writes `research/data/reports/weekly_<date>.md` (git-ignored: it holds the balance and P&L): account change, live
+strategies in R vs their 10-year backtests, exits, shadow strategies, open positions and signals. Needs the read-only
+prod tunnel (`.claude/prod-db.sh`, local only).

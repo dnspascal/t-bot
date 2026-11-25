@@ -1,0 +1,38 @@
+== 1. 5-minute returns, 746341 aligned steps
+   same 5 minutes: corr(gold, EURUSD) +0.341   corr(gold, silver) +0.735
+   other market now vs gold  5 min later: EURUSD +0.0021   silver +0.0018   gold itself -0.0147
+   other market now vs gold 10 min later: EURUSD +0.0037   silver -0.0005   gold itself +0.0003
+   other market now vs gold 15 min later: EURUSD +0.0027   silver +0.0063   gold itself -0.0010
+   other market now vs gold 30 min later: EURUSD -0.0020   silver +0.0016   gold itself -0.0003
+
+== 2. shock in the other market (>= 4 sigma in 5 min), gold had not followed: trade gold the implied way
+   EURUSD real:  hold  15m n= 1262 $  -215 / $  -165 (16-21 / 22-26) yrs+  1/11 | hold  60m n= 1211 $  -298 / $  -352 (16-21 / 22-26) yrs+  3/11 | hold 240m n= 1096 $  -368 / $   -23 (16-21 / 22-26) yrs+  6/11
+   EURUSD null:  hold  15m n= 2220 $  -216 / $   -67 (16-21 / 22-26) yrs+  3/11 | hold  60m n= 2043 $  -197 / $   -30 (16-21 / 22-26) yrs+  2/11 | hold 240m n= 1571 $  -114 / $   -15 (16-21 / 22-26) yrs+  5/11
+   silver real:  hold  15m n= 2173 $  -242 / $  +217 (16-21 / 22-26) yrs+  3/11 | hold  60m n= 2144 $  -173 / $  -117 (16-21 / 22-26) yrs+  3/11 | hold 240m n= 1926 $    +9 / $  +910 (16-21 / 22-26) yrs+  5/11
+   silver null:  hold  15m n= 2557 $  -300 / $  -155 (16-21 / 22-26) yrs+  1/11 | hold  60m n= 2358 $  -343 / $  -332 (16-21 / 22-26) yrs+  0/11 | hold 240m n= 1909 $  -133 / $   -71 (16-21 / 22-26) yrs+  5/11
+
+== 3/4. gold moved >= 2 sigma more/less than the other market implies over H hours: bet gold corrects (H1, beta from the past 20 days)
+   EURUSD real  last  4h, hold   4h: n= 1673  $   -128 / $  -1238 (16-21 / 22-26)  yrs+  3/11
+   EURUSD real  last  4h, hold  24h: n=  888  $   -302 / $  -1523 (16-21 / 22-26)  yrs+  5/11
+   EURUSD real  last  4h, hold 120h: n=  477  $   +659 / $   +279 (16-21 / 22-26)  yrs+  6/11
+   EURUSD real  last 24h, hold   4h: n= 1457  $   -287 / $   -972 (16-21 / 22-26)  yrs+  2/11
+   EURUSD real  last 24h, hold  24h: n=  450  $   -242 / $   -163 (16-21 / 22-26)  yrs+  4/11
+   EURUSD real  last 24h, hold 120h: n=  311  $   -223 / $  -1228 (16-21 / 22-26)  yrs+  4/11
+   EURUSD null  last  4h, hold   4h: n= 1651  $   -159 / $   -889 (16-21 / 22-26)  yrs+  4/11
+   EURUSD null  last  4h, hold  24h: n=  873  $    -53 / $  -1419 (16-21 / 22-26)  yrs+  6/11
+   EURUSD null  last  4h, hold 120h: n=  478  $  +1234 / $   -329 (16-21 / 22-26)  yrs+  6/11
+   EURUSD null  last 24h, hold   4h: n= 1455  $   -490 / $  -1310 (16-21 / 22-26)  yrs+  2/11
+   EURUSD null  last 24h, hold  24h: n=  434  $   -324 / $   -453 (16-21 / 22-26)  yrs+  5/11
+   EURUSD null  last 24h, hold 120h: n=  309  $   -290 / $  -1989 (16-21 / 22-26)  yrs+  3/11
+   silver real  last  4h, hold   4h: n= 1731  $    +81 / $   -435 (16-21 / 22-26)  yrs+  7/11
+   silver real  last  4h, hold  24h: n=  934  $    +59 / $  -1496 (16-21 / 22-26)  yrs+  5/11
+   silver real  last  4h, hold 120h: n=  481  $   +882 / $  -1356 (16-21 / 22-26)  yrs+  6/11
+   silver real  last 24h, hold   4h: n= 1473  $     -2 / $  -1262 (16-21 / 22-26)  yrs+  4/11
+   silver real  last 24h, hold  24h: n=  475  $   +110 / $   -469 (16-21 / 22-26)  yrs+  6/11
+   silver real  last 24h, hold 120h: n=  301  $   +494 / $   +181 (16-21 / 22-26)  yrs+  7/11
+   silver null  last  4h, hold   4h: n= 1658  $    -28 / $   -814 (16-21 / 22-26)  yrs+  5/11
+   silver null  last  4h, hold  24h: n=  879  $   +160 / $  -1425 (16-21 / 22-26)  yrs+  5/11
+   silver null  last  4h, hold 120h: n=  476  $  +1137 / $   +164 (16-21 / 22-26)  yrs+  6/11
+   silver null  last 24h, hold   4h: n= 1450  $   -407 / $  -1304 (16-21 / 22-26)  yrs+  2/11
+   silver null  last 24h, hold  24h: n=  433  $   -244 / $   -561 (16-21 / 22-26)  yrs+  6/11
+   silver null  last 24h, hold 120h: n=  302  $    -20 / $  -2092 (16-21 / 22-26)  yrs+  3/11
