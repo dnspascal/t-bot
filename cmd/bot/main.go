@@ -207,6 +207,7 @@ func startBotForProvider(
 		return
 	}
 	botResult.Bot.SeedMarketStates()
+	botResult.Bot.SeedStrategies(ctx)
 
 	if err := prov.StartStreaming(); err != nil {
 		slog.Error("start streaming failed", "provider", prov.Name(), "err", err)

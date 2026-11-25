@@ -36,6 +36,18 @@ type Strategy interface {
 	UsesTrendWatcher() bool
 }
 
+// Bar is a past candle used to seed a strategy at startup.
+type Bar struct {
+	OpenTime  int64
+	High, Low float64
+}
+
+// H1Seeder strategies need past H1 bars at startup (oldest first); the bot loads SeedCount() of them.
+type H1Seeder interface {
+	SeedH1(bars []Bar)
+	SeedCount() int
+}
+
 // MaxHolder strategies have their positions closed after MaxHold, instead of the generic 30/60-minute time stops.
 type MaxHolder interface {
 	MaxHold() time.Duration
