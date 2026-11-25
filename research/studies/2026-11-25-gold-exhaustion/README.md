@@ -35,3 +35,26 @@ days continuing 71–77% of the time in every year. Using only the range up to t
 ## Verdict
 On gold, an exhausted move and a move about to continue look the same at the time. This is why trend_follow's late
 entries and the counter-trend strategies' early entries both lose: the turn is not visible in advance.
+
+## Each sign as a filter on trend_follow (`filters.py`, output in `filters_output.txt`)
+Block a trend_follow entry when the sign is present (closed bars only; history spliced with the bot's own candles
+for 2026-11-25). trend_follow 2016–2026: 3,129 trades, −40.1R unfiltered.
+
+| filter | stops 18:25 / 18:30 | blocked | their R | trend_follow with filter |
+|---|---|---|---|---|
+| stretched 3 ATR in 24h | no / no | 1,288 | −3.4 | −36.7R |
+| RSI divergence | no / no | 526 | +10.9 | −51.0R |
+| volume >= 2x | no / no | 696 | −11.0 | −29.1R |
+| rejection wick >= 50% | **yes / yes** | 299 | +9.7 | −49.8R |
+| day range >= 1.5x ADR | no / no | 558 | +49.1 | −89.2R |
+| H1 RSI >= 80 (sell <= 20) | no / no | 366 | −7.7 | −32.4R |
+| M5 RSI >= 85 (sell <= 15) | no / no | 74 | +1.0 | −41.1R |
+| 5+ H1 candles in a row | no / no | 337 | −13.7 | −26.4R |
+| >= 4 ATR beyond EMA50 | no / no | 1,298 | +0.1 | −40.2R |
+
+Only the wick filter would have stopped both of today's sells, and over ten years it makes trend_follow worse. No
+filter turns trend_follow positive. The best (5+ candles, volume) trim the loss by blocking trades that average
+−0.02 to −0.04R — within noise.
+
+Lead, not a finding: the trades on days whose range so far is >= 1.5x ADR were trend_follow's best (558 trades,
++49.1R, 8 of 11 years positive), but +44.4R of it is 2022–2026 and +40.4R is 2025–2026. Needs its own test before use.
